@@ -1,0 +1,43 @@
+# REQ-E1b-S05-01: Kyverno ClusterPolicy enforcing the mandatory ADR-0301
+# label set on Pods. Manifest only — not applied by this lane (L2 admission
+# behaviour is covered by the deferred Chainsaw suite).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-kaddy-labels
+  annotations:
+    kaddy.io/adr: "0301"
+    kaddy.io/req: REQ-E1b-S05-01
+    policies.kyverno.io/title: Require kaddy ADR-0301 labels
+    policies.kyverno.io/category: Governance
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Every Pod must carry the mandatory ADR-0301 label set so that ownership,
+      classification, and blast-radius attribution are always present.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-mandatory-adr0301-labels
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: >-
+          Pods must set the mandatory ADR-0301 labels: owner,
+          app.kubernetes.io/name, app.kubernetes.io/part-of,
+          app.kubernetes.io/managed-by, track, data-classification,
+          business-criticality.
+        pattern:
+          metadata:
+            labels:
+              owner: "?*"
+              app.kubernetes.io/name: "?*"
+              app.kubernetes.io/part-of: "?*"
+              app.kubernetes.io/managed-by: "?*"
+              track: "?*"
+              data-classification: "?*"
+              business-criticality: "?*"
