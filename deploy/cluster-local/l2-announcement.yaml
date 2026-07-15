@@ -1,0 +1,19 @@
+# CiliumL2AnnouncementPolicy — ARPs the LB-IPAM pool IPs on the kind bridge
+# (REQ-E1e-S02-03). Requires l2announcements.enabled=true + kubeProxyReplacement
+# on the Cilium install.
+#
+# macOS note: L2/ARP on the docker/podman bridge is not reachable from the host,
+# so this exists to satisfy the edge shape (and works on host-routable substrates
+# like Talos/GSK). Host reachability is verified via loopback NodePorts instead.
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: kaddy-local-l2
+spec:
+  # Announce for every LoadBalancer service (Gateways surface as LB services).
+  loadBalancerIPs: true
+  interfaces:
+    - "^eth[0-9]+"
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux

@@ -1,0 +1,39 @@
+# Self-signed local CA + ClusterIssuer (REQ-E1e-S03-01) — local TLS without mkcert.
+#
+# 1) A self-signed bootstrap issuer mints the CA certificate.
+# 2) The CA cert/key are stored in a Secret in cert-manager's namespace.
+# 3) kaddy-local-ca is a CA ClusterIssuer backed by that Secret; downstream
+#    Certificates chain to this local root.
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: kaddy-selfsigned-bootstrap
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kaddy-local-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: kaddy-local-ca
+  secretName: kaddy-local-ca-tls
+  duration: 87600h # 10y — local dev root
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: kaddy-selfsigned-bootstrap
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: kaddy-local-ca
+spec:
+  ca:
+    secretName: kaddy-local-ca-tls

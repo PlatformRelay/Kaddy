@@ -1,0 +1,85 @@
+# Smoke Gateway + HTTPRoute + echo backend (REQ-E1e-S04-01).
+# Verifies the Cilium Gateway API dataplane end-to-end. The Gateway surfaces as a
+# LoadBalancer service and receives an LB-IPAM address (asserted assigned only).
+# Real HTTP is exercised via `kubectl port-forward` to the gateway service on the
+# host loopback — the LB IP itself is never curled (macOS bridge is not routable).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: e1e-smoke
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  namespace: e1e-smoke
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+        - name: echo
+          # http-echo returns a fixed 200 body — pinned, no floating tag.
+          image: hashicorp/http-echo:1.0.0
+          args:
+            - "-text=kaddy-e1e-ok"
+            - "-listen=:5678"
+          ports:
+            - containerPort: 5678
+          readinessProbe:
+            tcpSocket:
+              port: 5678
+            initialDelaySeconds: 2
+            periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+  namespace: e1e-smoke
+spec:
+  selector:
+    app: echo
+  ports:
+    - name: http
+      port: 5678
+      targetPort: 5678
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: kaddy-smoke
+  namespace: e1e-smoke
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo
+  namespace: e1e-smoke
+spec:
+  parentRefs:
+    - name: kaddy-smoke
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: echo
+          port: 5678
