@@ -1,7 +1,7 @@
 # Security & compliance audits — kaddy
 
 Committed, **replayable** audit procedure (E11). Reports are **public** — the process is part of
-the showcase. Run with repo skill `.claude/skills/kaddy-audit/SKILL.md` or manually.
+the showcase. Run with repo skill `skills/kaddy-audit/SKILL.md` or manually.
 
 ## When to run
 
@@ -57,7 +57,7 @@ Brief note tying label coverage to public NIS2/KRITIS asset-management expectati
 
 | Date | Summary | Report |
 | --- | --- | --- |
-| _(pending E11-S01)_ | — | — |
+| 2026-07-15 | Baseline health & direction audit (NEEDS-WORK; direction AT-RISK) | [`agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md`](../../agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md) |
 
 ## Tooling language
 

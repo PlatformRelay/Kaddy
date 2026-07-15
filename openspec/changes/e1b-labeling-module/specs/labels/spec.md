@@ -11,7 +11,7 @@ Epic: E1b · ADR: [0301](../../../docs/adr/0301-resource-labeling-convention.md)
 **Given** `modules/labels` with required inputs (`owner`, `service`, `part_of`, `track`, `data_classification`, `managed_by`)  
 **When** module is called with valid inputs  
 **Then** output `labels` contains all mandatory keys per ADR-0301  
-**Test:** `modules/labels/tests/valid_defaults`.tftest.hcl`
+**Test:** `modules/labels/tests/valid_defaults.tftest.hcl`
 
 **Verify:** `cd modules/labels && tofu test -filter=tests/valid_defaults`
 
@@ -35,7 +35,7 @@ Epic: E1b · ADR: [0301](../../../docs/adr/0301-resource-labeling-convention.md)
 **Given** `resource_name(prefix, suffix)` helper  
 **When** prefix=`kaddy`, suffix=`talos-cp-01`  
 **Then** result length ≤ 63 and matches `^[a-z0-9-]+$`  
-**Test:** `modules/labels/tests/name_length`.tftest.hcl`
+**Test:** `modules/labels/tests/name_length.tftest.hcl`
 
 **Verify:** `tofu test -filter=tests/name_length`
 
@@ -59,7 +59,7 @@ Epic: E1b · ADR: [0301](../../../docs/adr/0301-resource-labeling-convention.md)
 **Given** `track = "production"` (not in enum)  
 **When** `tofu test` runs  
 **Then** test fails with clear error mentioning allowed: `stable`, `canary`, `preview`  
-**Test:** `modules/labels/tests/invalid_track`.tftest.hcl`
+**Test:** `modules/labels/tests/invalid_track.tftest.hcl`
 
 **Verify:** `tofu test -filter=tests/invalid_track`
 

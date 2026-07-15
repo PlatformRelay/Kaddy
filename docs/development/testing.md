@@ -35,14 +35,12 @@ tests/chainsaw/
   .chainsaw.yaml          # global config (timeouts, namespaces)
   labeling/
     chainsaw-test.yaml    # Kyverno rejects unlabeled pods
-  security/
-    chainsaw-test.yaml    # default-deny netpol
-  gateway/
-    chainsaw-test.yaml    # HTTPRoute path routing
-  monitoring/
-    chainsaw-test.yaml    # ServiceMonitor + PrometheusRule present
   identity/
     chainsaw-test.yaml    # Dex + GitHub OIDC, Argo CD unauth denied
+  portal/
+    chainsaw-test.yaml    # Backstage-scaffolded WebsiteClaim reconciles
+  tls/
+    chainsaw-test.yaml    # cert-manager Certificate Ready / TLS route
 ```
 
 Install: `go install github.com/kyverno/chainsaw@latest` or release binary from
@@ -70,9 +68,9 @@ See epic specs under `openspec/changes/*/specs/` for per-story `Verify:` blocks.
 
 | Workflow | Levels |
 | --- | --- |
-| `ci.yaml` | `task verify` + L0 when present |
-| `chainsaw.yaml` (E3+) | L2 on kind |
-| `nightly.yaml` (optional) | L2 on driving-range (phase 1) or GSK (phase 2) + L3 smoke |
+| `verify.yaml` | `task verify` (scrub + lint + openspec + spec coverage) + L0 `tofu test` + L1 conftest |
+| `monitoring.yaml` | L1 promtool PrometheusRule unit tests (no cluster) |
+| `chainsaw.yaml` (E3+) | L2 Chainsaw on kind |
 
 ## Spec traceability
 
