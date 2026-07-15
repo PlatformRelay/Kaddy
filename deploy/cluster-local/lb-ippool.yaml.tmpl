@@ -4,12 +4,12 @@
 # because the kind network CIDR differs between docker and rootless podman and
 # does not exist until the cluster is created.
 #
-# __LB_RANGE__ is substituted with a high slice of the kind subnet
-# (e.g. 172.18.255.200-172.18.255.250) so it cannot collide with node IPs.
+# __LB_START__ / __LB_STOP__ are substituted with a high slice of the kind subnet
+# (e.g. 10.89.0.200-10.89.0.250) so it cannot collide with node IPs.
 #
 # macOS note: this subnet is not host-routable; the assigned LB IP is asserted
 # present in status.addresses only — never curled from the host.
-apiVersion: cilium.io/v2alpha1
+apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
   name: kaddy-local-pool
