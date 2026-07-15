@@ -10,7 +10,10 @@ if [[ ! -f "${DENYLIST}" ]]; then
   exit 1
 fi
 
-# Paths to scan (product + docs; exclude harness)
+# Paths to scan (product + docs + deploy/CI/hack/tests; exclude harness).
+# SEC-2: deploy/ (secrets live here), .github/ (workflows), hack/ (tooling),
+# tests/ (fixtures) were previously omitted so the CI sanitizer never scanned
+# where secrets could land.
 PATHS=(
   "${ROOT}/docs"
   "${ROOT}/openspec"
@@ -18,6 +21,10 @@ PATHS=(
   "${ROOT}/evidence"
   "${ROOT}/modules"
   "${ROOT}/stacks"
+  "${ROOT}/deploy"
+  "${ROOT}/.github"
+  "${ROOT}/hack"
+  "${ROOT}/tests"
   "${ROOT}/README.md"
   "${ROOT}/AGENTS.md"
 )
@@ -30,7 +37,11 @@ while IFS= read -r pattern || [[ -n "${pattern}" ]]; do
   [[ "${pattern}" =~ ^# ]] && continue
   for base in "${PATHS[@]}"; do
     [[ -e "${base}" ]] || continue
-    if grep -RIn --exclude-dir=.git --exclude='*.sample' "${pattern}" "${base}" 2>/dev/null; then
+    # Exclude the denylist itself and this scrubber: they contain every
+    # pattern verbatim, so scanning them would self-match (SEC-2 broadening).
+    if grep -RIn --exclude-dir=.git --exclude='*.sample' \
+        --exclude='sanitize-denylist.txt' --exclude='scrub-denylist.sh' \
+        "${pattern}" "${base}" 2>/dev/null; then
       echo "DENYLIST HIT: pattern '${pattern}'" >&2
       found=1
     fi
