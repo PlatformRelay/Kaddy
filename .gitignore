@@ -49,3 +49,6 @@ evidence/runs/
 .LSOverride
 *.swp
 *~
+
+# Local cluster state (kubeconfig, generated certs) — never commit
+.state/
