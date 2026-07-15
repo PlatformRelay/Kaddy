@@ -29,16 +29,27 @@ IDs, internal EAM systems, or org billing keys.
 Design to strictest syntax: GCP-compatible lowercase `[a-z0-9_-]{0,63}` for values (intersection
 with Kubernetes label values).
 
+**Canonical form (single source of truth): the BARE keys below.** There is exactly one canonical
+label set — these bare keys. Enforcement (OPA `policy/labels.rego`, Kyverno
+`require-kaddy-labels`) checks these bare keys and nothing else. The Kubernetes-recommended
+`app.kubernetes.io/*` keys are an explicit, **documented addition** (see *Kubernetes mapping*
+below) — a mirror emitted alongside the canonical keys, **never a competing canonical set**.
+Artifacts may carry both forms; only the bare form is authoritative and enforced.
+
 | Key | Req | Example | Purpose |
 | --- | --- | --- | --- |
 | `owner` | yes | `platform-team` | DRI for incidents |
-| `service` | yes | `clubhouse` | App identity → `app.kubernetes.io/name` |
-| `component` | opt | `web` | Role → `app.kubernetes.io/component` |
-| `part-of` | yes | `kaddy` | Platform/product → `app.kubernetes.io/part-of` |
-| `managed-by` | yes | `argocd` / `crossplane` / `terramate` | IaC tool |
+| `service` | yes | `clubhouse` | App identity — mirrored to `app.kubernetes.io/name` |
+| `component` | opt | `web` | Role — mirrored to `app.kubernetes.io/component` |
+| `part-of` | yes | `kaddy` | Platform/product — mirrored to `app.kubernetes.io/part-of` |
+| `managed-by` | yes | `argocd` / `crossplane` / `terramate` | IaC tool — mirrored to `app.kubernetes.io/managed-by` |
 | `data-classification` | yes | `internal` | `public` / `internal` / `confidential` / `restricted` |
 | `business-criticality` | yes | `business-operational` | Blast radius tier |
 | `track` | yes | `stable` | `stable` / `canary` / `preview` — **replaces environment/stage** |
+
+The mandatory core is therefore: `owner`, `service`, `part-of`, `managed-by`,
+`data-classification`, `business-criticality`, `track` (all bare). `component` is **optional**;
+when set it is emitted in both bare (`component`) and k8s (`app.kubernetes.io/component`) form.
 
 ### Annotations (high cardinality — not labels)
 
@@ -55,12 +66,16 @@ with Kubernetes label values).
 | `personal-data` | `none` / `pseudonymised` / `personal` / `special-category` |
 | `pci` | `true` / `false` |
 
-### Kubernetes mapping
+### Kubernetes mapping (documented addition — not a replacement)
 
-| kaddy key | K8s recommended |
+The canonical bare key is authoritative; the `app.kubernetes.io/*` key is emitted **in addition**
+so standard Kubernetes tooling (dashboards, selectors) works. Both are present on the same
+resource; policy enforces only the bare key.
+
+| Canonical (bare, enforced) | K8s-recommended mirror (additive, not enforced) |
 | --- | --- |
 | `service` | `app.kubernetes.io/name` |
-| `component` | `app.kubernetes.io/component` |
+| `component` (opt) | `app.kubernetes.io/component` |
 | `part-of` | `app.kubernetes.io/part-of` |
 | `managed-by` | `app.kubernetes.io/managed-by` |
 | `source-commit` (annotation) | `app.kubernetes.io/version` |

@@ -3,19 +3,32 @@
 # `name` output driven by name_prefix / name_suffix variables.
 
 locals {
-  # Canonical label map. Keys per ADR-0301, with Kubernetes app.kubernetes.io/*
-  # mapping for service/component/part-of/managed-by.
-  labels_base = {
-    "owner"                        = var.owner
+  # ADR-0301 canonical mandatory core, in BARE-key form. This is the single
+  # source of truth; policy (policy/labels.rego) and admission
+  # (deploy/policies/kyverno/require-kaddy-labels.yaml) enforce exactly these.
+  labels_canonical = {
+    "owner"                = var.owner
+    "service"              = var.service
+    "part-of"              = var.part_of
+    "managed-by"           = var.managed_by
+    "track"                = var.track
+    "data-classification"  = var.data_classification
+    "business-criticality" = var.business_criticality
+  }
+
+  # Documented ADDITION (ADR-0301 "Kubernetes mapping"): app.kubernetes.io/*
+  # mirror of the canonical keys, emitted alongside — never a competing
+  # canonical set. component (optional) is expressed only in k8s form.
+  labels_k8s_recommended = {
     "app.kubernetes.io/name"       = var.service
     "app.kubernetes.io/part-of"    = var.part_of
     "app.kubernetes.io/managed-by" = var.managed_by
-    "track"                        = var.track
-    "data-classification"          = var.data_classification
-    "business-criticality"         = var.business_criticality
   }
 
+  labels_base = merge(local.labels_canonical, local.labels_k8s_recommended)
+
   labels_component = var.component == null ? {} : {
+    "component"                   = var.component
     "app.kubernetes.io/component" = var.component
   }
 

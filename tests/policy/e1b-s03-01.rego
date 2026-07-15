@@ -4,11 +4,14 @@ package main
 
 import rego.v1
 
+# Canonical ADR-0301 mandatory keys in their BARE form (single source of
+# truth). k8s app.kubernetes.io/* mirrors are a documented addition and are
+# NOT required by policy.
 _full_labels := [
 	"owner=platform-team",
-	"app.kubernetes.io/name=clubhouse",
-	"app.kubernetes.io/part-of=kaddy",
-	"app.kubernetes.io/managed-by=terramate",
+	"service=clubhouse",
+	"part-of=kaddy",
+	"managed-by=terramate",
 	"track=stable",
 	"data-classification=internal",
 	"business-criticality=business-operational",

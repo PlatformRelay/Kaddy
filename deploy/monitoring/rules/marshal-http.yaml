@@ -1,7 +1,10 @@
 # Marshal HTTP alerts — REQ-E5-S03-02/03/04 + REQ-E5-S06-02/03
 # HighHTTPErrorRate, HighHTTPLatency, HighRequestRate.
-# metadata.labels carry the ADR-0301 mandatory core set; alert labels carry
-# severity/service/owner for self-routing.
+# metadata.labels carry the ADR-0301 canonical mandatory core in BARE-key form
+# (owner, service, part-of, managed-by, data-classification, business-criticality,
+# track) — the single enforced source of truth — followed by the documented
+# app.kubernetes.io/* mirror (an addition, not a competing canonical set).
+# Alert labels carry severity/service/owner for self-routing.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:

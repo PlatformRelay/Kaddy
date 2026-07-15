@@ -27,17 +27,17 @@ spec:
                 - Pod
       validate:
         message: >-
-          Pods must set the mandatory ADR-0301 labels: owner,
-          app.kubernetes.io/name, app.kubernetes.io/part-of,
-          app.kubernetes.io/managed-by, track, data-classification,
-          business-criticality.
+          Pods must set the mandatory ADR-0301 labels (canonical bare keys):
+          owner, service, part-of, managed-by, track, data-classification,
+          business-criticality. The app.kubernetes.io/* keys are a documented
+          addition and are not enforced here.
         pattern:
           metadata:
             labels:
               owner: "?*"
-              app.kubernetes.io/name: "?*"
-              app.kubernetes.io/part-of: "?*"
-              app.kubernetes.io/managed-by: "?*"
+              service: "?*"
+              part-of: "?*"
+              managed-by: "?*"
               track: "?*"
               data-classification: "?*"
               business-criticality: "?*"

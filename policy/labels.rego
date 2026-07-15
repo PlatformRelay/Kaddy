@@ -8,12 +8,13 @@ package main
 
 import rego.v1
 
-# Mandatory ADR-0301 label keys (Kubernetes app.kubernetes.io/* mapping applied).
+# Mandatory ADR-0301 label keys — the canonical BARE-key set (single source of
+# truth). The app.kubernetes.io/* keys are a documented addition, not required.
 mandatory_keys := {
 	"owner",
-	"app.kubernetes.io/name",
-	"app.kubernetes.io/part-of",
-	"app.kubernetes.io/managed-by",
+	"service",
+	"part-of",
+	"managed-by",
 	"track",
 	"data-classification",
 	"business-criticality",

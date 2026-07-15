@@ -14,22 +14,24 @@ variables {
 run "valid_defaults_produces_mandatory_labels" {
   command = plan
 
-  # Mandatory ADR-0301 keys, mapped to K8s app.kubernetes.io/* where specified.
+  # ADR-0301 canonical form: BARE keys are the single source of truth. The
+  # Kubernetes app.kubernetes.io/* keys are an explicit, documented ADDITION
+  # (asserted below) — not a competing canonical set.
   assert {
     condition     = output.labels["owner"] == "platform-team"
     error_message = "owner label missing or wrong"
   }
   assert {
-    condition     = output.labels["app.kubernetes.io/name"] == "clubhouse"
-    error_message = "service must map to app.kubernetes.io/name"
+    condition     = output.labels["service"] == "clubhouse"
+    error_message = "service (canonical bare key) missing or wrong"
   }
   assert {
-    condition     = output.labels["app.kubernetes.io/part-of"] == "kaddy"
-    error_message = "part_of must map to app.kubernetes.io/part-of"
+    condition     = output.labels["part-of"] == "kaddy"
+    error_message = "part-of (canonical bare key) missing or wrong"
   }
   assert {
-    condition     = output.labels["app.kubernetes.io/managed-by"] == "terramate"
-    error_message = "managed_by must map to app.kubernetes.io/managed-by"
+    condition     = output.labels["managed-by"] == "terramate"
+    error_message = "managed-by (canonical bare key) missing or wrong"
   }
   assert {
     condition     = output.labels["data-classification"] == "internal"
@@ -42,5 +44,20 @@ run "valid_defaults_produces_mandatory_labels" {
   assert {
     condition     = output.labels["track"] == "stable"
     error_message = "track label missing"
+  }
+
+  # Documented ADDITION: Kubernetes-recommended mirror of the canonical bare
+  # keys (ADR-0301 "Kubernetes mapping"). Present but non-canonical.
+  assert {
+    condition     = output.labels["app.kubernetes.io/name"] == "clubhouse"
+    error_message = "k8s mirror app.kubernetes.io/name must mirror service"
+  }
+  assert {
+    condition     = output.labels["app.kubernetes.io/part-of"] == "kaddy"
+    error_message = "k8s mirror app.kubernetes.io/part-of must mirror part-of"
+  }
+  assert {
+    condition     = output.labels["app.kubernetes.io/managed-by"] == "terramate"
+    error_message = "k8s mirror app.kubernetes.io/managed-by must mirror managed-by"
   }
 }

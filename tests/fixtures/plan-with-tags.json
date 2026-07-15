@@ -12,12 +12,15 @@
           "name": "kaddy-clubhouse-cp-01",
           "labels": [
             "owner=platform-team",
-            "app.kubernetes.io/name=clubhouse",
-            "app.kubernetes.io/part-of=kaddy",
-            "app.kubernetes.io/managed-by=terramate",
+            "service=clubhouse",
+            "part-of=kaddy",
+            "managed-by=terramate",
             "track=stable",
             "data-classification=internal",
-            "business-criticality=business-operational"
+            "business-criticality=business-operational",
+            "app.kubernetes.io/name=clubhouse",
+            "app.kubernetes.io/part-of=kaddy",
+            "app.kubernetes.io/managed-by=terramate"
           ]
         }
       }
