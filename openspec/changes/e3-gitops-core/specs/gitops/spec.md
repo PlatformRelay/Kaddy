@@ -21,7 +21,7 @@ Epic: E3 · ADR: [0103](../../../docs/adr/0103-argocd-gitops.md)
 **Priority:** should  
 **Given** lab environment  
 **When** auto-sync enabled on non-destructive apps  
-**Then** `syncPolicy.automated.selfHeal: true` on platform-core only (documented exceptions for rollouts)  
+**Then** `syncPolicy.automated.selfHeal: true` on the control-plane apps (`root` + `platform-core`) — both manage only declarative Argo/config CRs; workload-facing children (`observability`, `gateway`, `workloads`) keep selfHeal off, `identity` is manual (documented exceptions for stateful/traffic/rollouts)  
 **Test:** `tests/smoke/e3-s01-02.sh`
 
 **Verify:** `rg 'selfHeal' deploy/apps/`

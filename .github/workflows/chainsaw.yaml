@@ -72,8 +72,11 @@ jobs:
         run: |
           set -euo pipefail
           if ! command -v yq >/dev/null 2>&1; then
+            # SEC-4: pin to an exact release (was releases/latest) so the install
+            # is reproducible and Renovate can track the bump.
+            YQ_VERSION="v4.44.3"
             sudo wget -qO /usr/local/bin/yq \
-              https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+              "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
             sudo chmod +x /usr/local/bin/yq
           fi
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts

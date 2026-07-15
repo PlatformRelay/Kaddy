@@ -5,6 +5,11 @@ discovers the flat child Applications beside it (`root.yaml` itself is excluded
 so it never self-manages). Committed steady-state `targetRevision` is **`main`**
 on every Application; merging to `main` is what makes Argo CD sync for real.
 
+`root` runs with `syncPolicy.automated.selfHeal: true` (+ `prune`): the app-of-apps
+root manages only child Application CRs — declarative and non-destructive — so it
+reconciles child registration/de-registration straight from Git (the canonical
+app-of-apps pattern). It is one of the two **control-plane apps** that self-heal.
+
 ## Children
 
 | App | Path | selfHeal | Notes |
@@ -17,9 +22,11 @@ on every Application; merging to `main` is what makes Argo CD sync for real.
 
 ## selfHeal policy (REQ-E3-S01-02)
 
-`syncPolicy.automated.selfHeal: true` is set on **`platform-core` only**. Its
-resources are cluster-scoped, declarative and idempotent, so live drift should
-snap straight back to Git without a human.
+`syncPolicy.automated.selfHeal: true` is set on the **control-plane apps
+(`root` + `platform-core`)** only. Both manage exclusively declarative Argo/config
+CRs (child Applications; cluster-scoped ACME ClusterIssuers) that are idempotent,
+so live drift snaps straight back to Git without a human. Workload-facing children
+keep selfHeal **off**.
 
 Documented exceptions (selfHeal **off**, auto create/update still on):
 
