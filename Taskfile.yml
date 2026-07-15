@@ -243,6 +243,12 @@ tasks:
       - |
         set -euo pipefail
         VER="{{.ARGOCD_VERSION}}"
+        # SAFETY: never install into a non-kind context. Real remote (prod) contexts
+        # may live in an ambient KUBECONFIG on this workstation — refuse unless we are
+        # pointed at the isolated kind cluster (mirrors tests/smoke/lib.sh hard guard).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev (run 'task cluster:up' first)" >&2; exit 1; }
         # 1) Namespace + cmd-params-cm (server.insecure) + Gateway/Certificate/Route.
         #    Apply the overlay FIRST so argocd-server reads server.insecure on first boot.
         kubectl apply -f deploy/bootstrap/argocd.yaml
@@ -266,7 +272,9 @@ tasks:
             kubectl -n argocd rollout restart deploy/argocd-server >/dev/null 2>&1 || true
           fi
         fi
-        kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+        # Generous timeout: a cold install pulls the argocd/redis/dex/repo-server
+        # images concurrently on first boot, which can exceed 300s on a fresh node.
+        kubectl -n argocd rollout status deploy/argocd-server --timeout=600s
 
   test:smoke:e1:
     desc: E1 — live smoke bundle (needs a running kaddy-dev cluster; task cluster:up first)
