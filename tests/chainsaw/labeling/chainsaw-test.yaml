@@ -1,0 +1,17 @@
+# Placeholder — implement with E1b-S05 (TDD: test before Kyverno policy merge)
+
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: labeling-require-data-classification
+  annotations:
+    kaddy.io/req: REQ-E1b-S05-02
+    kaddy.io/status: pending-kyverno-policy
+spec:
+  skip: true
+  steps:
+    - try:
+        - apply:
+            file: pod-missing-data-classification.yaml
+        - error:
+            file: pod-missing-data-classification.yaml

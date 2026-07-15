@@ -1,0 +1,13 @@
+site_name: kaddy
+site_description: Security-first Website-as-a-Service platform
+repo_url: https://github.com/PlatformRelay/Kaddy
+nav:
+  - Home: README.md
+  - Architecture: ARCHITECTURE.md
+  - Roadmap: ROADMAP.md
+  - ADRs: adr/README.md
+  - Traceability: requirements/exercise-traceability.md
+  - Audits: audits/README.md
+  - Development: development/DEVELOPMENT.md
+docs_dir: docs
+site_dir: site

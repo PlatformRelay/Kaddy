@@ -1,0 +1,163 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+---
+version: "3"
+
+set:
+  - pipefail
+
+run: once
+
+vars:
+  MARKDOWNLINT_CONFIG: hack/tooling/markdownlint-cli2.yaml
+  DENYLIST: hack/tooling/sanitize-denylist.txt
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+    silent: true
+
+  lint:
+    desc: Markdown and shell lint
+    cmds:
+      - |
+        if command -v markdownlint-cli2 >/dev/null 2>&1; then
+          markdownlint-cli2 --config "{{.MARKDOWNLINT_CONFIG}}" "**/*.md" "#node_modules" "#slides/dist"
+        else
+          echo "markdownlint-cli2 not installed — skip (install via npm/pnpm for local lint)"
+        fi
+      - |
+        if command -v shellcheck >/dev/null 2>&1; then
+          shellcheck hack/scrub-denylist.sh
+        else
+          echo "shellcheck not installed — skip"
+        fi
+
+  scrub:
+    desc: Fail if sanitize denylist patterns appear in tracked paths
+    cmds:
+      - bash hack/scrub-denylist.sh
+
+  openspec:validate:
+    desc: Validate OpenSpec changes when openspec CLI is installed
+    cmds:
+      - |
+        if command -v openspec >/dev/null 2>&1; then
+          openspec validate --all
+        else
+          echo "openspec CLI not installed — validating change folder structure only"
+          test -f openspec/config.yaml
+          find openspec/changes -name proposal.md | head -1 | grep -q .
+        fi
+
+  verify:
+    desc: Design-phase gate — lint, scrub, openspec structure, spec test coverage
+    cmds:
+      - task: scrub
+      - task: lint
+      - task: openspec:validate
+      - task: test:spec
+
+  test:spec:
+    desc: Meta — every OpenSpec REQ has Test + Verify (STRICT_TEST_FILES=1 for epic exit)
+    cmds:
+      - bash hack/verify-spec-coverage.sh
+
+  test:unit:
+    desc: L0 — tofu test in modules/labels
+    cmds:
+      - |
+        if [ -d modules/labels/tests ]; then
+          (cd modules/labels && tofu test)
+        else
+          echo "modules/labels/tests not yet present (E1b)"
+          exit 0
+        fi
+
+  test:policy:
+    desc: L1 — conftest on OpenTofu plan fixtures
+    cmds:
+      - |
+        if command -v conftest >/dev/null 2>&1 && [ -d policy ]; then
+          conftest test --policy policy tests/fixtures/plan-*.json
+        else
+          echo "conftest or policy/ not ready — skip (E1b)"
+        fi
+
+  test:promrules:
+    desc: L1 — promtool unit tests for PrometheusRule alerts (marshal)
+    cmds:
+      - |
+        if ! command -v promtool >/dev/null 2>&1; then
+          echo "promtool not installed — see docs/development/testing.md (part of prometheus release)"
+          exit 1
+        fi
+        shopt -s nullglob
+        found=0
+        for t in tests/promtool/*.test.yaml; do
+          if ! grep -Eq 'alert_rule_test|promql_expr_test' "$t"; then
+            echo "skip $t (placeholder — no test cases yet, E5)"
+            continue
+          fi
+          found=1
+          echo "promtool test rules $t"
+          promtool test rules "$t"
+        done
+        if [ "$found" = 0 ]; then echo "no active promtool tests yet (E5)"; fi
+
+  test:chainsaw:
+    desc: L2 — Kyverno Chainsaw declarative cluster tests
+    cmds:
+      - |
+        if command -v chainsaw >/dev/null 2>&1; then
+          chainsaw test tests/chainsaw "$@"
+        else
+          echo "chainsaw not installed — see docs/development/testing.md"
+          exit 1
+        fi
+
+  test:load:
+    desc: L3 — k6 load (marshal thresholds)
+    cmds:
+      - |
+        if command -v k6 >/dev/null 2>&1 && [ -f tests/load/marshal-threshold.js ]; then
+          k6 run tests/load/marshal-threshold.js
+        else
+          echo "k6 or load script not ready (E8)"
+          exit 1
+        fi
+
+  test:scorecard:
+    desc: L4 — evidence capture bundle
+    cmds:
+      - |
+        if [ -x hack/scorecard/capture.sh ]; then
+          hack/scorecard/capture.sh
+        else
+          echo "scorecard capture not ready (E8)"
+          exit 1
+        fi
+
+  test:
+    desc: Run all available test levels (L0→L2; L3/L4 when implemented)
+    cmds:
+      - task: test:unit
+      - task: test:policy
+      - |
+        if command -v promtool >/dev/null 2>&1; then
+          task test:promrules
+        else
+          echo "skip promrules (no promtool)"
+        fi
+      - |
+        if command -v chainsaw >/dev/null 2>&1 && command -v kubectl >/dev/null 2>&1; then
+          task test:chainsaw
+        else
+          echo "skip chainsaw (no CLI or cluster)"
+        fi
+
+  demo:
+    desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
+    cmds:
+      - echo "E7 not implemented — run /agent-loop after E1–E6 are green"

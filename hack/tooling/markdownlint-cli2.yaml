@@ -1,0 +1,8 @@
+config:
+  globs:
+    - "**/*.md"
+    - "!node_modules/**"
+    - "!slides/dist/**"
+  ignores:
+    - node_modules
+    - slides/dist

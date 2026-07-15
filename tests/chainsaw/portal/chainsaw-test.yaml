@@ -1,0 +1,15 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-suite
+  annotations:
+    kaddy.io/req: REQ-E10-EXIT
+spec:
+  description: E10 — Backstage portal + scaffolded WebsiteClaim (skip until portal deployed)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "portal suite placeholder — enable when deploy/portal/ is synced (E10)"
+              exit 0

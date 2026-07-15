@@ -1,0 +1,11 @@
+title = "kaddy gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''(?:^|/)references/''',
+  '''(?:^|/)agent-context/''',
+  '''(?:^|/)tests/fixtures/''',
+]

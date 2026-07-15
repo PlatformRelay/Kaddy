@@ -1,0 +1,40 @@
+# Monitoring tests — PrometheusRule unit tests (promtool), L1, no cluster
+name: monitoring
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/monitoring/**'
+      - 'tests/promtool/**'
+      - 'Taskfile.yml'
+      - '.github/workflows/monitoring.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  promrules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install promtool + yq
+        run: |
+          PROM_VERSION="3.1.0"
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz" \
+            | tar -xz --strip-components=1 -C /usr/local/bin "prometheus-${PROM_VERSION}.linux-amd64/promtool"
+          sudo curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      - name: Extract rules from PrometheusRule CRs
+        run: |
+          if [ -x hack/monitoring/extract-rules.sh ]; then
+            hack/monitoring/extract-rules.sh
+          else
+            echo "extract-rules.sh not present yet (E5) — promtool tests run against committed rule_files"
+          fi
+      - name: promtool test rules
+        run: task test:promrules

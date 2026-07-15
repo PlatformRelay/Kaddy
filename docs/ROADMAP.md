@@ -1,0 +1,362 @@
+# ROADMAP — kaddy
+
+Build order for the gridscale platform-engineering exercise. **Design phase complete** — implementation
+via `/agent-loop`. Each epic links an OpenSpec change under `openspec/changes/`.
+
+Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
+
+---
+
+## Phases (D-017)
+
+| Phase | Substrate | Spend | When | Epics |
+| --- | --- | --- | --- | --- |
+| **0 · Range** | [driving-range](../../driving-range/) — local 3-node Talos (libvirt/KVM) | $0 | First — cluster must exist before kaddy E1 | driving-range E0–E10 (sibling repo; **Cilium edge in E10**) |
+| **1 · Platform (local)** | Same Talos cluster; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Rehearse GitOps platform | kaddy E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
+| **2 · Lab (gridscale)** | GSK + LBaaS + Object Storage | Lab credits | After E3–E7 green locally | E1g → E6g → E8b |
+
+**Gate to phase 2:** E3–E7 green on driving-range → start E1g (gridscale day-0).
+
+Phase 1 deltas vs phase 2 (document in runbooks):
+
+| Concern | Phase 1 (driving-range) | Phase 2 (gridscale) |
+| --- | --- | --- |
+| Substrate | Local Talos ([driving-range](../../driving-range/)) | GSK managed k8s |
+| Edge / TLS | **Cilium Gateway** + LB-IPAM/L2 + cert-manager | LBaaS + Let's Encrypt + cert-manager |
+| Identity | Dex + GitHub OAuth | Same (update Dex issuer URL for LBaaS domain) |
+| nginx legacy | In-cluster Deployment (stand-in) | `gridscale_server` via Upjet Crossplane |
+| Crossplane cloud API | Website XRD only (no provider-gridscale) | Upjet `provider-gridscale` |
+
+---
+
+## Testing foundation (cross-cutting)
+
+**OpenSpec:** [testing-foundation](../openspec/changes/testing-foundation/)  
+**ADR:** [0701](adr/0701-testing-strategy-chainsaw.md) · **Docs:** [development/testing.md](development/testing.md)
+
+| Level | Tool | Epic introducing |
+| --- | --- | --- |
+| L0 | `tofu test` | E1b |
+| L1 | conftest | E1b |
+| L1 | **promtool** (PrometheusRule alerts) | E5 |
+| L2 | **Chainsaw** | E1b/E1c → CI at E3 |
+| L3 | k6 | E8 |
+| L4 | scorecard | E8 |
+
+---
+
+## E1 · Platform bootstrap (driving-range handoff)
+
+**OpenSpec:** [e1-day0-bootstrap](../openspec/changes/e1-day0-bootstrap/)  
+**ADR:** [0102](adr/0102-talos-immutable-substrate.md) · **Depends:** [driving-range](../../driving-range/) cluster Ready
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1-S01 | Document kubeconfig / Cilium Gateway / StorageClass handoff contract | ⬜ |
+| E1-S02 | Bootstrap ArgoCD (initial Application) on driving-range | ⬜ |
+| E1-S03 | Verify cluster baseline (nodes Ready, default SC, Cilium LB-IPAM pool) | ⬜ |
+
+### E1-S01 — Handoff contract
+
+**Given** driving-range exports `kubeconfig` and documents Cilium Gateway + `local-path`  
+**When** operator follows `docs/runbooks/driving-range-handoff.md`  
+**Then** `kubectl get nodes` succeeds from the kaddy workspace
+
+**Exit criteria (epic):** ArgoCD UI reachable via Cilium-assigned Gateway/LB IP; cluster baseline documented.
+
+---
+
+## E1g · Gridscale day-0 (phase 2 — deferred)
+
+**OpenSpec:** [e1g-gridscale-day0](../openspec/changes/e1g-gridscale-day0/)  
+**ADR:** [0102](adr/0102-talos-immutable-substrate.md), [0302](adr/0302-terramate-opentofu-stacks.md)  
+**Gate:** E3–E7 green on driving-range
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1g-S01 | Terramate root + gridscale provider (v2) + object-storage state backend | ⬜ |
+| E1g-S02 | Network + firewall + IP stack | ⬜ |
+| E1g-S03 | GSK cluster (`gridscale_k8s`) + node pools | ⬜ |
+| E1g-S04 | LBaaS entry point in front of Gateway | ⬜ |
+| E1g-S05 | Retrieve kubeconfig + re-point ArgoCD bootstrap | ⬜ |
+
+**Exit criteria (epic):** Same GitOps apps sync on GSK; LBaaS public URL works; Dex issuer URL updated for public domain.
+
+---
+
+## E1b · Naming & labeling module
+
+**OpenSpec:** [e1b-labeling-module](../openspec/changes/e1b-labeling-module/)  
+**ADR:** [0301](adr/0301-resource-labeling-convention.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1b-S01 | `modules/labels` with outputs + naming helper | ⬜ |
+| E1b-S02 | `tofu test` fixtures for labels and names | ⬜ |
+| E1b-S03 | conftest policy — mandatory keys on plans | ⬜ |
+| E1b-S04 | Terramate codegen injects labels into all stacks | ⬜ |
+| E1b-S05 | Kyverno require-labels ClusterPolicy | ⬜ |
+
+### E1b-S02 — tofu test fixtures
+
+**Given** the labels module  
+**When** `tofu test` runs in CI  
+**Then** tests fail if required keys missing or name exceeds length / invalid charset
+
+---
+
+## E1c · Security baseline
+
+**OpenSpec:** [e1c-security-baseline](../openspec/changes/e1c-security-baseline/)  
+**ADR:** [0106](adr/0106-security-baseline.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1c-S01 | Default-deny NetworkPolicy template per namespace | ⬜ |
+| E1c-S02 | Trivy scan job in CI | ⬜ |
+| E1c-S03 | cosign sign + Kyverno verifyImages | ⬜ |
+| E1c-S04 | External Secrets pattern for gridscale creds | ⬜ |
+| E1c-S05 | SOPS + age + KSOPS plugin for `deploy/secrets/` ([ADR-0110](adr/0110-secrets-sops-age.md)) | ⬜ |
+
+---
+
+## E1d · Identity (Dex + GitHub)
+
+**OpenSpec:** [e1d-identity-keycloak-dex](../openspec/changes/e1d-identity-keycloak-dex/)  
+**ADR:** [0107](adr/0107-identity-keycloak-dex.md) · **Decision:** D-018  
+**Depends:** E3-S01 (app-of-apps), E4-S03 (TLS at gateway for Dex issuer URL)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1d-S01 | Dex deployment + GitHub connector (**PlatformRelay** org) + SOPS OAuth secret | ⬜ |
+| E1d-S02 | Argo CD OIDC via Dex + RBAC (GitHub teams → groups) | ⬜ |
+| E1d-S03 | Grafana OAuth via Dex | ⬜ |
+| E1d-S04 | NetworkPolicy for `identity` namespace | ⬜ |
+
+### E1d-S02 — Argo CD OIDC
+
+**Given** Dex issuer healthy with GitHub connector  
+**When** operator opens Argo CD UI  
+**Then** login redirects to GitHub via Dex; unauthenticated API returns 401
+
+**Exit criteria:** `chainsaw test tests/chainsaw/identity` green (non-skipped).
+
+---
+
+## E2 · Gateway spike (Cilium Gateway API)
+
+**OpenSpec:** [e2-gateway-spike](../openspec/changes/e2-gateway-spike/)  
+**ADR:** [0104](adr/0104-caddy-gateway-api.md) · **Decision:** D-019
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E2-S01 | Assert Gateway API CRDs + Cilium `GatewayClass` + LB-IPAM pool (handoff from driving-range E10) | ⬜ |
+| E2-S02 | GitOps `Gateway` + HTTPRoute path routing + weight-mutation spike | ⬜ |
+| E2-S03 | Document fallback level (L0/L1/L2) in decision log | ⬜ |
+
+**Exit criteria:** Spike report in `docs/decisions/e2-gateway-spike.md`; E7 unblocked or fallback chosen.
+
+---
+
+## E3 · GitOps platform core
+
+**OpenSpec:** [e3-gitops-core](../openspec/changes/e3-gitops-core/)  
+**ADR:** [0103](adr/0103-argocd-gitops.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E3-S01 | App-of-apps root Application (incl. `identity`, `observability`, **KSOPS**) | ⬜ |
+| E3-S02 | Observability: kube-prometheus-stack **+ Loki + Grafana Alloy** ([ADR-0108](adr/0108-logging-loki.md)) | ⬜ |
+| E3-S03 | cert-manager + Let's Encrypt **staging & prod** ClusterIssuers (HTTP-01 via Gateway) | ⬜ |
+| E3-S04 | Argo Rollouts + Gateway API plugin | ⬜ |
+
+---
+
+## E4 · Sample site (clubhouse) + TLS
+
+**OpenSpec:** [e4-clubhouse-tls](../openspec/changes/e4-clubhouse-tls/)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E4-S01 | Static web Deployment + Service | ⬜ |
+| E4-S02 | HTTPRoute `/` → clubhouse | ⬜ |
+| E4-S03 | TLS via cert-manager — staging validate, then **prod trusted cert** + auto-renew | ⬜ |
+
+**Given** Gateway and cert-manager are ready  
+**When** user curls `https://<host>/`  
+**Then** clubhouse HTML is served with valid TLS
+
+---
+
+## E5 · Monitoring & alerting (marshal)
+
+**OpenSpec:** [e5-monitoring-marshal](../openspec/changes/e5-monitoring-marshal/)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E5-S01 | Scrape platform gateway + clubhouse app metrics (PodMonitor/ServiceMonitor) | ⬜ |
+| E5-S02 | blackbox_exporter probes (uptime, status codes) | ⬜ |
+| E5-S03 | PrometheusRules: down, error rate, latency, request rate | ⬜ |
+| E5-S04 | Alertmanager receiver (ntfy/webhook) | ⬜ |
+| E5-S05 | Grafana dashboards-as-code (+ Loki logs panel) | ⬜ |
+| E5-S06 | **promtool unit tests** for every alert rule (L1, CI) | ⬜ |
+| E5-S07 | **Loki log-based checks** — gateway/access logs, labels, 5xx alert ([ADR-0108](adr/0108-logging-loki.md)) | ⬜ |
+
+---
+
+## E6 · Crossplane self-service + nginx legacy (phase 1 — local)
+
+**OpenSpec:** [e6-crossplane-website](../openspec/changes/e6-crossplane-website/)  
+**ADR:** [0105](adr/0105-crossplane-self-service.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E6-S01 | Install Crossplane (no cloud provider yet) | ⬜ |
+| E6-S02 | XRD `Website` + Composition (HTTPRoute + monitors) | ⬜ |
+| E6-S03 | nginx legacy stand-in (in-cluster Deployment, Hello World) | ⬜ |
+| E6-S04 | HTTPRoute `/legacy` → nginx backend | ⬜ |
+| E6-S05 | Gateway health checks for backends | ⬜ |
+
+---
+
+## E6g · Crossplane provider-gridscale (phase 2 — deferred)
+
+**OpenSpec:** [e6g-provider-gridscale](../openspec/changes/e6g-provider-gridscale/)  
+**ADR:** [0105](adr/0105-crossplane-self-service.md) · **Gate:** E1g complete
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E6g-S01 | Generate thin `provider-gridscale` with Upjet (time-boxed) + plain-TF fallback | ⬜ |
+| E6g-S02 | Install `provider-gridscale` (ProviderConfig) | ⬜ |
+| E6g-S03 | Extend Composition: `gridscale_server` nginx VM | ⬜ |
+| E6g-S04 | Re-verify `/legacy` routing + monitoring on real VM | ⬜ |
+
+---
+
+## E7 · Progressive delivery (mulligan)
+
+**OpenSpec:** [e7-mulligan-rollouts](../openspec/changes/e7-mulligan-rollouts/)  
+**ADR:** [0201](adr/0201-rollouts-blue-green-canary.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E7-S01 | Blue/green Rollout + pre-promotion AnalysisTemplate | ⬜ |
+| E7-S02 | Canary Rollout + HTTPRoute weights | ⬜ |
+| E7-S03 | `task demo` choreography + asciinema recording | ⬜ |
+| E7-S04 | Chaos: kill pod + VM → alert + reconcile | ⬜ |
+
+---
+
+## E8 · Evidence & submission (scorecard)
+
+**OpenSpec:** [e8-scorecard-evidence](../openspec/changes/e8-scorecard-evidence/)  
+**ADR:** [0202](adr/0202-evidence-as-artifact.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E8-S01 | k6 load profile tripping threshold alert | ⬜ |
+| E8-S02 | Capture script → HTML report | ⬜ |
+| E8-S03 | GitHub Pages publish workflow | ⬜ |
+| E8-S04 | README 5-minute + deep paths; cost table | ⬜ |
+
+---
+
+## E8b · Live demo environment
+
+**OpenSpec:** [e8b-live-demo](../openspec/changes/e8b-live-demo/)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E8b-S01 | Keep gridscale stack running through interview window | ⬜ |
+| E8b-S02 | Serve scorecard + read-only Grafana via Gateway TLS | ⬜ |
+
+---
+
+## E9 · Caddy operator (optional)
+
+**OpenSpec:** [e9-caddy-operator](../openspec/changes/e9-caddy-operator/)  
+**ADR:** [0401](adr/0401-caddy-operator-design-first.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E9-S01 | kubebuilder scaffold + CRD types | ⬜ |
+| E9-S02 | Caddy reconciler (Admin API) | ⬜ |
+| E9-S03 | CaddySite + observability bundle | ⬜ |
+
+**Gate:** start only if E1–E8 ✅
+
+---
+
+## E11 · Security & compliance audit runs
+
+**OpenSpec:** [e11-security-audit](../openspec/changes/e11-security-audit/)  
+**Procedure:** [audits/README.md](audits/README.md)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E11-S01 | First dated audit report | ⬜ |
+| E11-S02 | Diff vs subsequent run | ⬜ |
+
+---
+
+## E12 · Slidev showcase deck
+
+**OpenSpec:** [e12-slidev-deck](../openspec/changes/e12-slidev-deck/)
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E12-S01 | Slidev scaffold + CI build | ⬜ |
+| E12-S02 | Deck content: pitch, arch, security, demo cues | ⬜ |
+| E12-S03 | GitHub Pages deploy | ⬜ |
+
+---
+
+## E10 · Portal / IDP ✂️
+
+**OpenSpec:** [e10-portal-stretch](../openspec/changes/e10-portal-stretch/) — **cuttable**  
+**ADR:** [0109](adr/0109-idp-portal-orchestrator.md) · **Decision:** D-014 (INBOX)
+
+**Orchestrator = Crossplane (E6, already the platform API). Portal = Backstage (OSS, phased).**
+Turns kaddy into a fully-fledged IDP: a scaffolder form bootstraps an **nginx** or **Caddy** static
+site → opens a GitOps **PR** with a `WebsiteClaim` → Argo CD applies → Crossplane reconciles.
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E10-S01 | Backstage via GitOps + OIDC (Dex) | ⬜ |
+| E10-S02 | `static-site` scaffolder → `WebsiteClaim` PR (golden-file tested) | ⬜ |
+| E10-S03 | Scaffolded claim reconciles end-to-end (Chainsaw) | ⬜ |
+| E10-S04 | Software Catalog + TechDocs | ⬜ |
+
+**Scope guard (ADR-0109):** orchestrator-first — E6 already delivers the *capability*; the portal is
+*experience* and only starts if E1–E8 land early. SaaS (Port/Humanitec) rejected for the lab.
+
+---
+
+## driving-range · Local Talos cluster (phase 0 — sibling repo)
+
+**Repo:** [driving-range](../../driving-range/) — **not** a kaddy epic; must land before kaddy E1.
+
+Long-lived **3-node Talos** (1 control plane + 2 workers) on libvirt/KVM, OpenTofu-declared,
+**Cilium CNI + Gateway API + LB-IPAM/L2** (no MetalLB) + `local-path-provisioner`. Replaces `kind`
+for development. See driving-range [ROADMAP](../../driving-range/docs/ROADMAP.md) and
+[ARCHITECTURE](../../driving-range/docs/ARCHITECTURE.md).
+
+---
+
+## Suggested loop order
+
+**Phase 0 — driving-range (sibling repo)**
+
+1. driving-range E0 (learn) → E1–E7 + **E10** (Cilium Gateway + LB-IPAM)
+
+**Phase 1 — kaddy on driving-range ($0 cloud)**
+
+2. E1 (handoff + ArgoCD) → E1b ∥ E1c  
+3. E2 (gateway spike)  
+4. E3 → E4 ∥ E5 → E6 → E7 → E8 (evidence from local cluster)
+
+**Phase 2 — gridscale lab (after E3–E7 green locally)**
+
+5. E1g (GSK day-0) → E6g (Upjet provider + VM) → E8b (live demo)  
+6. E11, E12 in parallel where possible  
+7. E9 / E10 if time

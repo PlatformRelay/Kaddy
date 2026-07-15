@@ -1,87 +1,86 @@
-# Pocket IDP
+# kaddy — a caddie for your websites
 
-The material in this repo allows you to create an Internal Developer Platform (IDP) running with the Humanitec Platform Orchestrator in less than 5 minutes.
-The Pocket IDP is based on the ["Five-minute IDP"](https://developer.humanitec.com/introduction/getting-started/the-five-minute-idp/) getting started guide in the Humanitec developer docs.
+**Security-first · spec-driven · Kubernetes-native Website-as-a-Service.**
 
-However, it has expanded its capabilities to demonstrate end-to-end platform-based flows. Because of that, it can be used to experience how modern platform-building patterns behave in reality without any strings or cloud costs attached.
+kaddy is an internal developer platform for **monitored, TLS-terminated websites**. One self-service
+claim provisions a site behind Caddy with observability, alerting, and progressive delivery. The
+[gridscale Platform Engineer exercise](docs/HIRING_EXERCICSE.md) (install Caddy, monitor with
+Prometheus, alert on thresholds, optional nginx reverse proxy) is satisfied as **one tenant** of the
+platform — `clubhouse` — not as a one-off VM script.
 
-If you choose to extend your experience beyond the capabilities of a local-machine-solution, for example, to collaborate with others on the same instance, you can simply upgrade to a cloud-based reference-architecture, which are available as OSS Terraform based packages here: [Humanitec Architecture (github.com)](https://github.com/humanitec-architecture/).
+> **Local-first:** rehearse on a **3-node Talos cluster** ([driving-range](../driving-range/)) before
+> spending gridscale credits. Promote to **GSK + LBaaS + Upjet Crossplane** in phase 2 — see
+> [decisions D-017](agent-context/decisions.md) and [ROADMAP](docs/ROADMAP.md).
 
-## Pre-requisites
+## Reviewer paths
 
-- The [humctl](https://developer.humanitec.com/platform-orchestrator/cli/) CLI
-- Docker (or an equivalent)
-- A Humanitec Organization. If you do not have one yet, [sign up here](https://humanitec.com/free-trial) for a free trial.
-- A user account with the [Administrator](https://developer.humanitec.com/platform-orchestrator/security/rbac/#organization-level-roles) role in that Organization
-- mkcert &rarr; [mkcert installation](https://github.com/FiloSottile/mkcert?tab=readme-ov-file#installation)
-- direnv &rarr; [direnv installation](https://direnv.net/#basic-installation)
+**5 minutes** — [docs/requirements/exercise-traceability.md](docs/requirements/exercise-traceability.md)
+maps every brief requirement to an epic, then skim [docs/ROADMAP.md](docs/ROADMAP.md).
 
-## Installation
+**Deep dive** — [docs/adr/README.md](docs/adr/README.md) (architecture decisions) →
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) → [openspec/changes/](openspec/changes/) (specs with
+`Verify:` + `Test:` per requirement).
 
-> [!IMPORTANT]
-> The following instructions are meant to be executed on MacOS or Linux. If you use a different shell or > OS, please adopt paths and commands as needed.
+## Stack
 
-1. Create a local CA and sign a certificate that you can provide to the PocketIDP
-   
-   ```shell
-   mkcert -install
-   mkcert 5min-idp 5min-idp-control-plane kubernetes.docker.internal localhost 127.0.0.1 ::1
-   ```
-   
-   Be sure to note the path and filenames of the generated certificates as you need them for step 3!
+| Layer | Phase 1 (driving-range) | Phase 2 (gridscale lab) |
+| --- | --- | --- |
+| Substrate | [driving-range](../driving-range/) — local Talos 3-node | **GSK** managed k8s |
+| Day-0 IaC | driving-range OpenTofu (sibling repo) | Terramate + `gridscale/gridscale` v2 (E1g) |
+| Edge | **Cilium Gateway** + LB-IPAM/L2 | **LBaaS** + LE + Cilium/Envoy |
+| GitOps | **ArgoCD** app-of-apps | Same manifests, re-sync on GSK |
+| Identity | Dex + GitHub OAuth ([PlatformRelay](https://github.com/PlatformRelay)) | Same (update issuer URL for LBaaS domain) |
+| Secrets | SOPS + age in git ([ADR-0110](docs/adr/0110-secrets-sops-age.md)) | Same |
+| Observability | kube-prometheus-stack + Loki + Alloy | Same |
+| TLS | cert-manager (staging) | LBaaS LE + cert-manager |
+| Self-service | Crossplane `Website` XRD | + Upjet **provider-gridscale** (E6g) |
+| Progressive delivery | Argo Rollouts + Gateway API | Same |
+| Policy | Kyverno, default-deny NetworkPolicies | Same |
 
-2. Login with humctl to create the token that will be picked up by direnv in the next step
-   
-   ```shell
-   humctl login
-   ```
-   
-   Now follow [this guide](https://developer.humanitec.com/platform-orchestrator/security/service-users/) to create a more permanent service user token that will allow usage of your PocketIDP beyond 24h. You will need it as well in the next step.
+## Named components (the caddie metaphor)
 
-3. Populate environment variables
-   
-   First, you want to create a `.envrc` file with the following contents - it will be run by direnv every time you change into this directory, so it might be a good idea to have your own directory for the PocketIDP.
-   
-   ```shell
-   token=$(yq -r '.token' ~/.humctl)
-   export HUMANITEC_TOKEN=$token
-   export HUMANITEC_ORG="" #set me to your Humanitec org
-   export HUMANITEC_SERVICE_USER="" #set permanent token from step 2
-   # CA in PEM format and set here
-   export TLS_CA_CERT="$(mkcert -CAROOT)/rootCA.pem"
-   # Please check on the paths to your files from step 1
-   export TLS_CERT_STRING="$(cat /%%%YOUR PATH HERE%%%/%%%YOUR FILE NAME HERE%%%.pem | base64)" #Your cert in base64 encoded format
-   export TLS_KEY_STRING="$(cat /%%%YOUR PATH HERE%%%/%%%YOUR FILE NAME HERE%%%-key.pem | base64)" #Your key in base64 encoded format
-   ```
-   
-   and allow direnv to work with this file by executing
-   
-   ```shell
-   direnv allow
-   ```
+| Component | Role |
+| --- | --- |
+| **clubhouse** | the sample website tenant (satisfies the brief) |
+| **marshal** | alerting pipeline — PrometheusRules + Alertmanager |
+| **mulligan** | blue/green + canary with automated rollback |
+| **scorecard** | evidence harness — k6 + metrics/logs capture → HTML report |
+| **driving-range** | local Talos practice cluster (sibling repo) |
 
-## Run the PocketIDP
+## Testing (mandatory TDD)
 
-### For the prebuilt container
+Every requirement carries a `Test:` artifact and a `Verify:` command. See
+[docs/development/testing.md](docs/development/testing.md) and
+[ADR-0701](docs/adr/0701-testing-strategy-chainsaw.md).
 
-```shell
-docker run --rm -it -h pocketidp --name 5min-idp \
-    -e HUMANITEC_ORG \
-    -e HUMANITEC_SERVICE_USER \
-    -e TLS_CA_CERT \
-    -e TLS_CERT_STRING \
-    -e TLS_KEY_STRING \
-    -v hum-5min-idp:/state \
-    -v $HOME/.humctl:/root/.humctl \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    --network bridge \
-    ghcr.io/internaldeveloperplatform/pocketidp:latest
+```bash
+task verify         # lint + scrub + openspec + spec-coverage
+task test:spec      # every REQ has Test + Verify
+task test           # L0 tofu test · L1 conftest + promtool · L2 Chainsaw
 ```
 
-### For the non-prebuilt container
+| Level | Tool | Proves |
+| --- | --- | --- |
+| L0 | `tofu test` | label module outputs |
+| L1 | conftest · **promtool** | plan labels · **alert rules fire** |
+| L2 | **Chainsaw** | policies, routes, rollouts, monitors on live cluster |
+| L3 / L4 | k6 · scorecard | load/alerting · evidence bundle |
 
-```shell
-gh repo clone InternalDeveloperPlatform/PocketIDP
-cd PocketIDP
-make run-local
-```
+## Status
+
+**Design phase.** Phase 1 starts after [driving-range](../driving-range/) cluster is Ready.
+Implementation runs via `/agent-loop` per the [ROADMAP](docs/ROADMAP.md).
+
+## Reference material
+
+[`references/PocketIDP/`](references/PocketIDP/) is a local, un-vendored copy of
+[PocketIDP](https://github.com/InternalDeveloperPlatform/PocketIDP), kept as a reference for the
+**Gitea + Backstage** demo setup we will draw on for E10. It is gitignored — not part of kaddy's
+committed tree.
+
+## Cloud note
+
+The brief provisions a **gridscale** lab. **Phase 1** develops on local Talos ($0) via
+[driving-range](../driving-range/). **Phase 2** promotes to gridscale-native PaaS — GSK, LBaaS,
+Object Storage, Upjet Crossplane — for the employer-facing demo (E8b). Reasoning in
+[decisions D-013 / D-015 / D-016 / D-017](agent-context/decisions.md).

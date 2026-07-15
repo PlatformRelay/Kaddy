@@ -1,0 +1,46 @@
+# Chainsaw CI (enabled after E3) — L2 declarative cluster e2e on kind
+name: chainsaw
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/**'
+      - 'tests/chainsaw/**'
+      - 'Taskfile.yml'
+      - '.github/workflows/chainsaw.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  chainsaw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          wait: 120s
+      - name: Install Chainsaw
+        run: go install github.com/kyverno/chainsaw@latest
+      # Suites are gated by `skip: true` until their epic lands (labeling→E1b,
+      # security→E1c, tls→E3, identity→E1d, monitoring→E5, rollouts→E7, portal→E10).
+      # Each epic's implementation installs its deps here (Kyverno, kube-prometheus-stack, …)
+      # and flips its suite's skip flag off.
+      - name: Install Kyverno (labeling/security suites)
+        run: |
+          if ls tests/chainsaw/labeling/*.yaml tests/chainsaw/security/*.yaml >/dev/null 2>&1; then
+            kubectl create -f https://github.com/kyverno/kyverno/releases/latest/download/install.yaml || true
+            kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
+          fi
+      - name: Run Chainsaw suites
+        run: task test:chainsaw

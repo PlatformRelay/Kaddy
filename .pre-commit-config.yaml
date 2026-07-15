@@ -1,0 +1,23 @@
+# Pre-commit hooks — install: pre-commit install
+# Mirrors CI secret hygiene; gitleaks runs on every commit.
+---
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        args: [--config=.github/gitleaks.toml]
+
+  - repo: local
+    hooks:
+      - id: scrub-denylist
+        name: scrub-denylist
+        entry: bash hack/scrub-denylist.sh
+        language: system
+        pass_filenames: false
+
+      - id: markdownlint
+        name: markdownlint-cli2
+        entry: bash -c 'command -v markdownlint-cli2 >/dev/null && markdownlint-cli2 --config hack/tooling/markdownlint-cli2.yaml "$@" || true' --
+        language: system
+        files: \.md$

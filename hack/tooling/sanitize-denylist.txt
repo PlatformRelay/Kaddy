@@ -1,0 +1,27 @@
+# Patterns that must never appear in committed kaddy artifacts.
+# Derived from private labeling draft — rewrite from public sources only.
+
+# Employer / org (examples — extend as needed)
+REWE
+rewe-group
+rewe\.atlassian
+adoit
+atp-web\.rewe
+KR2403
+KR2101
+KR2405
+KR2501
+CCoE
+RIAG Austria
+Ernährung
+Lebensmittelhandel
+
+# Internal product names from draft context (not kaddy scope)
+Runway
+Theseus
+Fairway
+
+# EAM / internal tooling slugs
+PROD165
+PROD246
+AC4914

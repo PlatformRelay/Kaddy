@@ -1,0 +1,15 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: tls-suite
+  annotations:
+    kaddy.io/req: REQ-E3-S03-00
+spec:
+  description: E3/E4 — cert-manager + Let's Encrypt issuers (skip until deployed)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "tls suite placeholder — enable when deploy/cert-manager/ is synced (E3-S03)"
+              exit 0
