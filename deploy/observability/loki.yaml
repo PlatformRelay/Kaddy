@@ -61,11 +61,18 @@ spec:
             enabled: false
           querier:
             max_concurrent: 2
-        # SingleBinary: exactly one replica, no PVC (ephemeral is fine for a lab).
+        # SingleBinary: exactly one replica with a small PVC. Persistence is
+        # REQUIRED here even for a lab: the Loki container runs with a read-only
+        # rootfs, so the filesystem object store + ruler-storage need a writable
+        # /var/loki mount — an unmounted path fails with "mkdir /var/loki:
+        # read-only file system". A 2Gi local-path PVC (kind default SC
+        # `standard`) provides it; short retention keeps it tiny.
         singleBinary:
           replicas: 1
           persistence:
-            enabled: false
+            enabled: true
+            size: 2Gi
+            storageClass: standard
           resources:
             requests:
               cpu: 100m

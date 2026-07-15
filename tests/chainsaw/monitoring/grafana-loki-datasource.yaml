@@ -23,11 +23,11 @@ spec:
                 labels:
                   grafana_datasource: "1"
         - script:
-            # The provisioning body must declare a type: loki default datasource.
+            # The provisioning body must declare a type: loki datasource. It is
+            # NOT default (Prometheus is the single org default; two defaults make
+            # Grafana refuse to start) — matches the spec verify (type: loki only).
             content: |
               kubectl -n monitoring get cm grafana-loki-datasource -o yaml \
                 | grep -qi 'type: loki'
-              kubectl -n monitoring get cm grafana-loki-datasource -o yaml \
-                | grep -qi 'isDefault: true'
             check:
               ($error): ~

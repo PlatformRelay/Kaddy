@@ -2,10 +2,12 @@
 #
 # The kube-prometheus-stack Grafana sidecar (sidecar.datasources, label
 # grafana_datasource=1) watches for ConfigMaps like this one and provisions the
-# datasource into Grafana at runtime. `isDefault: true` here makes Loki the
-# default source for the Explore/logs view so logs and metrics share one pane
-# (ADR-0108). Prometheus stays the default *metrics* source via the chart's own
-# self-registered datasource; a Grafana instance can hold one default per signal.
+# datasource into Grafana at runtime. Loki is the SINGLE logs datasource, so it
+# is the de-facto logs source for Explore. It is intentionally NOT marked
+# isDefault: Grafana allows exactly one default datasource per org, and the
+# kube-prometheus-stack chart already registers Prometheus as that default; a
+# second default makes Grafana refuse to start ("Only one datasource per
+# organization can be marked as default"). Matches the spec verify (type: loki).
 #
 # NOTE: this ConfigMap declares its own namespace (monitoring) so the Argo CD
 # `observability` directory-app applies it there, not into the app's default ns.
@@ -36,7 +38,6 @@ data:
         access: proxy
         # In-cluster Loki single-binary service (port 3100).
         url: http://loki.monitoring.svc.cluster.local:3100
-        isDefault: true
         jsonData:
           maxLines: 1000
         editable: false
