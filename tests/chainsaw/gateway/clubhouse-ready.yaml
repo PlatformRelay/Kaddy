@@ -1,0 +1,70 @@
+# REQ-E4-S01-01 / S01-02: clubhouse Deployment ready + Service exposes :8080.
+# Assumes the E4 manifests are already applied (GitOps sync or the E4 smoke apply).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: gateway-clubhouse-ready
+  annotations:
+    kaddy.io/req: REQ-E4-S01-01
+    # skip: true — this suite needs the clubhouse Deployment/Service in ns `gateway`
+    # (deploy/workloads/clubhouse), which the ephemeral CI chainsaw kind cluster does
+    # NOT provision (it installs cert-manager only, no Cilium/Gateway/workloads).
+    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    #   chainsaw test --test-file tests/chainsaw/gateway/clubhouse-ready.yaml .
+    # Un-skip once CI stands up the Cilium substrate + applies the E4 manifests
+    # (a .github/workflows change — infra follow-up, outside the E4 lane boundary).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-gateway
+spec:
+  skip: true
+  description: clubhouse Deployment has ReadyReplicas >= 1 with mandatory labels; Service exposes 8080
+  namespace: gateway
+  steps:
+    - name: deployment-ready
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: gateway
+                name: clubhouse
+                labels:
+                  owner: platform-team
+                  service: clubhouse
+                  part-of: kaddy
+                  managed-by: argocd
+                  data-classification: public
+                  business-criticality: business-operational
+                  track: stable
+              status:
+                (readyReplicas > `0`): true
+      catch:
+        - describe:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: clubhouse
+    - name: pod-carries-track-stable
+      try:
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: gateway
+                labels:
+                  service: clubhouse
+                  track: stable
+              status:
+                phase: Running
+    - name: service-port-8080
+      try:
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                namespace: gateway
+                name: clubhouse
+              spec:
+                (ports[0].port): 8080

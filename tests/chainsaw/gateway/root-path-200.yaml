@@ -1,0 +1,79 @@
+# REQ-E4-S02-01: HTTPRoute / -> clubhouse is Accepted + ResolvedRefs on the
+# platform Gateway, the Gateway is Programmed, and a curl of / through the Gateway
+# from an in-cluster pod returns 200 with the marker body "clubhouse".
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: gateway-root-path-200
+  annotations:
+    kaddy.io/req: REQ-E4-S02-01
+    # skip: true — needs the live Cilium Gateway + HTTPRoute + clubhouse + the
+    # kaddy-local-ca issuer, none of which the ephemeral CI chainsaw kind cluster
+    # provisions (cert-manager only; no Cilium/Gateway API/GatewayClass/local-CA).
+    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    #   chainsaw test --test-file tests/chainsaw/gateway/root-path-200.yaml .
+    # Un-skip once CI stands up the Cilium substrate (infra follow-up, out of lane).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-gateway
+spec:
+  skip: true
+  description: Gateway Programmed, HTTPRoute Accepted/ResolvedRefs, / returns 200 with clubhouse marker
+  namespace: gateway
+  steps:
+    - name: gateway-programmed
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: Gateway
+              metadata:
+                namespace: gateway
+                name: clubhouse
+              status:
+                (conditions[?type=='Programmed'].status | [0]): "True"
+      catch:
+        - describe:
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: Gateway
+            name: clubhouse
+    - name: httproute-accepted
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: gateway
+                name: clubhouse
+              status:
+                (parents[0].conditions[?type=='Accepted'].status | [0]): "True"
+                (parents[0].conditions[?type=='ResolvedRefs'].status | [0]): "True"
+      catch:
+        - describe:
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
+            name: clubhouse
+    - name: root-path-returns-clubhouse
+      try:
+        - script:
+            timeout: 90s
+            content: |
+              set -eu
+              GW_IP="$(kubectl -n gateway get svc cilium-gateway-clubhouse \
+                -o jsonpath='{.spec.clusterIP}')"
+              CA_SECRET="$(kubectl get clusterissuer kaddy-local-ca \
+                -o jsonpath='{.spec.ca.secretName}')"
+              CA="$(kubectl -n cert-manager get secret "${CA_SECRET}" \
+                -o jsonpath='{.data.tls\.crt}')"
+              # Verified HTTPS (no -k): pass the local CA, resolve SNI to the Gateway IP.
+              kubectl -n gateway run root-path-check-$$ --rm -i --restart=Never \
+                --image=curlimages/curl:8.11.0 --quiet \
+                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                --env=CA_B64="${CA}" -- sh -c '
+                  echo "$CA_B64" | base64 -d > /tmp/ca.crt
+                  curl -sS --cacert /tmp/ca.crt \
+                    --resolve clubhouse.kaddy.local:443:'"${GW_IP}"' \
+                    https://clubhouse.kaddy.local/'
+            check:
+              (contains($stdout, 'clubhouse')): true

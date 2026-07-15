@@ -1,0 +1,46 @@
+# REQ-E4-S03-05: clubhouse Certificate auto-renewal is configured — spec.renewBefore
+# is present and cert-manager owns renewal (status.renewalTime populated once Ready).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: tls-certificate-renewal
+  annotations:
+    kaddy.io/req: REQ-E4-S03-05
+    # skip: true — needs the clubhouse-tls Certificate issued by the kaddy-local-ca
+    # ClusterIssuer in ns `gateway`. CI's ephemeral chainsaw cluster installs
+    # cert-manager + the letsencrypt-staging issuer only — NOT kaddy-local-ca and
+    # NOT the clubhouse Certificate — so this cannot issue there.
+    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    #   chainsaw test --test-file tests/chainsaw/tls/certificate-renewal.yaml .
+    # Un-skip once CI provisions kaddy-local-ca + applies the clubhouse cert
+    # (infra follow-up, outside the E4 lane boundary).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-local-ca
+spec:
+  skip: true
+  description: clubhouse-tls Certificate is Ready, has renewBefore, and cert-manager set a renewalTime
+  namespace: gateway
+  steps:
+    - name: certificate-ready-and-renewing
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: cert-manager.io/v1
+              kind: Certificate
+              metadata:
+                namespace: gateway
+                name: clubhouse-tls
+              spec:
+                # renewBefore must be set (cert-manager owns renewal — no manual step).
+                (renewBefore != null): true
+              status:
+                conditions:
+                  - type: Ready
+                    status: "True"
+                # cert-manager schedules the next renewal once the cert is issued.
+                (renewalTime != null): true
+      catch:
+        - describe:
+            apiVersion: cert-manager.io/v1
+            kind: Certificate
+            name: clubhouse-tls
