@@ -1,0 +1,16 @@
+# Golden file — Dex GitHub connector (PlatformRelay org)
+# Compare rendered ConfigMap/Helm values against this shape in tests/smoke/e1d-s01-03.sh
+
+connectors:
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      clientID: $GITHUB_CLIENT_ID
+      clientSecret: $GITHUB_CLIENT_SECRET
+      redirectURI: https://dex.platformrelay.dev/callback
+      orgs:
+        - name: PlatformRelay
+          teams:
+            - platform-admins
+            - platform-readonly

@@ -1,0 +1,17 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Configuration
+metadata:
+  name: kaddy
+spec:
+  timeouts:
+    apply: 45s
+    assert: 90s
+    delete: 30s
+  cleanup: true
+  namespace:
+    name: chainsaw-kaddy
+    template:
+      metadata:
+        labels:
+          app.kubernetes.io/part-of: kaddy
+          app.kubernetes.io/managed-by: chainsaw

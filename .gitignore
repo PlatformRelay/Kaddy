@@ -1,0 +1,51 @@
+# kaddy .gitignore
+# Restored after an accidental PocketIDP overwrite (2026-07-15).
+
+# --- Harness: local-only, never committed (see AGENTS.md) ---
+.claude/
+agent-context/
+
+# --- Third-party reference material (kept locally, not vendored) ---
+references/
+
+# --- Secrets / local env ---
+.envrc
+*.env
+!.envrc.example
+kube/
+kubeconfig
+*.kubeconfig
+
+# --- OpenTofu / Terraform ---
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# --- Task / tooling caches ---
+.task/
+.cache/
+
+# --- Node / Slidev ---
+node_modules/
+slides/dist/
+slides/.slidev/
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+
+# --- Evidence: generated run artifacts (keep README + templates) ---
+evidence/runs/
+
+# --- OS / editor ---
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*~

@@ -1,0 +1,42 @@
+# OpenSpec project config — injected into every planning request (OPSX workflow).
+schema: spec-driven
+
+context: |
+  Project: kaddy (github.com/PlatformRelay/kaddy) — security-first Website-as-a-Service on Kubernetes.
+  Phase 1 substrate: local Talos via driving-range (sibling repo); phase 2: gridscale GSK + LBaaS.
+  Day-0: driving-range OpenTofu (phase 1); Terramate + gridscale provider v2 (phase 2, E1g).
+  Ingress: **Cilium Gateway API** on platform cluster — no MetalLB, no caddyserver/gateway on platform (ADR-0104, D-019).
+  Tenant Caddy: Backstage scaffold / tenant product (E10), not platform ingress.
+  Identity: Dex + GitHub connector scoped to **PlatformRelay** org (D-018).
+  Secrets: SOPS + age encrypted in git; Argo KSOPS plugin — no imperative kubectl create secret (ADR-0110, D-020).
+  Observability: kube-prometheus-stack; alerts self-route via mandatory labels (marshal).
+  Progressive delivery: Argo Rollouts blue/green + canary; Prometheus AnalysisTemplate gates promotion (mulligan).
+  Self-service: Crossplane XRD Website claim; phase 2 nginx VM via Upjet provider-gridscale.
+  Security: default-deny NetworkPolicies; Trivy CI; cosign + Kyverno verify; NIS2/KRITIS-style classification labels.
+  Labeling: mandatory core — owner, service, component, part-of, managed-by, data-classification, track (stable|canary|preview).
+  No dev/prod environment dimension — single lab platform for hiring exercise.
+  Sanitization: no employer names, internal policy IDs, or internal EAM system references in committed artifacts.
+  Commits: :gitmoji: type(scope): summary — ASCII shortcode only.
+  Implementation: TDD mandatory; one logical change per commit; rebase-merge on PRs.
+  Testing pyramid ADR-0701: L0 tofu test, L1 conftest, L2 Chainsaw, L3 k6, L4 scorecard.
+  Every spec REQ must include **Verify:** (command) and **Test:** (artifact path); gate: `task test:spec`.
+  Epic EXIT: STRICT_TEST_FILES=1 — all Test paths must exist. Chainsaw under tests/chainsaw/.
+
+rules:
+  proposal:
+    - State problem, scope, and non-goals explicitly.
+    - Link to ADR(s) and exercise traceability where relevant.
+    - Name counterpoints considered.
+  specs:
+    - Use Given / When / Then for behavioural requirements.
+    - Map requirements to epic ID (E1, E1b, …) and story ID (E1-S01).
+    - Assign stable REQ IDs (REQ-E5-S03-01) with **Test:** (artifact path) and **Verify:** (command).
+    - Tag Level: L0|L1|L2|L3|L4 per ADR-0701. One test artifact per REQ — no exceptions.
+  design:
+    - Prefer mermaid diagrams for flows; reference existing modules/paths.
+    - Document fallback paths for risky dependencies (Cilium Gateway L0 vs Envoy L1 per ADR-0104).
+    - Reference Chainsaw suite paths under tests/chainsaw/ when cluster verification applies.
+  tasks:
+    - Vertical slices; each task independently verifiable.
+    - Include gate command(s) that must pass before PR.
+    - List "add failing test" before "implement" for each story.

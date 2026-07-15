@@ -1,0 +1,30 @@
+# Copy to .envrc and fill in — never commit .envrc (gitignored).
+# gridscale lab: panel → API keys → create token + copy user UUID.
+
+export GRIDSCALE_API_KEY="<api-token>"
+export GRIDSCALE_USER_UUID="<user-uuid>"
+
+# Official gridscale provider names (uncomment if using gridscale/gridscale provider):
+# export GRIDSCALE_TOKEN="${GRIDSCALE_API_KEY}"
+# export GRIDSCALE_UUID="${GRIDSCALE_USER_UUID}"
+
+# Cloudflare DNS (platformrelay.dev zone) — cert-manager DNS-01, external-dns, OpenTofu.
+# Dashboard → My Profile → API Tokens → create token with Zone.DNS:Edit on platformrelay.dev.
+# Account ID: zone Overview → right column.
+
+export CLOUDFLARE_TOKEN="<api-token>"
+export CLOUDFLARE_ACCOUNT_ID="<account-id>"
+
+# GitHub OAuth app for Dex (E1d) — Developer settings → OAuth Apps (or GitHub App OAuth credentials).
+# Callback URL must be: https://dex.platformrelay.dev/callback
+# See docs/runbooks/github-oauth-dex.md
+
+export GITHUB_APP_CLIENT_ID="<client-id>"
+export GITHUB_APP_CLIENT_SECRET="<client-secret>"
+# Optional — not read by Dex; stored if you use GitHub App APIs elsewhere:
+# export GITHUB_APP_APP_ID="<app-id>"
+# export OS_AUTH_URL="..."
+# export OS_USERNAME="..."
+# export OS_PASSWORD="..."
+# export OS_TENANT_NAME="..."
+# export OS_REGION_NAME="..."

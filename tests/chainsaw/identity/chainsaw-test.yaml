@@ -1,0 +1,13 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-suite
+spec:
+  description: E1d — Dex + GitHub OIDC (skip until identity manifests land)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "identity suite placeholder — enable when deploy/identity/ is synced"
+              exit 0
