@@ -13,8 +13,16 @@ source "${CLUSTER_DIR}/versions.env"
 STATE_DIR="${REPO_ROOT}/.state"
 mkdir -p "${STATE_DIR}"
 
+# SAFETY: isolate the kind kubeconfig from the developer's shared ~/.kube/config,
+# which on this workstation carries 100+ real GKE contexts. Every kubectl/helm in
+# these scripts targets ONLY the kaddy-dev kind cluster via this file — a stray
+# apply can never reach a production context.
+export KUBECONFIG="${STATE_DIR}/kubeconfig"
+
 KIND_CLUSTER_WAIT="${KIND_CLUSTER_WAIT:-300s}"
-HELM_TIMEOUT="${HELM_TIMEOUT:-300s}"
+# 600s: a cold-cache clean bring-up pulls Cilium + cert-manager images on a fresh
+# node while Cilium is still settling; 300s was too tight and timed out cert-manager.
+HELM_TIMEOUT="${HELM_TIMEOUT:-600s}"
 
 log() { echo "[e1e] $*" >&2; }
 fail() { echo "[e1e] ERROR: $*" >&2; exit 1; }
@@ -50,6 +58,21 @@ detect_provider() {
   log "container runtime: ${KIND_EXPERIMENTAL_PROVIDER:-docker}"
 }
 
+# Preflight: Cilium's agent must mount /sys/fs/bpf, which rootless podman denies
+# (the agent crashloops for ~5 min then Helm --wait fails). Under podman we require
+# a ROOTFUL machine and fail fast with the remedy rather than crashlooping silently.
+# See the "Implementation deviations" note in the E1e spec.
+assert_podman_rootful() {
+  [[ "${KIND_EXPERIMENTAL_PROVIDER:-}" == "podman" ]] || return 0
+  command -v podman >/dev/null 2>&1 || return 0
+  local rootful
+  rootful="$(podman machine inspect --format '{{.Rootful}}' 2>/dev/null | head -1 || true)"
+  # Empty means no machine abstraction (e.g. native Linux podman) — nothing to assert.
+  [[ -z "${rootful}" ]] && return 0
+  [[ "${rootful}" == "true" ]] && return 0
+  fail "rootless podman cannot mount /sys/fs/bpf for Cilium — run: podman machine stop && podman machine set --rootful && podman machine start (see E1e spec deviations)"
+}
+
 # The CLI used to inspect the kind bridge network (podman/nerdctl/docker).
 runtime_cli() {
   case "${KIND_EXPERIMENTAL_PROVIDER:-docker}" in
@@ -68,9 +91,17 @@ use_context() {
 }
 
 export_kubeconfig() {
-  # Keep the cluster kubeconfig under .state/ (gitignored) as the canonical path.
-  kind export kubeconfig --name "${CLUSTER_NAME}" --kubeconfig "${STATE_DIR}/kubeconfig" >/dev/null 2>&1 || true
-  kind export kubeconfig --name "${CLUSTER_NAME}" >/dev/null 2>&1 || true
+  # Write the cluster kubeconfig to the isolated .state/ path (== $KUBECONFIG).
+  kind export kubeconfig --name "${CLUSTER_NAME}" --kubeconfig "${KUBECONFIG}" >/dev/null 2>&1
+}
+
+# Hard guard: refuse to proceed unless the active context is the kind cluster.
+# Called before any mutating kubectl/helm so we can never hit a GKE prod context.
+assert_kind_context() {
+  local ctx
+  ctx="$(kubectl config current-context 2>/dev/null || true)"
+  [[ "${ctx}" == "kind-${CLUSTER_NAME}" ]] \
+    || fail "refusing to continue: active context is '${ctx}', expected 'kind-${CLUSTER_NAME}' (KUBECONFIG=${KUBECONFIG})"
 }
 
 # The control-plane container IP — used as k8sServiceHost for Cilium kube-proxy
