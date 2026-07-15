@@ -1,0 +1,30 @@
+# REQ-E4-S01-02 — clubhouse Service exposes port 8080 (asserted by
+# tests/smoke/e4-s01-02.sh and tests/chainsaw/gateway/clubhouse-ready.yaml).
+# ClusterIP: the HTTPRoute backendRef targets this Service; the edge is the
+# platform Gateway, not this Service directly.
+apiVersion: v1
+kind: Service
+metadata:
+  name: clubhouse
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    service: clubhouse
+    track: stable
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

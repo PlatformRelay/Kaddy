@@ -1,0 +1,96 @@
+# REQ-E4-S01-01 — clubhouse Deployment (static branded landing page).
+#
+# nginx-unprivileged: runs as non-root (uid 101) by default and listens on :8080,
+# so no privileged port / no root is needed. Image pinned to an exact tag (SEC-4:
+# no floating :latest). Read-only rootfs + dropped caps + writable /tmp emptyDir
+# satisfy the security baseline (ADR-0106); nginx temp paths are redirected to
+# /tmp in the mounted nginx.conf.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clubhouse
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: clubhouse
+      track: stable
+  template:
+    metadata:
+      labels:
+        owner: platform-team
+        service: clubhouse
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: public
+        business-criticality: business-operational
+        track: stable
+        app.kubernetes.io/name: clubhouse
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.29.0-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+              readOnly: true
+            - name: site
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: site
+          configMap:
+            name: clubhouse-site
+        - name: tmp
+          emptyDir: {}
