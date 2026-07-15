@@ -33,12 +33,16 @@ GW_IP="$(kubectl -n "${NS}" get svc "${GW_SVC}" -o jsonpath='{.spec.clusterIP}' 
 [[ -n "${GW_IP}" ]] || smoke_fail "gateway service ${GW_SVC} has no clusterIP"
 
 POD="clubhouse-redir-$$"
-code="$(kubectl -n "${NS}" run "${POD}" --rm -i --restart=Never \
+# NOTE: `kubectl run --rm -i` can occasionally echo the pod's stdout twice (an
+# attach-stream quirk), so we print a delimited marker and extract the LAST
+# 3-digit code — robust against a doubled stream (e.g. "301301").
+raw="$(kubectl -n "${NS}" run "${POD}" --rm -i --restart=Never \
   --image=curlimages/curl:8.11.0 --quiet \
   --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
-  -- sh -c "curl -s -o /dev/null -w '%{http_code}' -H 'Host: ${HOST}' http://${GW_IP}:80/" \
+  -- sh -c "printf 'CODE:'; curl -s -o /dev/null --max-redirs 0 -w '%{http_code}' -H 'Host: ${HOST}' http://${GW_IP}:80/; printf '\n'" \
   2>/dev/null || true)"
-echo "plain-HTTP status via Gateway: ${code}"
+code="$(printf '%s' "${raw}" | grep -oE 'CODE:[0-9]{3}' | head -1 | grep -oE '[0-9]{3}')"
+echo "plain-HTTP status via Gateway: ${code} (raw: ${raw//$'\n'/ })"
 case "${code}" in
   301|302|307|308) smoke_ok "REQ-E4-S03-03 HTTP redirects to HTTPS (${code})" ;;
   *) smoke_fail "expected 3xx redirect from HTTP listener, got '${code}'" ;;
