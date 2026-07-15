@@ -1,0 +1,34 @@
+# REQ-E5-S01-02 — clubhouse ServiceMonitor (should). Scrapes the app /metrics so
+# up{service="clubhouse"} == 1 when the app exposes metrics.
+# Cluster verification deferred.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: clubhouse
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: clubhouse
+  namespaceSelector:
+    matchNames:
+      - apps
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      relabelings:
+        - targetLabel: service
+          replacement: clubhouse
