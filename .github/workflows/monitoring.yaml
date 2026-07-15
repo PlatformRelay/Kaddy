@@ -38,3 +38,5 @@ jobs:
           fi
       - name: promtool test rules
         run: task test:promrules
+      - name: Assert rule coverage (REQ-E5-S06-05 — every alert has a test)
+        run: hack/monitoring/assert-rule-coverage.sh

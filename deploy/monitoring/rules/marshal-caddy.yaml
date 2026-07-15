@@ -25,8 +25,14 @@ spec:
     - name: marshal.caddy
       rules:
         - alert: CaddyTargetDown
-          # Caddy scrape target reporting down (up == 0) for longer than 2m.
-          expr: up{job="caddy"} == 0
+          # REQ-E5-S03-01: fire when Caddy targets are absent for 2m.
+          # Two failure modes must fire this alert:
+          #   1. present-but-failing — the target is scraped but reports up == 0.
+          #   2. absent — the pods vanished, so no up{job="caddy"} series exists at
+          #      all and up == 0 can never match. absent() covers this case.
+          # The combined expr detects both without dropping the present-but-failing
+          # coverage. absent() synthesizes only {job="caddy"} (no instance label).
+          expr: absent(up{job="caddy"}) or up{job="caddy"} == 0
           for: 2m
           labels:
             severity: critical
@@ -34,6 +40,8 @@ spec:
             owner: platform-team
           annotations:
             summary: 'Caddy scrape target down'
+            # Instance-independent wording: the absent() branch has no instance
+            # label, so a per-instance description would render an empty gap.
             description: >-
-              Caddy target {{ $labels.instance }} (job caddy) has been down for
-              more than 2 minutes. Requests may be failing at the gateway.
+              Caddy scrape target (job caddy) has been down or absent for more
+              than 2 minutes. Requests may be failing at the gateway.

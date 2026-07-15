@@ -14,8 +14,9 @@ evaluation_interval: 1m
 
 tests:
   # -------------------------------------------------------------------------
-  # REQ-E5-S06-01 — CaddyTargetDown (marshal-caddy.yaml)
-  # up{job="caddy"} at 0 for > 2m must fire severity=critical with service label.
+  # REQ-E5-S06-01 / REQ-E5-S03-01 — CaddyTargetDown (marshal-caddy.yaml)
+  # Present-but-failing: up{job="caddy"} at 0 for > 2m must fire
+  # severity=critical with service label.
   # -------------------------------------------------------------------------
   - interval: 1m
     input_series:
@@ -39,7 +40,38 @@ tests:
               instance: caddy:2019
             exp_annotations:
               summary: 'Caddy scrape target down'
-              description: 'Caddy target caddy:2019 (job caddy) has been down for more than 2 minutes. Requests may be failing at the gateway.'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # REQ-E5-S03-01 — CaddyTargetDown, ABSENT-target branch.
+  # REQ intent: "Caddy targets absent for 2m". If the pods vanish, no up{job="caddy"}
+  # series is scraped at all, so up==0 never matches — the absent() branch must fire.
+  # absent(up{job="caddy"}) synthesizes labels from the equality matchers only, so the
+  # firing alert carries {job="caddy"} with NO instance label.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # Anchor series on an unrelated job establishes the eval timeline from t=0
+      # while up{job="caddy"} is absent throughout.
+      - series: 'up{job="other",instance="anchor:9090"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      # Silent: only 1m of absence — below the 2m `for:` window.
+      - eval_time: 1m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      # Fires: 3m of absence (>2m). No instance label on the absent() vector.
+      - eval_time: 3m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
 
   # -------------------------------------------------------------------------
   # REQ-E5-S06-02 — HighHTTPErrorRate (marshal-http.yaml)
