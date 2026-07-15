@@ -1,78 +1,20 @@
-# promtool test rules — marshal alerting (E5)
-# L1 unit tests for the PrometheusRule alerts in deploy/monitoring/rules/.
+# promtool test rules — ACTIVE platform marshal HTTP alerting (E5)
+# L1 unit tests for the PrometheusRule alerts in deploy/monitoring/rules/marshal-http.yaml.
 # Rule files are produced by hack/monitoring/extract-rules.sh (projects .spec out
 # of each PrometheusRule CR). Run the extract first, then:
 #   task test:promrules   OR   promtool test rules tests/promtool/marshal.test.yaml
 #
 # Each alert is proved to FIRE on its condition and to stay SILENT below threshold,
 # asserting the ADR-0301 alert labels (severity, service, owner).
+# The caddy_* target-down rule (marshal-caddy) is PARKED with the e-caddy-mvp epic
+# (D-026, ARCH-2/ARCH-3) and its tests live in tests/promtool/caddy-mvp-marshal.test.yaml.
+# Only the ACTIVE platform marshal-http rules are extracted/tested here.
 rule_files:
-  - /tmp/marshal-caddy.rules.yaml
   - /tmp/marshal-http.rules.yaml
 
 evaluation_interval: 1m
 
 tests:
-  # -------------------------------------------------------------------------
-  # REQ-E5-S06-01 / REQ-E5-S03-01 — CaddyTargetDown (marshal-caddy.yaml)
-  # Present-but-failing: up{job="caddy"} at 0 for > 2m must fire
-  # severity=critical with service label.
-  # -------------------------------------------------------------------------
-  - interval: 1m
-    input_series:
-      - series: 'up{job="caddy",instance="caddy:2019"}'
-        # up for 2m, then down (0) for 4m — crosses the 2m `for:` window.
-        values: '1 1 0 0 0 0'
-    alert_rule_test:
-      # Silent: only 1m into the outage — below the 2m `for:` window.
-      - eval_time: 2m
-        alertname: CaddyTargetDown
-        exp_alerts: []
-      # Fires: 3m into the outage (>2m), still down.
-      - eval_time: 5m
-        alertname: CaddyTargetDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              service: caddy
-              owner: platform-team
-              job: caddy
-              instance: caddy:2019
-            exp_annotations:
-              summary: 'Caddy scrape target down'
-              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
-
-  # -------------------------------------------------------------------------
-  # REQ-E5-S03-01 — CaddyTargetDown, ABSENT-target branch.
-  # REQ intent: "Caddy targets absent for 2m". If the pods vanish, no up{job="caddy"}
-  # series is scraped at all, so up==0 never matches — the absent() branch must fire.
-  # absent(up{job="caddy"}) synthesizes labels from the equality matchers only, so the
-  # firing alert carries {job="caddy"} with NO instance label.
-  # -------------------------------------------------------------------------
-  - interval: 1m
-    input_series:
-      # Anchor series on an unrelated job establishes the eval timeline from t=0
-      # while up{job="caddy"} is absent throughout.
-      - series: 'up{job="other",instance="anchor:9090"}'
-        values: '1 1 1 1 1 1'
-    alert_rule_test:
-      # Silent: only 1m of absence — below the 2m `for:` window.
-      - eval_time: 1m
-        alertname: CaddyTargetDown
-        exp_alerts: []
-      # Fires: 3m of absence (>2m). No instance label on the absent() vector.
-      - eval_time: 3m
-        alertname: CaddyTargetDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              service: caddy
-              owner: platform-team
-              job: caddy
-            exp_annotations:
-              summary: 'Caddy scrape target down'
-              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
-
   # -------------------------------------------------------------------------
   # REQ-E5-S06-02 — HighHTTPErrorRate (marshal-http.yaml)
   # 5xx ratio > 5% sustained over the `for:` window must fire.

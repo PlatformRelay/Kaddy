@@ -1,0 +1,80 @@
+# promtool test rules — e-caddy-mvp VM-variant alerting slice (parked E5 caddy_* alert)
+#
+# REQ-CADDY-S01-03 — the CaddyTargetDown marshal alert, migrated out of ACTIVE platform
+# monitoring into this epic's VM-variant slice (operator-confirmed Option A — park, D-026;
+# audit ARCH-2/ARCH-3). The platform's Cilium/Envoy edge never emits a Caddy target, so
+# this alert cannot fire against the platform; it fires against the Caddy VM's external
+# /metrics endpoint (in-cluster Prometheus scrape) once the tenant lands — the brief spine
+# serve → scrape → fire.
+#
+# STANDALONE by design: rule_files points at a COMMITTED relative projection in the epic
+# slice, NOT a /tmp extract. So the spec's bare Verify command works with an empty /tmp:
+#   promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml
+#
+# Fire + silent rigor PRESERVED from the original E5 marshal.test.yaml (both failure
+# modes: present-but-failing up==0, and absent-target absent()).
+rule_files:
+  - ../../deploy/caddy-mvp/monitoring/rules/marshal-caddy.rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S01-03 (parked REQ-E5-S06-01 / REQ-E5-S03-01) — CaddyTargetDown.
+  # Present-but-failing: up{job="caddy"} at 0 for > 2m must fire
+  # severity=critical with service label.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="caddy",instance="caddy:2019"}'
+        # up for 2m, then down (0) for 4m — crosses the 2m `for:` window.
+        values: '1 1 0 0 0 0'
+    alert_rule_test:
+      # Silent: only 1m into the outage — below the 2m `for:` window.
+      - eval_time: 2m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      # Fires: 3m into the outage (>2m), still down.
+      - eval_time: 5m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+              instance: caddy:2019
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S01-03 (parked REQ-E5-S03-01) — CaddyTargetDown, ABSENT-target branch.
+  # REQ intent: "Caddy targets absent for 2m". If the VM/pods vanish, no up{job="caddy"}
+  # series is scraped at all, so up==0 never matches — the absent() branch must fire.
+  # absent(up{job="caddy"}) synthesizes labels from the equality matchers only, so the
+  # firing alert carries {job="caddy"} with NO instance label.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # Anchor series on an unrelated job establishes the eval timeline from t=0
+      # while up{job="caddy"} is absent throughout.
+      - series: 'up{job="other",instance="anchor:9090"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      # Silent: only 1m of absence — below the 2m `for:` window.
+      - eval_time: 1m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      # Fires: 3m of absence (>2m). No instance label on the absent() vector.
+      - eval_time: 3m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'

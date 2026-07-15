@@ -1,10 +1,18 @@
-# Marshal alerting rules (E5)
+# Marshal alerting rules (E5) — ACTIVE platform monitoring
 
-`PrometheusRule` CRs for the marshal (Caddy gateway) alerts. Each alert is proved
+`PrometheusRule` CRs for the marshal HTTP alerts. Each alert is proved
 by an L1 `promtool` unit test in [`tests/promtool/marshal.test.yaml`](../../../tests/promtool/marshal.test.yaml)
 and every alert name is coverage-checked by
 [`hack/monitoring/assert-rule-coverage.sh`](../../../hack/monitoring/assert-rule-coverage.sh)
 (REQ-E5-S06-05).
+
+> **Migrated out (ARCH-2/ARCH-3, D-026):** the `CaddyTargetDown` rule (`marshal-caddy.yaml`)
+> and the Caddy `PodMonitor` were **parked** with the `e-caddy-mvp` epic — the platform's
+> Cilium/Envoy edge never emits a Caddy target, so that alert cannot fire against the platform
+> (operator-confirmed Option A — park). They now live under
+> [`deploy/caddy-mvp/monitoring/`](../../caddy-mvp/monitoring/) with their promtool suite at
+> [`tests/promtool/caddy-mvp-marshal.test.yaml`](../../../tests/promtool/caddy-mvp-marshal.test.yaml)
+> (REQ-CADDY-S01-03). See [ADR-0104](../../../docs/adr/0104-caddy-gateway-api.md).
 
 Rule files are fed to `promtool` by
 [`hack/monitoring/extract-rules.sh`](../../../hack/monitoring/extract-rules.sh),
@@ -17,22 +25,11 @@ alert carries `severity`, `service`, `owner` labels for self-routing.
 
 | File | Alerts |
 | --- | --- |
-| `marshal-caddy.yaml` | `CaddyTargetDown` |
 | `marshal-http.yaml` | `HighHTTPErrorRate`, `HighHTTPLatency`, `HighRequestRate` |
 
+`CaddyTargetDown` (`marshal-caddy.yaml`) is parked with `e-caddy-mvp` — see the note above.
+
 ## Thresholds and PromQL
-
-### CaddyTargetDown (REQ-E5-S03-01)
-
-- Severity: `critical`
-- Threshold: Caddy scrape target reports `up == 0` for longer than `2m`.
-- PromQL:
-
-  ```promql
-  up{job="caddy"} == 0
-  ```
-
-  with `for: 2m`.
 
 ### HighHTTPErrorRate (REQ-E5-S03-02)
 
