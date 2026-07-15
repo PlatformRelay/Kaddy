@@ -1,0 +1,36 @@
+# REQ-E5-S01-01 — Caddy PodMonitor. Scrapes Caddy admin/metrics endpoint so that
+# caddy_http_requests_total (and friends) land in Prometheus.
+# Cluster verification deferred (no cluster offline); YAML validity + ADR-0301
+# labels are enforced here.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: caddy
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: caddy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: gateway
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: caddy
+  namespaceSelector:
+    matchNames:
+      - gateway
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      # Job label pins the scrape to job="caddy" — the alert rules match on it.
+      relabelings:
+        - targetLabel: job
+          replacement: caddy
