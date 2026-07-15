@@ -210,6 +210,27 @@ tasks:
           echo "skip chainsaw (no CLI or cluster)"
         fi
 
+  cluster:up:
+    desc: E1e — bring up the local kind cluster (Cilium + Gateway API + cert-manager)
+    cmds:
+      - bash hack/cluster/kind-up.sh
+
+  cluster:down:
+    desc: E1e — tear down the local kind cluster
+    cmds:
+      - bash hack/cluster/kind-down.sh
+
+  test:meta:e1e:
+    desc: E1e — offline meta gates (kind config + secure install), no cluster needed
+    cmds:
+      - bash tests/meta/e1e-kind-config.sh
+      - bash tests/meta/e1e-security.sh
+
+  test:smoke:e1e:
+    desc: E1e — live smoke bundle (needs a running kaddy-dev cluster; task cluster:up first)
+    cmds:
+      - bash tests/smoke/e1e-exit.sh
+
   demo:
     desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
     cmds:
