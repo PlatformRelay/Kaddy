@@ -1,8 +1,10 @@
 # Smoke Gateway + HTTPRoute + echo backend (REQ-E1e-S04-01).
 # Verifies the Cilium Gateway API dataplane end-to-end. The Gateway surfaces as a
 # LoadBalancer service and receives an LB-IPAM address (asserted assigned only).
-# Real HTTP is exercised via `kubectl port-forward` to the gateway service on the
-# host loopback — the LB IP itself is never curled (macOS bridge is not routable).
+# Real HTTP is exercised by pinning the gateway LB service's nodePort to 30080 and
+# curling 127.0.0.1:30080 (the loopback-bound kind extraPortMapping) — the LB IP
+# itself is never curled (macOS bridge is not routable). port-forward can't be used:
+# the cilium-gateway LB service is selectorless (Envoy datapath, not pods).
 ---
 apiVersion: v1
 kind: Namespace
