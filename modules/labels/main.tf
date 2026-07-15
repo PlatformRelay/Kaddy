@@ -6,13 +6,13 @@ locals {
   # Canonical label map. Keys per ADR-0301, with Kubernetes app.kubernetes.io/*
   # mapping for service/component/part-of/managed-by.
   labels_base = {
-    "owner"                       = var.owner
-    "app.kubernetes.io/name"      = var.service
-    "app.kubernetes.io/part-of"   = var.part_of
+    "owner"                        = var.owner
+    "app.kubernetes.io/name"       = var.service
+    "app.kubernetes.io/part-of"    = var.part_of
     "app.kubernetes.io/managed-by" = var.managed_by
-    "track"                       = var.track
-    "data-classification"         = var.data_classification
-    "business-criticality"        = var.business_criticality
+    "track"                        = var.track
+    "data-classification"          = var.data_classification
+    "business-criticality"         = var.business_criticality
   }
 
   labels_component = var.component == null ? {} : {

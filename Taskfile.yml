@@ -8,7 +8,7 @@ set:
 run: once
 
 vars:
-  MARKDOWNLINT_CONFIG: hack/tooling/markdownlint-cli2.yaml
+  MARKDOWNLINT_CONFIG: hack/tooling/.markdownlint-cli2.yaml
   DENYLIST: hack/tooling/sanitize-denylist.txt
 
 tasks:
@@ -52,12 +52,54 @@ tasks:
         fi
 
   verify:
-    desc: Design-phase gate — lint, scrub, openspec structure, spec test coverage
+    desc: Design-phase gate — lint, scrub, openspec structure, spec test coverage, fmt, docs
     cmds:
       - task: scrub
       - task: lint
       - task: openspec:validate
       - task: test:spec
+      - task: test:fmt
+      - task: test:unit
+      - task: docs:tf:check
+
+  test:fmt:
+    desc: L0 — tofu fmt -check in modules/labels
+    cmds:
+      - |
+        set -eu
+        if ! command -v tofu >/dev/null 2>&1; then
+          echo "tofu not installed — skip test:fmt"
+          exit 0
+        fi
+        tofu fmt -check -recursive modules
+
+  docs:tf:
+    desc: Regenerate modules/labels README terraform-docs section
+    cmds:
+      - |
+        set -eu
+        if ! command -v terraform-docs >/dev/null 2>&1; then
+          echo "terraform-docs not installed — brew install terraform-docs"; exit 1
+        fi
+        terraform-docs -c .terraform-docs.yml modules/labels
+
+  docs:tf:check:
+    desc: Fail if terraform-docs output drifts from committed README
+    cmds:
+      - |
+        set -eu
+        if ! command -v terraform-docs >/dev/null 2>&1; then
+          echo "terraform-docs not installed — skip docs:tf:check"
+          exit 0
+        fi
+        tmp=$(mktemp)
+        cp modules/labels/README.md "$tmp"
+        terraform-docs -c .terraform-docs.yml modules/labels
+        if ! diff -q "$tmp" modules/labels/README.md >/dev/null; then
+          echo "FAIL terraform-docs drift — run 'task docs:tf'" >&2
+          exit 1
+        fi
+        echo "ok   modules/labels/README.md"
 
   test:spec:
     desc: Meta — every OpenSpec REQ has Test + Verify (STRICT_TEST_FILES=1 for epic exit)
