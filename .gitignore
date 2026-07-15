@@ -12,6 +12,8 @@ references/
 .envrc
 *.env
 !.envrc.example
+# Pinned cluster tool/chart versions must be committed (E1e, REQ-E1e-S05-01)
+!hack/cluster/versions.env
 kube/
 kubeconfig
 *.kubeconfig
