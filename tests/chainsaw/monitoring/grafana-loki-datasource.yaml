@@ -1,6 +1,7 @@
-# REQ-E3-S02-05: Loki wired as a Grafana datasource (default logs source). The
-# provisioning ConfigMap carries the sidecar discovery label and a type: loki,
-# isDefault: true datasource body.
+# REQ-E3-S02-05: Loki wired as a Grafana datasource (the single logs source). The
+# provisioning ConfigMap carries the sidecar discovery label and a type: loki
+# datasource body. It is NOT isDefault (Prometheus is the one org default;
+# a second default makes Grafana refuse to boot) — spec verify checks type: loki.
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:

@@ -58,7 +58,11 @@ jobs:
           helm upgrade --install cert-manager jetstack/cert-manager \
             --namespace cert-manager --create-namespace \
             --version v1.18.2 --set crds.enabled=true --wait --timeout 5m
-          kubectl apply -f deploy/cert-manager/
+          # Only the STAGING issuer is exercised by the tls suite. Applying the
+          # prod issuer too would register an account against the Let's Encrypt
+          # PRODUCTION ACME API on every PR run — unnecessary prod-API traffic —
+          # so CI installs staging only. (Live/kind bootstrap applies both.)
+          kubectl apply -f deploy/cert-manager/cluster-issuer-staging.yaml
       # E3: install the observability stack (monitoring suites) directly with Helm,
       # reusing the SAME pinned chart versions + values embedded in the Argo CD
       # Application manifests (extracted with yq) so CI mirrors the GitOps source of
