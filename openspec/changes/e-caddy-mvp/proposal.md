@@ -26,7 +26,7 @@ decouples platform-edge monitoring from the tenant product.
 ## What (this change — stub / design-first)
 
 - This epic's **proposal + story map** (variants below). No product code lands here yet.
-- **Home for the parked `caddy_*` marshal alerts** (recommendation A — park; OPEN for operator, D-026):
+- **Home for the parked `caddy_*` marshal alerts** (operator-confirmed Option A — park, D-026):
   the alerts + their promtool fire/silent tests move out of active platform monitoring and
   into the **VM-variant alerting slice** of this epic. They are the *alerting slice of the VM
   variant*, not dead code — they fire against the VM's metrics endpoint when the tenant lands.
@@ -77,20 +77,19 @@ Variant B on E7 for Rollouts, E3 for in-cluster Prometheus).
 - **Caddy as platform ingress / gateway.** The platform edge is Cilium Gateway API (Envoy);
   Caddy is a tenant product reached *through* it (ADR-0104, D-019). Never the edge.
 - Enabling Envoy/Cilium metrics in the E1e substrate to re-point `caddy_*` alerts — that is
-  scope creep; the alerts are recommended parked with this epic instead (see marshal decision, rec A · OPEN).
+  scope creep; the alerts are parked with this epic (operator-confirmed marshal decision, Option A).
 - Full IDP scaffolder breadth (that is E10's concern; this epic is the served-website MVP only).
 
-## Marshal-alert decision (OPEN · recommendation A — park)
+## Marshal-alert decision (ANSWERED · Option A — park)
 
-The broken `caddy_*` marshal alerts are **recommended to be parked with this epic** and
-**disabled from active platform monitoring**. This is the planning-lane **recommendation A**;
-the A/B choice is **OPEN for the operator** (`agent-context/INBOX.md`, D-026) and recorded
-**PROPOSED** (not ratified) in `agent-context/decisions.md`. Rationale: Option B (re-point to
+The broken `caddy_*` marshal alerts are **parked with this epic** and **disabled from active
+platform monitoring**. The operator **confirmed Option A** (`agent-context/INBOX.md`, D-026;
+recorded **ANSWERED** in `agent-context/decisions.md`). Rationale: Option B (re-point to
 Cilium/Envoy Gateway metrics) would require enabling Envoy metrics in the E1e substrate = scope
 creep. Promtool rigor (fire + silent assertions) is **preserved**, scoped to this epic's
-VM-variant alerting slice (REQ-CADDY-S01-03). **Until the operator confirms A, the ARCH-2/ARCH-3
-alert-migration + ADR-0104 retcon are blocked.** On confirmation, the monitoring/Caddy lane
-retcons ADR-0104 (platform edge = Cilium/Envoy Gateway; Caddy = tenant MVP, not gateway).
+VM-variant alerting slice (REQ-CADDY-S01-03). The ARCH-2/ARCH-3 alert-migration + ADR-0104 retcon
+are **unblocked** and assigned to the monitoring/Caddy lane, which retcons ADR-0104 (platform edge
+= Cilium/Envoy Gateway; Caddy = tenant MVP, not gateway).
 
 ## Relationship to E9 / E10
 
@@ -110,6 +109,6 @@ retcons ADR-0104 (platform edge = Cilium/Envoy Gateway; Caddy = tenant MVP, not 
 ## Links
 
 - ADR-0104 (edge Cilium Gateway) · D-019 · audit ARCH-2, ARCH-3, DIR-1, DIR-2
-- Marshal decision: OPEN (recommendation A — park) · `agent-context/INBOX.md` D-026 · `decisions.md` (PROPOSED)
+- Marshal decision: ANSWERED (Option A — park) · `agent-context/INBOX.md` D-026 · `decisions.md` (ANSWERED)
 - Preconditions: E1 · E3 · E4 · E7 (Variant B) · E6 / E6g / E1g (Variant A VM + nginx)
 - Remediation backlog: `openspec/changes/audit-remediation-2026-07/` (WS1)

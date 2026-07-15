@@ -22,7 +22,7 @@ their owning epics).
 - Organize the 39 findings into **WS1–WS5 + WONTFIX + ROADMAPPED**, each with finding IDs,
   operator answer, priority, and concrete task bullets (see `tasks.md`).
 - Mint the platform MVP epic (`e-caddy-mvp`) as the home for the hollow-spine fixes (WS1).
-- Flag the OPEN marshal-alert decision (options A/B, recommendation A — park) and reference it from WS1.
+- Flag + resolve the marshal-alert decision (options A/B) — operator confirmed Option A (park) — referenced from WS1.
 
 ## Non-goals
 
@@ -31,7 +31,7 @@ their owning epics).
   `Taskfile.yml`, `tests/smoke/e1-*`, `deploy/bootstrap/**`, `deploy/monitoring/**`,
   `modules/labels/**`, `policy/**`, `docs/adr/0104-*`, `docs/adr/0301-*`,
   `openspec/changes/e1-day0-bootstrap/**`). Those are *targeted* here, executed there.
-- Re-deciding the marshal A/B question — it is **left OPEN** for the operator (recommendation A);
+- Re-deciding the marshal A/B question — the operator **confirmed Option A** (park);
   this lane only flags it and blocks ARCH-2/ARCH-3 alert work on it.
 - Marking anything FIXED in the tech-debt register (nothing is fixed yet).
 
@@ -39,7 +39,7 @@ their owning epics).
 
 | WS | Title | Prio | Finding IDs | Owner / status |
 |----|-------|------|-------------|----------------|
-| **WS1** | Caddy-MVP spine | **P0** | ARCH-2, ARCH-3, DIR-1, DIR-2 | This lane mints `e-caddy-mvp`; marshal decision **OPEN** (rec A) — ARCH-2/ARCH-3 blocked on it |
+| **WS1** | Caddy-MVP spine | **P0** | ARCH-2, ARCH-3, DIR-1, DIR-2 | This lane mints `e-caddy-mvp`; marshal decision **ANSWERED (A — park)** — ARCH-2/ARCH-3 unblocked |
 | **WS2** | Substrate + status retcon | P1 | ARCH-1, ARCH-6, DOC-1, DOC-2, DOC-3, DOC-4, DOC-5, DOC-6, DOC-7, DOC-8, DOC-9, DIR-5, TEST-5, TEST-6, TEST-7 | **In progress this session — docs lane** |
 | **WS3** | CI + gate wiring | P1 | TEST-2, SEC-1, SEC-2, SEC-4, ARCH-5, TEST-8, TEST-1 (advisory) | Runs **after** live E1 lane merges (holds Taskfile.yml) |
 | **WS4** | Test-artifact + hygiene | P2 | TEST-3, TEST-4 | Gated on owning epics landing |
@@ -57,8 +57,8 @@ Operator direction: Caddy = the platform **MVP** (Website-as-a-Service tenant pr
 ARCH-3: *"caddy will be the MVP of our platform, but for now we are building the preconditions to
 show it off"*). Deliverable **now** = the minted `e-caddy-mvp` epic + the flagged marshal
 decision. The demo spine (Prometheus + web app) is built through the **normal epic sequence**
-(E1 → E3 → E4), not a one-off. **Marshal decision is OPEN (operator; INBOX D-026)**, options A/B,
-**recommendation A** — park the `caddy_*` alerts with `e-caddy-mvp` (VM-variant alerting slice),
+(E1 → E3 → E4), not a one-off. **Marshal decision ANSWERED (operator; INBOX D-026, Option A)**,
+**Option A** — park the `caddy_*` alerts with `e-caddy-mvp` (VM-variant alerting slice),
 disabled from active platform monitoring, promtool rigor preserved; platform-edge monitoring
 **decoupled** from Caddy. **ARCH-2 / ARCH-3 alert work is blocked on this decision.**
 

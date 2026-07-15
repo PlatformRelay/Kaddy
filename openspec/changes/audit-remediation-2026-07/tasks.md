@@ -14,18 +14,17 @@ active lane executes · **[epic]** = folded into an epic's own tasks.
 - [x] **[this lane]** Mint the platform MVP epic `openspec/changes/e-caddy-mvp/` (proposal +
       story map + two-variant specs). Caddy = WaaS tenant reached **through** the Cilium/Envoy
       edge, **not** the gateway (DIR-1, ARCH-3).
-- [x] **[this lane]** **Flag** the marshal-alert decision as **OPEN** for the operator (INBOX
-      D-026), options A/B, **recommendation A (park)**: `caddy_*` alerts + promtool tests scoped
+- [x] **[this lane]** **Flag + resolve** the marshal-alert decision — operator confirmed **Option A (park)** (INBOX
+      D-026), options A/B, **operator-confirmed Option A (park)**: `caddy_*` alerts + promtool tests scoped
       to `e-caddy-mvp` VM-variant slice; disabled from active platform monitoring; promtool
       fire/silent rigor preserved (ARCH-2). Platform-edge monitoring **decoupled** from Caddy.
-      Recorded PROPOSED in decisions.md (D-026) — **not** ratified.
+      Recorded ANSWERED in decisions.md (D-026) — operator-ratified.
 - [ ] **[sibling: monitoring/Caddy lane]** Migrate `deploy/monitoring/rules/marshal-caddy.yaml`
       + `tests/promtool/marshal*.test.yaml` into the epic slice; disable the `caddy_*` alerts in
-      active platform monitoring. **BLOCKED on the OPEN marshal decision (INBOX D-026)** — do not
-      start until the operator confirms A.
+      active platform monitoring. **Unblocked — marshal decision ANSWERED, Option A (INBOX D-026).**
 - [ ] **[sibling: monitoring/Caddy lane]** Retcon ADR-0104: platform edge = Cilium/Envoy Gateway;
       Caddy = tenant MVP, not gateway (ARCH-2). *(docs/adr/0104 — owned by monitoring/Caddy lane;
-      blocked on the OPEN marshal decision.)*
+      now unblocked — marshal decision ANSWERED, Option A.)*
 - [ ] **[epic: e-caddy-mvp]** Build the brief spine (serve→scrape→fire) through the normal
       sequence E1 → E3 → E4; VM path via E6g/E1g; Rollouts via E7 (DIR-2). Gated on preconditions.
 - Gate (this lane): `task test:spec` (structure valid; new epic dir present).

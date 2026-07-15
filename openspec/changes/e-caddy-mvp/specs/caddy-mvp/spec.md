@@ -46,9 +46,9 @@ curl -sf "http://${CADDY_VM_HOST}/metrics" | grep -q 'caddy_'
 
 ## REQ-CADDY-S01-03: VM variant alerting — parked E5 caddy_* marshal alerts (serve→scrape→fire)
 
-**Priority:** must · **Level:** L1 · **Refs:** ARCH-2, ARCH-3, marshal decision — recommendation A (park), OPEN pending operator (D-026)
+**Priority:** must · **Level:** L1 · **Refs:** ARCH-2, ARCH-3, marshal decision — operator-confirmed Option A (park) (D-026)
 **Given** the parked E5 `caddy_*` marshal PrometheusRules + their promtool tests, migrated out of
-active platform monitoring into this VM-variant slice (recommendation A — park; OPEN, D-026)
+active platform monitoring into this VM-variant slice (operator-confirmed Option A — park, D-026)
 **When** in-cluster Prometheus scrapes the VM's external metrics endpoint and the promtool suite
 runs the rules across the `for:` window
 **Then** each `caddy_*` alert **fires** when its condition holds and is **silent** when it does not

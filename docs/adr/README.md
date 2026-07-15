@@ -22,7 +22,7 @@ Theme-numbered ADRs (`0Txx`) grouped by concern. Status: **Current** unless note
 | [0104](0104-caddy-gateway-api.md) | Cilium Gateway API for platform ingress; Caddy as tenant product |
 | [0105](0105-crossplane-self-service.md) | Crossplane self-service via Upjet provider-gridscale |
 | [0106](0106-security-baseline.md) | Security baseline — netpols, images, policy |
-| [0107](0107-identity-keycloak-dex.md) | Identity — Dex OIDC + GitHub (**PlatformRelay**) |
+| [0107](0107-identity-dex.md) | Identity — Dex OIDC + GitHub (**PlatformRelay**) |
 | [0108](0108-logging-loki.md) | Logging — Loki + Grafana Alloy |
 | [0109](0109-idp-portal-orchestrator.md) | IDP portal & orchestrator (Backstage + Crossplane) |
 | [0110](0110-secrets-sops-age.md) | Secrets — SOPS + age encrypted in git (IaC) |
