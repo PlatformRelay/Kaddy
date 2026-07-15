@@ -9,6 +9,7 @@ source "${CLUSTER_DIR}/common.sh"
 require_tools
 detect_provider
 use_context
+assert_kind_context
 
 DEPLOY_DIR="${REPO_ROOT}/deploy/cluster-local"
 

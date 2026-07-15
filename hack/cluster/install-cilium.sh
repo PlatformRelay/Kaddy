@@ -10,6 +10,7 @@ source "${CLUSTER_DIR}/common.sh"
 require_tools
 detect_provider
 use_context
+assert_kind_context
 
 DEPLOY_DIR="${REPO_ROOT}/deploy/cluster-local"
 
@@ -44,6 +45,8 @@ helm upgrade --install cilium cilium/cilium \
   --set k8sServiceHost="${CP_IP}" \
   --set k8sServicePort=6443 \
   --set ipam.mode=kubernetes \
+  --set operator.replicas=1 \
+  --set operator.rollOutPods=true \
   --set gatewayAPI.enabled=true \
   --set l2announcements.enabled=true \
   --set "l2announcements.leaseDuration=3s" \
@@ -57,11 +60,16 @@ kubectl -n kube-system rollout status ds/cilium --timeout=180s
 
 # --- 3) LB-IPAM pool carved from the ACTUAL kind bridge subnet (REQ-E1e-S02-03) ---
 CLI="$(runtime_cli)"
-KIND_SUBNET="$("${CLI}" network inspect kind 2>/dev/null \
-  | jq -r 'if type=="array" then .[0] else . end
-           | (.subnets[0].subnet // .IPAM.Config[0].Subnet // empty)' 2>/dev/null || true)"
+# The podman `kind` network is dual-stack; the IPv6 subnet sorts first. Select the
+# IPv4 subnet explicitly (docker exposes IPAM.Config[].Subnet, podman .subnets[]).
+KIND_SUBNET="$("${CLI}" network inspect kind 2>/dev/null | jq -r '
+  (.[0] // .) as $n
+  | ( ($n.subnets // []) | map(.subnet)
+      + (($n.IPAM.Config // []) | map(.Subnet)) )
+  | map(select(test("\\.")))
+  | .[0] // empty' 2>/dev/null || true)"
 if [[ -z "${KIND_SUBNET}" ]]; then
-  log "WARN: could not read kind subnet from runtime — falling back to 172.18.0.0/16 default"
+  log "WARN: could not read IPv4 kind subnet from runtime — falling back to 172.18.0.0/16 default"
   KIND_SUBNET="172.18.0.0/16"
 fi
 # Carve a high /24 slice .200-.250 so it can't collide with node IPs.
