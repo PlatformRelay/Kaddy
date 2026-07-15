@@ -18,6 +18,9 @@ repos:
 
       - id: markdownlint
         name: markdownlint-cli2
-        entry: bash -c 'command -v markdownlint-cli2 >/dev/null && markdownlint-cli2 --config hack/tooling/markdownlint-cli2.yaml "$@" || true' --
+        # TEST-8: config path is the dotted .markdownlint-cli2.yaml (matches
+        # Taskfile MARKDOWNLINT_CONFIG); lint failures propagate (no `|| true`),
+        # but an absent tool skips gracefully instead of failing the hook.
+        entry: bash -c 'if command -v markdownlint-cli2 >/dev/null; then markdownlint-cli2 --config hack/tooling/.markdownlint-cli2.yaml "$@"; else echo "markdownlint-cli2 not installed — skip"; fi' --
         language: system
         files: \.md$
