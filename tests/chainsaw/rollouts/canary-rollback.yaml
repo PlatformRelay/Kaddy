@@ -1,4 +1,10 @@
-# REQ-E7-S02-02: aborting a canary rolls HTTPRoute weights back to 100% stable.
+# REQ-E7-S02-02 (PARTIAL — abort-driven, not analysis-driven): aborting a canary
+# rolls HTTPRoute weights back to 100% stable — the "mulligan" self-heal. The spec
+# frames this as an AnalysisRun *failure* driving the rollback; the AnalysisTemplate
+# is scaffolded but not wired into the Rollout steps (no failing SLI on the nginx
+# demo app), so this suite drives the rollback via an explicit abort and asserts
+# the controller returns the live HTTPRoute weight to 0. Same auto-rollback code
+# path an analysis failure would trigger.
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:

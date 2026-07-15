@@ -96,6 +96,18 @@ spec:
     canary:
       stableService: mulligan-stable
       canaryService: mulligan-canary
+      # REQ-E7-S02-03 — give canary vs stable pods a distinct `track` label so a
+      # Prometheus query can split traffic by track. The controller injects these
+      # onto the canary/stable ReplicaSet pods during a rollout (so
+      # `-l track=canary` returns the canary pods mid-flight). NOTE: plain nginx
+      # exposes no `http_requests_total`; a ServiceMonitor + instrumented app
+      # would complete the metric half (scaffolded, not scraped here).
+      canaryMetadata:
+        labels:
+          track: canary
+      stableMetadata:
+        labels:
+          track: stable
       trafficRouting:
         plugins:
           argoproj-labs/gatewayAPI:

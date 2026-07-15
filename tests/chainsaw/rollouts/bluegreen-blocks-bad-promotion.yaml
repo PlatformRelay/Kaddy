@@ -1,9 +1,12 @@
-# REQ-E7-S01-02: a blue/green Rollout with autoPromotionEnabled:false does NOT
-# auto-promote — the new (green) revision is parked on the PREVIEW service and the
-# ACTIVE service keeps serving the old revision until an explicit promote. This is
-# the structural guard that a "bad" green never receives active traffic; the
-# Prometheus pre-promotion AnalysisTemplate (deploy/workloads/mulligan/
-# analysistemplate.yaml) is the metric gate layered on top.
+# REQ-E7-S01-02 (PARTIAL — structural guard, not metric-gated): a blue/green
+# Rollout with autoPromotionEnabled:false does NOT auto-promote — the new (green)
+# revision is parked on the PREVIEW service and the ACTIVE service keeps serving
+# the old revision until an explicit promote. This proves a "bad" green never
+# receives active traffic *by construction*. The Prometheus pre-promotion
+# AnalysisTemplate (deploy/workloads/mulligan/analysistemplate.yaml) is SCAFFOLDED
+# to gate on a metric but is NOT wired into this Rollout's steps (the nginx demo
+# app emits no failing SLI to gate on) — so this suite asserts the structural
+# block, not analysis-driven blocking.
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
