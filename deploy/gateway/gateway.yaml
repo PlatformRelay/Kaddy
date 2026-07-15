@@ -1,0 +1,50 @@
+# REQ-E4-S02 — platform Gateway (fills the E2-S02 deferred "platform Gateway").
+#
+# Cilium GatewayClass; HTTPS listener terminates the clubhouse-tls Secret issued
+# by kaddy-local-ca (same namespace — a Gateway can only reference certificateRefs
+# in its own namespace). An HTTP listener is present to drive the optional
+# HTTP->HTTPS redirect (REQ-E4-S03-03).
+#
+# allowedRoutes.from: Same — the HTTPRoutes live in this same `gateway` namespace,
+# so no ReferenceGrant is needed.
+#
+# Cilium provisions a LoadBalancer Service `cilium-gateway-clubhouse` for this
+# Gateway; the E4 smoke pins its NodePort to a free port and curls it in-cluster
+# (macOS loopback maps only 30080/30443, both already held — see hack/smoke).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: clubhouse
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: gateway
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: clubhouse-gateway
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: clubhouse.kaddy.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: clubhouse-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

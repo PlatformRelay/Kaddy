@@ -1,0 +1,25 @@
+# REQ-E4-S02 — platform edge namespace.
+#
+# Co-locates the platform Gateway, its HTTPRoute, the cert-manager Certificate
+# (whose TLS Secret MUST live in the Gateway's namespace), and the clubhouse
+# Deployment/Service. Co-location keeps `allowedRoutes.namespaces.from: Same`
+# and avoids a cross-namespace ReferenceGrant for the HTTPRoute backendRef.
+#
+# Created here (not by the `gateway` Application's destination, which targets
+# `default`) so every resource can pin `namespace: gateway` explicitly.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+  labels:
+    owner: platform-team
+    service: gateway
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    # Additive app.kubernetes.io/* mirror (ADR-0301 documented mirror).
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd

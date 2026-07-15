@@ -1,0 +1,89 @@
+# REQ-E4-S03-04 — Let's Encrypt clubhouse certificates (CLOUD-ONLY — NOT
+# issuable on kind; DEFERRED, documented, not applied to the live cluster).
+#
+# WHY DEFERRED (honest): Let's Encrypt validates domain control via an inbound
+# HTTP-01 (or DNS-01) challenge. On the local kind/podman substrate there is no
+# public DNS record for clubhouse.kaddy.local and no public inbound reachability
+# to the challenge path, so the ACME order can never be validated here. Issuing
+# these would hang in `pending` forever — so they are intentionally NOT part of
+# the `workloads`/`gateway` App sync and NOT applied by the E4 smoke gate.
+#
+# WHAT MAKES THEM REAL IN THE CLOUD: on a cloud edge (phase 2, provider-gridscale
+# LBaaS + a real public hostname + DNS), point the platform Gateway's
+# certificateRefs Secret at `clubhouse-tls-le-staging` first to validate the
+# pipeline against the LE staging directory (untrusted chain — expected), then
+# flip to `clubhouse-tls-le-prod` for a publicly trusted chain. The staging→prod
+# ordering mirrors the spec's "staging first, then prod" acceptance path
+# (REQ-E4-S03-01 → REQ-E4-S03-04).
+#
+# The `letsencrypt-staging` / `letsencrypt-prod` ClusterIssuers already exist and
+# are Ready (their ACME *account registration* is outbound-only and succeeds on
+# kind — but account registration is not certificate issuance).
+#
+# These manifests are kept in-repo for provenance and to satisfy
+# STRICT_TEST_FILES traceability. They are EXCLUDED from GitOps sync by LOCATION:
+# the `platform-core` Application directory-syncs `deploy/cert-manager` with
+# recurse OFF (the ArgoCD default), so files in this `cloud-only/` subdirectory
+# are never rendered/applied. (An `argocd.argoproj.io/sync-options: Skip` annotation
+# is NOT used — Skip is not a valid sync-option value; ArgoCD would silently apply
+# the resource anyway. The non-recursive subdir is the robust exclusion.)
+# On a cloud edge, move these up one directory (or enable recurse) to sync them.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: clubhouse-tls-le-staging
+  namespace: gateway
+  annotations:
+    kaddy.io/status: cloud-only-not-issuable-on-kind
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: clubhouse-tls-le-staging
+  duration: 2160h
+  renewBefore: 720h
+  dnsNames:
+    # Replace with a real, publicly resolvable hostname on the cloud edge.
+    - clubhouse.example.invalid
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: clubhouse-tls-le-prod
+  namespace: gateway
+  annotations:
+    kaddy.io/status: cloud-only-not-issuable-on-kind
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: clubhouse-tls-le-prod
+  duration: 2160h
+  renewBefore: 720h
+  dnsNames:
+    - clubhouse.example.invalid
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io

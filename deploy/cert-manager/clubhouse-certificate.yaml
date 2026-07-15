@@ -1,0 +1,40 @@
+# REQ-E4-S03-01 / S03-05 — clubhouse TLS certificate (issued on kind).
+#
+# Issued by the in-cluster `kaddy-local-ca` ClusterIssuer (E1e/E3). That CA is
+# genuinely trusted once its CA cert is passed to curl --cacert, so the smoke
+# gate verifies the chain with NO `-k` (satisfies REQ-E4-S03-02's "no -k").
+#
+# The TLS Secret `clubhouse-tls` lands in the `gateway` namespace so the platform
+# Gateway (same namespace) can reference it from certificateRefs.
+#
+# renewBefore is set so cert-manager owns renewal with no manual step
+# (REQ-E4-S03-05); status.renewalTime is populated once issued.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: clubhouse-tls
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: clubhouse-tls
+  duration: 2160h    # 90d
+  renewBefore: 720h  # 30d — cert-manager auto-renews, no manual step
+  dnsNames:
+    - clubhouse.kaddy.local
+    - localhost
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    name: kaddy-local-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
