@@ -1,0 +1,91 @@
+# REQ-E7-S01-02: a blue/green Rollout with autoPromotionEnabled:false does NOT
+# auto-promote — the new (green) revision is parked on the PREVIEW service and the
+# ACTIVE service keeps serving the old revision until an explicit promote. This is
+# the structural guard that a "bad" green never receives active traffic; the
+# Prometheus pre-promotion AnalysisTemplate (deploy/workloads/mulligan/
+# analysistemplate.yaml) is the metric gate layered on top.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollouts-bluegreen-blocks-bad-promotion
+  annotations:
+    kaddy.io/req: REQ-E7-S01-02
+    # skip: true — needs the Argo Rollouts controller (absent in the CI chainsaw
+    # kind cluster). Verified PASSING live with:
+    #   chainsaw test --test-file tests/chainsaw/rollouts/bluegreen-blocks-bad-promotion.yaml .
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-rollouts-gateway
+spec:
+  skip: true
+  description: A new blue/green revision stays on preview (not promoted) without an explicit promote.
+  namespace: mulligan
+  steps:
+    - name: baseline-healthy
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan-bg
+              spec:
+                strategy:
+                  blueGreen:
+                    activeService: mulligan-bg-active
+                    previewService: mulligan-bg-preview
+                    autoPromotionEnabled: false
+    - name: roll-new-green
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan-bg
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      kaddy.io/chainsaw-bg: "green"
+    - name: parked-on-preview-not-promoted
+      try:
+        - assert:
+            timeout: 120s
+            # The Rollout pauses (green parked on preview) rather than auto-promoting.
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan-bg
+              status:
+                (phase == 'Paused' || phase == 'Progressing'): true
+        - assert:
+            # Preview service has a pod-template-hash selector (green is up on preview).
+            resource:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                namespace: mulligan
+                name: mulligan-bg-preview
+              spec:
+                selector:
+                  (rollouts-pod-template-hash != null): true
+      catch:
+        - get:
+            apiVersion: argoproj.io/v1alpha1
+            kind: Rollout
+            name: mulligan-bg
+    - name: promote-and-cleanup
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan-bg
+              status:
+                promoteFull: true

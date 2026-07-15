@@ -1,0 +1,34 @@
+# REQ-E7-S02-01 — dedicated demo Gateway for the mulligan progressive-delivery
+# demo.
+#
+# A SEPARATE Gateway from the E4 `clubhouse` Gateway (boundary: do not rewrite
+# clubhouse's edge). HTTP-only on host `mulligan.kaddy.local` — the demo's point
+# is the live HTTPRoute weight shift, not TLS (clubhouse already proves TLS). The
+# Cilium GatewayClass provisions a LoadBalancer Service for this Gateway from the
+# LB-IPAM pool.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mulligan
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan-gateway
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: mulligan.kaddy.local
+      allowedRoutes:
+        namespaces:
+          from: Same

@@ -1,0 +1,22 @@
+# REQ-E7 — mulligan demo namespace (progressive-delivery playground).
+#
+# A dedicated namespace keeps the E7 demo (Rollouts + its own demo Gateway/
+# HTTPRoute) fully isolated from the E4 `gateway` namespace, so the clubhouse
+# route is never rewritten and E4 smokes stay green. Resources pin `namespace:
+# mulligan` explicitly even though the `workloads` Application destination is
+# `default` (mirrors how clubhouse pins `gateway`).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd

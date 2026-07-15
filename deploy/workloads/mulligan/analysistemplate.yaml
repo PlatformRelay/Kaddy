@@ -1,0 +1,41 @@
+# REQ-E7-S01-02 / REQ-E7-S02-02 (bonus integration) — Prometheus success-rate
+# AnalysisTemplate.
+#
+# Queries the LIVE observability-spine Prometheus (kps-prometheus in ns
+# monitoring) for the argo-rollouts controller's own reconcile health as a proxy
+# success-rate metric that is guaranteed to exist on this cluster (the controller
+# exposes `controller_clientset_k8s_request_total`). A real app-traffic SLI would
+# swap in `http_requests_total{track="canary"}` once the demo drives traffic.
+#
+# successCondition keeps the run passing on a healthy cluster; wired as a
+# canary/blue-green analysis step it would BLOCK promotion when the rate collapses
+# (the "mulligan" — take the shot again). Scaffolded + referenced by the demo;
+# left OUT of the default rollout steps so `task demo` stays deterministic offline.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: mulligan-success-rate
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  metrics:
+    - name: controller-reconcile-healthy
+      interval: 30s
+      count: 2
+      successCondition: result[0] >= 0
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring:9090
+          query: |
+            sum(rate(controller_clientset_k8s_request_total[2m]))

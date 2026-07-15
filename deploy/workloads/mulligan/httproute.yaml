@@ -1,0 +1,44 @@
+# REQ-E7-S02-01 / REQ-E2-S02-03 — canary-weighted HTTPRoute.
+#
+# The Argo Rollouts Gateway API plugin mutates the two backendRef `weight` values
+# on this route during a canary rollout (100/0 → per-step → …). The committed
+# values below are the STABLE steady state (all traffic to stable). The owning
+# `workloads` Application sets `ignoreDifferences` (jqPathExpressions) on
+# `backendRefs[].weight` so Argo CD does not fight the controller (ADR-0103).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mulligan
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  parentRefs:
+    - name: mulligan
+      namespace: mulligan
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: http
+  hostnames:
+    - mulligan.kaddy.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: mulligan-stable
+          port: 8080
+          weight: 100
+        - name: mulligan-canary
+          port: 8080
+          weight: 0

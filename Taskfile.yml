@@ -356,7 +356,44 @@ tasks:
     cmds:
       - bash tests/smoke/e4-exit.sh
 
-  demo:
-    desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
+  bootstrap:e7:
+    desc: E7 — install Argo Rollouts controller + Gateway API plugin + mulligan demo (idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
     cmds:
-      - echo "E7 not implemented — run /agent-loop after E1–E6 are green"
+      - |
+        set -euo pipefail
+        # SAFETY: never apply into a non-kind context (mirrors bootstrap:e4).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        # Controller install (vendored+pinned), plugin ConfigMap + HTTPRoute RBAC.
+        kubectl apply -f deploy/rollouts/namespace.yaml
+        kubectl apply -f deploy/rollouts/install.yaml -n argo-rollouts
+        kubectl apply -f deploy/rollouts/config.yaml
+        # The controller must restart to (re)load the plugin ConfigMap.
+        kubectl -n argo-rollouts rollout restart deploy/argo-rollouts
+        kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=180s
+        # Demo workloads (blue/green + canary Rollouts, demo Gateway/HTTPRoute).
+        kubectl apply -f deploy/workloads/mulligan/namespace.yaml
+        kubectl apply -f deploy/workloads/mulligan/
+        echo "E7 rollouts + mulligan applied. Watch: kubectl -n mulligan get rollout,httproute"
+
+  test:smoke:e7:
+    desc: E7 — live smoke bundle (rollouts controller, live HTTPRoute weight shift, demo; needs a green cluster)
+    cmds:
+      - bash tests/smoke/e7-exit.sh
+
+  demo:
+    desc: Choreographed mulligan demo (E7 — blue/green promote + canary live weight shift)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash hack/demo/mulligan.sh
+
+  demo:chaos:
+    desc: E7 — chaos beat — abort a canary → Argo Rollouts auto-rolls HTTPRoute weights back to stable
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash hack/demo/mulligan-abort.sh

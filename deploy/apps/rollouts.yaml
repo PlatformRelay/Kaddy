@@ -1,0 +1,40 @@
+# REQ-E7-S02-01: rollouts child Application — the Argo Rollouts controller.
+#
+# Syncs deploy/rollouts (vendored+pinned controller install, the Gateway API
+# trafficRouting plugin ConfigMap, and the extra HTTPRoute RBAC) into the
+# argo-rollouts namespace. selfHeal OFF: the install is a heavy, one-shot
+# controller whose plugin ConfigMap needs a controller restart to take effect
+# (bootstrap:e7 handles the restart) — keep a human in the loop, mirroring the
+# other non-platform-core apps.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rollouts
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: rollouts
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: rollouts
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/rollouts
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,22 @@
+# REQ-E7 — argo-rollouts controller namespace.
+#
+# The vendored upstream install.yaml (deploy/rollouts/install.yaml) is namespaced
+# to this namespace; the rollouts child Application (deploy/apps/rollouts.yaml)
+# targets it as its destination. Created here so labels are explicit and the
+# app-of-apps CreateNamespace is not the sole owner.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argo-rollouts
+  labels:
+    owner: platform-team
+    service: argo-rollouts
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    # Additive app.kubernetes.io/* mirror (ADR-0301 documented mirror).
+    app.kubernetes.io/name: argo-rollouts
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd

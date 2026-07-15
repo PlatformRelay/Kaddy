@@ -1,0 +1,152 @@
+# REQ-E7-S01-01/02/03 — blue/green Rollout with active + preview Services.
+#
+# blueGreen strategy: the new (green) ReplicaSet is brought up behind
+# `mulligan-bg-preview` while `mulligan-bg-active` keeps serving the current
+# (blue) version. Promotion flips the active Service selector to green (the
+# `track: stable` pods). `autoPromotionEnabled: false` keeps a human/`task demo`
+# in the loop; a pre-promotion AnalysisTemplate (analysistemplate.yaml) can gate
+# promotion on a live Prometheus success-rate query.
+#
+# Distinct selector (`app: mulligan-bg`) and Services so this Rollout never
+# contends with the canary Rollout's pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mulligan-bg-active
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan-bg
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan-bg
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: mulligan-bg
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mulligan-bg-preview
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan-bg
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: preview
+    app.kubernetes.io/name: mulligan-bg
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: mulligan-bg
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: mulligan-bg
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan-bg
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan-bg
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: mulligan-bg
+  template:
+    metadata:
+      labels:
+        app: mulligan-bg
+        owner: platform-team
+        service: mulligan-bg
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: public
+        business-criticality: business-operational
+        track: stable
+        app.kubernetes.io/name: mulligan-bg
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.29.0-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+              readOnly: true
+            - name: site
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: site
+          configMap:
+            name: mulligan-site
+        - name: tmp
+          emptyDir: {}
+  strategy:
+    blueGreen:
+      activeService: mulligan-bg-active
+      previewService: mulligan-bg-preview
+      autoPromotionEnabled: false

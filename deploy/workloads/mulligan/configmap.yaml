@@ -1,0 +1,57 @@
+# REQ-E7 — mulligan demo landing page + nginx config.
+#
+# Shared by the canary and blue/green Rollout pod templates. nginx-unprivileged
+# listens on :8080 with a read-only rootfs (temp paths redirected to /tmp). The
+# page carries the marker string "mulligan"; `/healthz` returns 200 for probes;
+# `/track` echoes a build marker so a curl loop during a rollout can show traffic
+# split (the smoke test asserts the HTTPRoute weight field itself, which is the
+# authoritative signal).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mulligan-site
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+data:
+  index.html: |
+    <!doctype html>
+    <html lang="en"><head><meta charset="utf-8" />
+    <title>kaddy · mulligan</title></head>
+    <body style="font-family:system-ui;text-align:center;padding:3rem">
+      <h1>mulligan</h1>
+      <p>progressive delivery · Argo Rollouts + Gateway API weights</p>
+    </body></html>
+  nginx.conf: |
+    worker_processes auto;
+    error_log /dev/stderr warn;
+    pid /tmp/nginx.pid;
+    events { worker_connections 1024; }
+    http {
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+      access_log /dev/stdout;
+      client_body_temp_path /tmp/client_temp;
+      proxy_temp_path /tmp/proxy_temp;
+      fastcgi_temp_path /tmp/fastcgi_temp;
+      uwsgi_temp_path /tmp/uwsgi_temp;
+      scgi_temp_path /tmp/scgi_temp;
+      server {
+        listen 8080;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+        location = /healthz { return 200 "ok\n"; }
+        location = /track { return 200 "mulligan\n"; }
+        location / { try_files $uri $uri/ =404; }
+      }
+    }

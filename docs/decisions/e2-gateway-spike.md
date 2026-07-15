@@ -146,7 +146,7 @@ The spike lands on **L0** — no fallback was required.
 | REQ-E2-S01-03 · LB-IPAM pool programmed | **DONE** | `kaddy-local-pool` Ready (observed CIDR `10.89.0.200–.250`; spec quotes driving-range range) |
 | REQ-E2-S02-01 · Gateway has an address | **DONE** (via E1 argocd Gateway) | `argocd` Gateway `PROGRAMMED=True`, `10.89.0.200` |
 | REQ-E2-S02-02 · HTTPRoute `/` returns landing | **DONE** (via E1 argocd Gateway) | HTTPS listener + `/`→`argocd-server`, reachable `127.0.0.1:30443` |
-| REQ-E2-S02-03 · HTTPRoute weight mutation | **DEFERRED → E7** | owned by REQ-E7-S02-01 (`trafficRouting.plugins` gatewayAPI) |
+| REQ-E2-S02-03 · HTTPRoute weight mutation | **DONE (in E7)** | proven live: Argo Rollouts Gateway API plugin (`argoproj-labs/gatewayAPI` v0.16.0) shifted the `mulligan` HTTPRoute backend weights `100/0 → 20 → 50 → 100` on `kind-kaddy-dev`; smoke `tests/smoke/e7-s02-03.sh` |
 | REQ-E2-S03-01 · spike decision recorded | **DONE** | this doc |
 | REQ-E2-S03-02 · E7 unblocked / fallback | **DONE** (in spirit) | E7 spec `Depends: E2 L0`; literal `e7 tasks.md` xref = coordinator follow-up |
 

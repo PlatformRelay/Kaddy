@@ -34,6 +34,17 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: default
+  # REQ-E7-S02-01 (ADR-0103) — the Argo Rollouts Gateway API plugin mutates the
+  # mulligan HTTPRoute backend weights during a canary. Ignore those fields so
+  # Argo CD does not fight the controller (weight lives in an array, so a
+  # jqPathExpression is required — a JSON pointer can't target array elements).
+  ignoreDifferences:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: mulligan
+      namespace: mulligan
+      jqPathExpressions:
+        - .spec.rules[].backendRefs[].weight
   syncPolicy:
     automated:
       prune: true

@@ -1,0 +1,80 @@
+# REQ-E7-S02-01: canary Rollout shifts HTTPRoute backend weights.
+# Assumes the argo-rollouts controller + Gateway API plugin + the mulligan
+# manifests (deploy/rollouts, deploy/workloads/mulligan) are already applied
+# (GitOps sync or `task bootstrap:e7`).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollouts-canary-weights
+  annotations:
+    kaddy.io/req: REQ-E7-S02-01
+    # skip: true — needs the Argo Rollouts controller, the Gateway API
+    # trafficRouting plugin (downloaded at controller startup), a Cilium Gateway,
+    # and the mulligan HTTPRoute — NONE of which the ephemeral CI chainsaw kind
+    # cluster provisions (it installs cert-manager only). Verified PASSING against
+    # the live kind-kaddy-dev cluster with:
+    #   chainsaw test --test-file tests/chainsaw/rollouts/canary-weights.yaml .
+    # (kick a canary first: kubectl -n mulligan patch rollout mulligan --type merge
+    #  -p '{"spec":{"template":{"metadata":{"annotations":{"x":"1"}}}}}')
+    # Un-skip once CI stands up the Cilium + Rollouts substrate (infra follow-up).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-rollouts-gateway
+spec:
+  skip: true
+  description: During a canary the mulligan HTTPRoute carries a non-zero canary backend weight.
+  namespace: mulligan
+  steps:
+    - name: rollout-and-route-exist
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan
+                labels:
+                  owner: platform-team
+                  service: mulligan
+                  part-of: kaddy
+                  managed-by: argocd
+                  track: stable
+        - assert:
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: mulligan
+                name: mulligan
+    - name: trigger-canary
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      kaddy.io/chainsaw-canary: "trigger"
+    - name: canary-weight-is-nonzero
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              spec:
+                # The Gateway API plugin sets the canary backendRef weight > 0.
+                (rules[0].backendRefs[?name == 'mulligan-canary'].weight | [0] > `0`): true
+      catch:
+        - get:
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
+            name: mulligan

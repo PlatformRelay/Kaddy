@@ -1,0 +1,80 @@
+# REQ-E7-S02-02: aborting a canary rolls HTTPRoute weights back to 100% stable.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: rollouts-canary-rollback
+  annotations:
+    kaddy.io/req: REQ-E7-S02-02
+    # skip: true — same substrate dependency as canary-weights (Rollouts + Gateway
+    # API plugin + Cilium Gateway), absent in the CI chainsaw kind cluster.
+    # Verified PASSING live with:
+    #   chainsaw test --test-file tests/chainsaw/rollouts/canary-rollback.yaml .
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-rollouts-gateway
+spec:
+  skip: true
+  description: After aborting a canary the mulligan HTTPRoute canary weight returns to 0.
+  namespace: mulligan
+  steps:
+    - name: trigger-canary
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              spec:
+                template:
+                  metadata:
+                    annotations:
+                      kaddy.io/chainsaw-rollback: "trigger"
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              spec:
+                (rules[0].backendRefs[?name == 'mulligan-canary'].weight | [0] > `0`): true
+    - name: abort-rollout
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              status:
+                abort: true
+    - name: weights-return-to-stable
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              spec:
+                (rules[0].backendRefs[?name == 'mulligan-canary'].weight | [0]): 0
+      catch:
+        - get:
+            apiVersion: gateway.networking.k8s.io/v1
+            kind: HTTPRoute
+            name: mulligan
+    - name: un-abort-cleanup
+      try:
+        - patch:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Rollout
+              metadata:
+                namespace: mulligan
+                name: mulligan
+              status:
+                abort: false

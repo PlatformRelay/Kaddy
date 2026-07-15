@@ -1,0 +1,58 @@
+# REQ-E7-S02-01 — stable + canary Services for the canary Rollout.
+#
+# The Gateway API plugin flips the HTTPRoute backend weights between these two
+# Services. Argo Rollouts manages their `.spec.selector` (injecting the
+# per-revision rollouts-pod-template-hash) so `mulligan-stable` resolves to the
+# stable ReplicaSet and `mulligan-canary` to the canary ReplicaSet. The static
+# selector below (`app: mulligan`) is the baseline the controller augments.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mulligan-stable
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: mulligan
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mulligan-canary
+  namespace: mulligan
+  labels:
+    owner: platform-team
+    service: mulligan
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: canary
+    app.kubernetes.io/name: mulligan
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: mulligan
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
