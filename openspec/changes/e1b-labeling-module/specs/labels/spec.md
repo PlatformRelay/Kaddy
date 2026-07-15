@@ -91,13 +91,20 @@ Epic: E1b · ADR: [0301](../../../docs/adr/0301-resource-labeling-convention.md)
 
 ## REQ-E1b-S04-01: Terramate injects labels into every stack
 
-**Priority:** must  
-**Given** `stacks/ovh/network/terramate.stack.tm.hcl`  
+**Priority:** must · **Status:** DEFERRED to E1g (operator-ratified 2026-07-15 — see note)  
+**Given** a Terramate-managed stack (local **driving-range** or **gridscale**)  
 **When** `terramate generate`  
 **Then** `_terramate_generated_labels.tf` exists and calls `modules/labels`  
 **Test:** `tests/smoke/e1b-s04-01.sh`
 
-**Verify:** `test -f stacks/ovh/network/_terramate_generated_labels.tf`
+**Verify:** deferred to E1g — no Terramate stacks exist in phase 1 (see deferral note)
+
+> **Deferral (operator-ratified 2026-07-15):** the original `stacks/ovh/*` target predates the
+> gridscale pivot (D-013) and driving-range local-first sequencing (D-017); no `stacks/` tree exists in
+> phase 1. gridscale day-0 (OVH-owned; lab env `lab.gridscale.cloud`) is **E1g / phase 2**. This `must`
+> is not dropped — it **moves to E1g**, retargeted at the **local (driving-range)** and **gridscale**
+> stacks, not `ovh`. The `modules/labels` module (REQ-S01–S03, complete on this lane) is ready for E1g
+> to consume as the codegen source.
 
 ---
 
