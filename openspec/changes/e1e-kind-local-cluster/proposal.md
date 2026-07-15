@@ -41,6 +41,16 @@ assertions pass unmodified, and the edge architecture still matches gridscale GS
 - **Reintroduces `kind`** which D-017 explicitly replaced. Accepted and scoped: local dev only; phase-2
   substrate is unchanged (GSK).
 
+## Implementation deviations (recorded at landing)
+
+- **Rootful podman required.** Cilium's agent needs to mount `/sys/fs/bpf`; under *rootless* podman that
+  is denied and the agent crashloops. Escalated to `podman machine set --rootful`; with that,
+  `kubeProxyReplacement=true` comes up clean (the secure default is kept — the tasks.md
+  `kubeProxyReplacement=false` fallback was **not** needed and would not have helped, since the failure
+  is bpf-mount privilege, not kube-proxy). See the spec's "Implementation deviations" section.
+- **`operator.replicas=1`** for the single-node kind cluster (the default 2 with anti-affinity can't
+  schedule and hangs Helm `--wait`).
+
 ## Links
 
 - ADR-0104 (edge Cilium Gateway) · D-025, D-019, D-022 · amends D-017
