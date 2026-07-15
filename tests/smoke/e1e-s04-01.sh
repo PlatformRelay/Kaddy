@@ -46,9 +46,20 @@ for _ in $(seq 1 30); do
 done
 kubectl -n "${NS}" get svc "${GW_SVC}" >/dev/null 2>&1 || smoke_fail "gateway service ${GW_SVC} not found"
 
-kubectl -n "${NS}" patch svc "${GW_SVC}" --type=json \
-  -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":${HOST_PORT}}]" >/dev/null \
-  || smoke_fail "failed to pin ${GW_SVC} nodePort to ${HOST_PORT}"
+# Idempotent: only patch if not already pinned (re-runs, or a reconcile that
+# already set it). Guard against the port being held elsewhere on the cluster.
+cur_np="$(kubectl -n "${NS}" get svc "${GW_SVC}" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null)"
+if [[ "${cur_np}" != "${HOST_PORT}" ]]; then
+  holder="$(kubectl get svc -A -o json 2>/dev/null \
+    | jq -r --argjson p "${HOST_PORT}" \
+        '.items[] | select(.spec.ports[]?.nodePort==$p) | "\(.metadata.namespace)/\(.metadata.name)"' \
+    | grep -v "^${NS}/${GW_SVC}$" || true)"
+  [[ -z "${holder}" ]] \
+    || smoke_fail "nodePort ${HOST_PORT} already held by ${holder} (stale gateway? delete that ns and retry)"
+  kubectl -n "${NS}" patch svc "${GW_SVC}" --type=json \
+    -p="[{\"op\":\"replace\",\"path\":\"/spec/ports/0/nodePort\",\"value\":${HOST_PORT}}]" >/dev/null \
+    || smoke_fail "failed to pin ${GW_SVC} nodePort to ${HOST_PORT}"
+fi
 # Confirm the pin stuck (Cilium reconciles the service).
 sleep 5
 np="$(kubectl -n "${NS}" get svc "${GW_SVC}" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null)"
