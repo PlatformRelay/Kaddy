@@ -7,7 +7,7 @@ Mandatory labels everywhere (ADR-0301); tested tofu module prevents drift and sa
 ## What
 
 - `modules/labels` with `tofu test` + conftest
-- Terramate codegen into all stacks
+- Terramate codegen into all stacks — **deferred to E1g** (no stacks in phase 1; see spec REQ-E1b-S04-01 deferral note)
 - Kyverno enforcement in cluster
 
 ## Spec reference
