@@ -19,12 +19,13 @@ active lane executes · **[epic]** = folded into an epic's own tasks.
       to `e-caddy-mvp` VM-variant slice; disabled from active platform monitoring; promtool
       fire/silent rigor preserved (ARCH-2). Platform-edge monitoring **decoupled** from Caddy.
       Recorded ANSWERED in decisions.md (D-026) — operator-ratified.
-- [ ] **[sibling: monitoring/Caddy lane]** Migrate `deploy/monitoring/rules/marshal-caddy.yaml`
-      + `tests/promtool/marshal*.test.yaml` into the epic slice; disable the `caddy_*` alerts in
-      active platform monitoring. **Unblocked — marshal decision ANSWERED, Option A (INBOX D-026).**
-- [ ] **[sibling: monitoring/Caddy lane]** Retcon ADR-0104: platform edge = Cilium/Envoy Gateway;
-      Caddy = tenant MVP, not gateway (ARCH-2). *(docs/adr/0104 — owned by monitoring/Caddy lane;
-      now unblocked — marshal decision ANSWERED, Option A.)*
+- [x] **[monitoring/Caddy lane]** Migrated `marshal-caddy.yaml` + Caddy `PodMonitor` →
+      `deploy/caddy-mvp/monitoring/`; `CaddyTargetDown` promtool test → `tests/promtool/caddy-mvp-marshal.test.yaml`
+      (standalone, fire+silent preserved); `caddy_*` alerts disabled from active platform monitoring.
+      `assert-rule-coverage.sh` now enumerates only the active `marshal-http` alerts (3, all covered).
+      **Done — marshal decision ANSWERED, Option A (D-026).**
+- [x] **[monitoring/Caddy lane]** Retconned ADR-0104: platform edge = Cilium/Envoy Gateway;
+      Caddy = tenant MVP, not gateway; `caddy_*` monitoring belongs to `e-caddy-mvp` (ARCH-2, D-026).
 - [ ] **[epic: e-caddy-mvp]** Build the brief spine (serve→scrape→fire) through the normal
       sequence E1 → E3 → E4; VM path via E6g/E1g; Rollouts via E7 (DIR-2). Gated on preconditions.
 - Gate (this lane): `task test:spec` (structure valid; new epic dir present).

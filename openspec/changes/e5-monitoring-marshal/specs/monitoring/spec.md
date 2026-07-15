@@ -2,9 +2,24 @@
 
 Epic: E5 · **Refs:** gridscale brief (response codes, latency, uptime, alerting)
 
+> **Reconciliation (ARCH-2/ARCH-3, D-026, 2026-07-15).** The `caddy_*` **target-down** slice —
+> the `CaddyTargetDown` alert (`marshal-caddy.yaml`), the Caddy `PodMonitor`, and their promtool
+> tests — **migrated out of active platform monitoring** into the `e-caddy-mvp` VM-variant alerting
+> slice ([REQ-CADDY-S01-03](../../../e-caddy-mvp/specs/caddy-mvp/spec.md)). The platform edge is
+> Cilium Gateway API (Envoy), which never emits a `job="caddy"` target (ADR-0104, D-019), so that
+> alert can only fire against the Caddy **VM tenant**. Operator-confirmed **Option A — park** (D-026).
+> Fire+silent rigor is preserved, now at `tests/promtool/caddy-mvp-marshal.test.yaml`. The affected
+> REQs below (S01-01, S03-01, S06-01) are **fulfilled by the `e-caddy-mvp` slice**, not by active
+> platform monitoring; their scope is reconciled, not deleted. The `marshal-http` alerts
+> (S03-02/03/04, S06-02/03) remain in **active** platform monitoring.
+
 ---
 
 ## REQ-E5-S01-01: Caddy PodMonitor
+
+> **Migrated (D-026 · ARCH-2):** the Caddy `PodMonitor` moved to
+> `deploy/caddy-mvp/monitoring/prometheus/caddy-podmonitor.yaml`; it scrapes the Caddy **VM
+> tenant**, not the platform edge. Fulfilled by the `e-caddy-mvp` VM-variant slice.
 
 **Priority:** must  
 **Given** Caddy pods expose metrics on documented port (typically admin/metrics)  
@@ -55,6 +70,11 @@ curl -s 'http://127.0.0.1:9090/api/v1/query?query=caddy_http_requests_total' | j
 ---
 
 ## REQ-E5-S03-01: CaddyTargetDown alert
+
+> **Migrated (D-026 · ARCH-2/ARCH-3):** `marshal-caddy.yaml` (`CaddyTargetDown`) parked with the
+> `e-caddy-mvp` VM-variant slice ([REQ-CADDY-S01-03](../../../e-caddy-mvp/specs/caddy-mvp/spec.md));
+> now lives at `deploy/caddy-mvp/monitoring/rules/marshal-caddy.yaml`. Fires against the Caddy VM
+> target, not the platform edge (which never emits `job="caddy"`).
 
 **Priority:** must  
 **Given** PrometheusRule `marshal-caddy-down`  
@@ -164,13 +184,18 @@ curl -s 'http://127.0.0.1:9090/api/v1/query?query=caddy_http_requests_total' | j
 
 ## REQ-E5-S06-01: CaddyTargetDown rule unit test
 
+> **Migrated (D-026 · ARCH-2):** the fire+silent unit test moved to
+> `tests/promtool/caddy-mvp-marshal.test.yaml` (standalone, no extract step), scoped to the
+> `e-caddy-mvp` slice ([REQ-CADDY-S01-03](../../../e-caddy-mvp/specs/caddy-mvp/spec.md)). Rigor
+> preserved; no active platform alert lost its test.
+
 **Priority:** must · **Story:** E5-S06 · **Level:** L1 · **TDD:** write test first  
-**Given** `deploy/monitoring/rules/marshal-caddy.yaml` PrometheusRule  
+**Given** `deploy/caddy-mvp/monitoring/rules/marshal-caddy.yaml` PrometheusRule  
 **When** `promtool test rules` feeds `up{job="caddy"}` dropping to 0 for > 2m  
 **Then** `CaddyTargetDown` fires with `severity=critical`, `service` label present  
-**Test:** `tests/promtool/marshal.test.yaml`
+**Test:** `tests/promtool/caddy-mvp-marshal.test.yaml`
 
-**Verify:** `task test:promrules`
+**Verify:** `promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml`
 
 ---
 
