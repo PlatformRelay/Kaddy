@@ -1,6 +1,15 @@
 # ADR-0102: Two-phase substrate — driving-range (local Talos) then gridscale GSK
 
-**Theme:** 01 · Foundations · **Status:** Current · **Amended:** D-017 (local-first sequencing)
+**Theme:** 01 · Foundations · **Status:** Amended · **Amended:** D-017 (local-first sequencing), **D-025** (phase-1 substrate → kind + Cilium; local Talos deferred)
+
+> **Superseding note (D-025, 2026-07-15).** The **phase-1 local substrate is now a `kind` + Cilium
+> cluster** ([E1e](../../openspec/changes/e1e-kind-local-cluster/), landed), **not** the 3-node Talos
+> driving-range this ADR describes. Phase-1 development stalled for hours on libvirt/Talos yak-shaving with
+> no working cluster, so D-025 pivoted local dev to kind (single control-plane node, Cilium 1.18 CNI +
+> Gateway API + LB-IPAM/L2, cert-manager). The **3-node Talos driving-range is deferred to an optional
+> maturity-contrast spike** (like Talos-on-gridscale in D-015) and is no longer a blocker for E1. **Phase 2
+> (gridscale GSK) is unchanged** — everything below about GSK still holds. The Talos content is retained for
+> that deferred spike, not deleted.
 
 ## Context
 

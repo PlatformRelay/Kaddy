@@ -8,9 +8,11 @@ claim provisions a site behind Caddy with observability, alerting, and progressi
 Prometheus, alert on thresholds, optional nginx reverse proxy) is satisfied as **one tenant** of the
 platform — `clubhouse` — not as a one-off VM script.
 
-> **Local-first:** rehearse on a **3-node Talos cluster** ([driving-range](../driving-range/)) before
-> spending gridscale credits. Promote to **GSK + LBaaS + Upjet Crossplane** in phase 2 — see
-> [decisions D-017](agent-context/decisions.md) and [ROADMAP](docs/ROADMAP.md).
+> **Local-first:** phase-1 development runs on a local **kind + Cilium** cluster
+> ([e1e-kind-local-cluster](openspec/changes/e1e-kind-local-cluster/), landed) — Cilium Gateway API +
+> LB-IPAM/L2, so the edge matches phase 2. Promote to **GSK + LBaaS + Upjet Crossplane** in phase 2 —
+> see [decisions D-025](agent-context/decisions.md) and [ROADMAP](docs/ROADMAP.md). The 3-node Talos
+> [driving-range](../driving-range/) is a deferred optional maturity-contrast spike (D-025).
 
 ## Reviewer paths
 
@@ -23,10 +25,10 @@ maps every brief requirement to an epic, then skim [docs/ROADMAP.md](docs/ROADMA
 
 ## Stack
 
-| Layer | Phase 1 (driving-range) | Phase 2 (gridscale lab) |
+| Layer | Phase 1 (kind — local) | Phase 2 (gridscale lab) |
 | --- | --- | --- |
-| Substrate | [driving-range](../driving-range/) — local Talos 3-node | **GSK** managed k8s |
-| Day-0 IaC | driving-range OpenTofu (sibling repo) | Terramate + `gridscale/gridscale` v2 (E1g) |
+| Substrate | **kind + Cilium** ([E1e](openspec/changes/e1e-kind-local-cluster/), landed) — single-node | **GSK** managed k8s |
+| Day-0 IaC | `hack/cluster/` kind bring-up (E1e) | Terramate + `gridscale/gridscale` v2 (E1g) |
 | Edge | **Cilium Gateway** + LB-IPAM/L2 | **LBaaS** + LE + Cilium/Envoy |
 | GitOps | **ArgoCD** app-of-apps | Same manifests, re-sync on GSK |
 | Identity | Dex + GitHub OAuth ([PlatformRelay](https://github.com/PlatformRelay)) | Same (update issuer URL for LBaaS domain) |
@@ -45,7 +47,7 @@ maps every brief requirement to an epic, then skim [docs/ROADMAP.md](docs/ROADMA
 | **marshal** | alerting pipeline — PrometheusRules + Alertmanager |
 | **mulligan** | blue/green + canary with automated rollback |
 | **scorecard** | evidence harness — k6 + metrics/logs capture → HTML report |
-| **driving-range** | local Talos practice cluster (sibling repo) |
+| **driving-range** | deferred optional 3-node Talos maturity-contrast spike (sibling repo; D-025) |
 
 ## Testing (mandatory TDD)
 
@@ -68,8 +70,9 @@ task test           # L0 tofu test · L1 conftest + promtool · L2 Chainsaw
 
 ## Status
 
-**Design phase.** Phase 1 starts after [driving-range](../driving-range/) cluster is Ready.
-Implementation runs via `/agent-loop` per the [ROADMAP](docs/ROADMAP.md).
+**Phase 1 underway.** The local **kind + Cilium** substrate (E1e), the **labels** module (E1b), and
+the **marshal** monitoring rules (E5) are landed and gated on `main`; remaining epics run via
+`/agent-loop` per the [ROADMAP](docs/ROADMAP.md). Phase 2 (gridscale GSK) is deferred.
 
 ## Reference material
 
@@ -80,7 +83,7 @@ committed tree.
 
 ## Cloud note
 
-The brief provisions a **gridscale** lab. **Phase 1** develops on local Talos ($0) via
-[driving-range](../driving-range/). **Phase 2** promotes to gridscale-native PaaS — GSK, LBaaS,
-Object Storage, Upjet Crossplane — for the employer-facing demo (E8b). Reasoning in
-[decisions D-013 / D-015 / D-016 / D-017](agent-context/decisions.md).
+The brief provisions a **gridscale** lab. **Phase 1** develops on a local **kind + Cilium** cluster
+($0, [E1e](openspec/changes/e1e-kind-local-cluster/)). **Phase 2** promotes to gridscale-native PaaS —
+GSK, LBaaS, Object Storage, Upjet Crossplane — for the employer-facing demo (E8b). Reasoning in
+[decisions D-013 / D-015 / D-016 / D-025](agent-context/decisions.md).

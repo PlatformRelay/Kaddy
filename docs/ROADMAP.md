@@ -1,27 +1,30 @@
 # ROADMAP — kaddy
 
-Build order for the gridscale platform-engineering exercise. **Design phase complete** — implementation
-via `/agent-loop`. Each epic links an OpenSpec change under `openspec/changes/`.
+Build order for the gridscale platform-engineering exercise. **Phase 1 underway** — the local
+substrate (E1e), labels module (E1b), and marshal monitoring rules (E5) are landed and gated on `main`;
+remaining epics run via `/agent-loop`. Each epic links an OpenSpec change under `openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 
 ---
 
-## Phases (D-017)
+## Phases (D-025)
 
 | Phase | Substrate | Spend | When | Epics |
 | --- | --- | --- | --- | --- |
-| **0 · Range** | [driving-range](../../driving-range/) — local 3-node Talos (libvirt/KVM) | $0 | First — cluster must exist before kaddy E1 | driving-range E0–E10 (sibling repo; **Cilium edge in E10**) |
-| **1 · Platform (local)** | Same Talos cluster; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Rehearse GitOps platform | kaddy E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
+| **1 · Platform (local)** | **kind + Cilium** ([E1e](../openspec/changes/e1e-kind-local-cluster/), ✅ landed) — single-node; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Now — develop GitOps platform locally | kaddy **E1e** → E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
 | **2 · Lab (gridscale)** | GSK + LBaaS + Object Storage | Lab credits | After E3–E7 green locally | E1g → E6g → E8b |
 
-**Gate to phase 2:** E3–E7 green on driving-range → start E1g (gridscale day-0).
+**Gate to phase 2:** E3–E7 green on the local kind cluster → start E1g (gridscale day-0).
+
+The 3-node Talos [driving-range](../../driving-range/) is a **deferred optional maturity-contrast spike**
+(D-025), not a phase-1 blocker — see the section near the end of this file.
 
 Phase 1 deltas vs phase 2 (document in runbooks):
 
-| Concern | Phase 1 (driving-range) | Phase 2 (gridscale) |
+| Concern | Phase 1 (kind + Cilium) | Phase 2 (gridscale) |
 | --- | --- | --- |
-| Substrate | Local Talos ([driving-range](../../driving-range/)) | GSK managed k8s |
+| Substrate | Local kind cluster ([E1e](../openspec/changes/e1e-kind-local-cluster/)) | GSK managed k8s |
 | Edge / TLS | **Cilium Gateway** + LB-IPAM/L2 + cert-manager | LBaaS + Let's Encrypt + cert-manager |
 | Identity | Dex + GitHub OAuth | Same (update Dex issuer URL for LBaaS domain) |
 | nginx legacy | In-cluster Deployment (stand-in) | `gridscale_server` via Upjet Crossplane |
@@ -45,21 +48,43 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 
 ---
 
-## E1 · Platform bootstrap (driving-range handoff)
+## E1e · Local kind substrate (Cilium Gateway API) ✅
+
+**OpenSpec:** [e1e-kind-local-cluster](../openspec/changes/e1e-kind-local-cluster/)  
+**ADR:** [0104](adr/0104-caddy-gateway-api.md) · **Decision:** D-025 (amends D-017)
+
+Owns **substrate + edge** for phase-1 local development: a reproducible **kind** cluster (`kaddy-dev`,
+single control-plane node, Kubernetes v1.33.1) running **Cilium 1.18** (CNI + Gateway API + LB-IPAM/L2,
+kube-proxy replacement, operator `replicas=1`), **cert-manager v1.18.2** with a self-signed
+`kaddy-local-ca` issuer, and the built-in local-path StorageClass. macOS-safe: Gateway/LB IPs asserted
+assigned (not host-curled); HTTP smoke via loopback-bound `extraPortMappings`. E1 bootstraps ArgoCD on top.
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E1e-S01 | Cilium-ready, loopback-bound kind config | ✅ |
+| E1e-S02 | Cilium CNI + Gateway API + LB-IPAM/L2 (kube-proxy replaced) | ✅ |
+| E1e-S03 | cert-manager pinned + `kaddy-local-ca` issuer + default StorageClass | ✅ |
+| E1e-S04 | Gateway HTTP reachable locally (macOS-safe) | ✅ |
+| E1e-S05 | Secure install — pinned versions, no `:latest`, no secrets in git | ✅ |
+
+---
+
+## E1 · Platform bootstrap (kind → ArgoCD)
 
 **OpenSpec:** [e1-day0-bootstrap](../openspec/changes/e1-day0-bootstrap/)  
-**ADR:** [0102](adr/0102-talos-immutable-substrate.md) · **Depends:** [driving-range](../../driving-range/) cluster Ready
+**ADR:** [0102](adr/0102-talos-immutable-substrate.md) · **Depends:** [E1e](../openspec/changes/e1e-kind-local-cluster/) local cluster Ready
 
 | ID | Story | Status |
 | --- | --- | --- |
 | E1-S01 | Document kubeconfig / Cilium Gateway / StorageClass handoff contract | ⬜ |
-| E1-S02 | Bootstrap ArgoCD (initial Application) on driving-range | ⬜ |
+| E1-S02 | Bootstrap ArgoCD (initial Application) on the kind cluster | ⬜ |
 | E1-S03 | Verify cluster baseline (nodes Ready, default SC, Cilium LB-IPAM pool) | ⬜ |
 
 ### E1-S01 — Handoff contract
 
-**Given** driving-range exports `kubeconfig` and documents Cilium Gateway + `local-path`  
-**When** operator follows `docs/runbooks/driving-range-handoff.md`  
+**Given** the [E1e](../openspec/changes/e1e-kind-local-cluster/) kind cluster exports `kubeconfig` and
+provides Cilium Gateway + default StorageClass  
+**When** operator runs `task cluster:up` (E1e) and bootstraps ArgoCD  
 **Then** `kubectl get nodes` succeeds from the kaddy workspace
 
 **Exit criteria (epic):** ArgoCD UI reachable via Cilium-assigned Gateway/LB IP; cluster baseline documented.
@@ -70,7 +95,7 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 
 **OpenSpec:** [e1g-gridscale-day0](../openspec/changes/e1g-gridscale-day0/)  
 **ADR:** [0102](adr/0102-talos-immutable-substrate.md), [0302](adr/0302-terramate-opentofu-stacks.md)  
-**Gate:** E3–E7 green on driving-range
+**Gate:** E3–E7 green on the local kind cluster (E1e)
 
 | ID | Story | Status |
 | --- | --- | --- |
@@ -84,18 +109,18 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 
 ---
 
-## E1b · Naming & labeling module
+## E1b · Naming & labeling module ✅ (S04 deferred to E1g)
 
 **OpenSpec:** [e1b-labeling-module](../openspec/changes/e1b-labeling-module/)  
 **ADR:** [0301](adr/0301-resource-labeling-convention.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1b-S01 | `modules/labels` with outputs + naming helper | ⬜ |
-| E1b-S02 | `tofu test` fixtures for labels and names | ⬜ |
-| E1b-S03 | conftest policy — mandatory keys on plans | ⬜ |
-| E1b-S04 | Terramate codegen injects labels into all stacks | ⬜ |
-| E1b-S05 | Kyverno require-labels ClusterPolicy | ⬜ |
+| E1b-S01 | `modules/labels` with outputs + naming helper | ✅ |
+| E1b-S02 | `tofu test` fixtures for labels and names | ✅ |
+| E1b-S03 | conftest policy — mandatory keys on plans | ✅ |
+| E1b-S04 | Terramate codegen injects labels into all stacks | ⬜ (deferred to E1g — D-021/S04 descope) |
+| E1b-S05 | Kyverno require-labels ClusterPolicy | ✅ |
 
 ### E1b-S02 — tofu test fixtures
 
@@ -123,7 +148,7 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 ## E1d · Identity (Dex + GitHub)
 
 **OpenSpec:** [e1d-identity-keycloak-dex](../openspec/changes/e1d-identity-keycloak-dex/)  
-**ADR:** [0107](adr/0107-identity-keycloak-dex.md) · **Decision:** D-018  
+**ADR:** [0107](adr/0107-identity-dex.md) · **Decision:** D-018  
 **Depends:** E3-S01 (app-of-apps), E4-S03 (TLS at gateway for Dex issuer URL)
 
 | ID | Story | Status |
@@ -150,7 +175,7 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E2-S01 | Assert Gateway API CRDs + Cilium `GatewayClass` + LB-IPAM pool (handoff from driving-range E10) | ⬜ |
+| E2-S01 | Assert Gateway API CRDs + Cilium `GatewayClass` + LB-IPAM pool (handoff from E1e local cluster) | ⬜ |
 | E2-S02 | GitOps `Gateway` + HTTPRoute path routing + weight-mutation spike | ⬜ |
 | E2-S03 | Document fallback level (L0/L1/L2) in decision log | ⬜ |
 
@@ -188,18 +213,18 @@ Phase 1 deltas vs phase 2 (document in runbooks):
 
 ---
 
-## E5 · Monitoring & alerting (marshal)
+## E5 · Monitoring & alerting (marshal) 🚧 (rules + monitors landed; receiver/Grafana/Loki pending)
 
 **OpenSpec:** [e5-monitoring-marshal](../openspec/changes/e5-monitoring-marshal/)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E5-S01 | Scrape platform gateway + clubhouse app metrics (PodMonitor/ServiceMonitor) | ⬜ |
-| E5-S02 | blackbox_exporter probes (uptime, status codes) | ⬜ |
-| E5-S03 | PrometheusRules: down, error rate, latency, request rate | ⬜ |
+| E5-S01 | Scrape platform gateway + clubhouse app metrics (PodMonitor/ServiceMonitor) | ✅ |
+| E5-S02 | blackbox_exporter probes (uptime, status codes) | ✅ |
+| E5-S03 | PrometheusRules: down, error rate, latency, request rate | ✅ |
 | E5-S04 | Alertmanager receiver (ntfy/webhook) | ⬜ |
 | E5-S05 | Grafana dashboards-as-code (+ Loki logs panel) | ⬜ |
-| E5-S06 | **promtool unit tests** for every alert rule (L1, CI) | ⬜ |
+| E5-S06 | **promtool unit tests** for every alert rule (L1, CI) | ✅ |
 | E5-S07 | **Loki log-based checks** — gateway/access logs, labels, 5xx alert ([ADR-0108](adr/0108-logging-loki.md)) | ⬜ |
 
 ---
@@ -332,26 +357,26 @@ site → opens a GitOps **PR** with a `WebsiteClaim` → Argo CD applies → Cro
 
 ---
 
-## driving-range · Local Talos cluster (phase 0 — sibling repo)
+## driving-range · deferred optional Talos spike (D-025)
 
-**Repo:** [driving-range](../../driving-range/) — **not** a kaddy epic; must land before kaddy E1.
+**Repo:** [driving-range](../../driving-range/) — **not** a kaddy epic and **not** a phase-1 blocker.
 
-Long-lived **3-node Talos** (1 control plane + 2 workers) on libvirt/KVM, OpenTofu-declared,
-**Cilium CNI + Gateway API + LB-IPAM/L2** (no MetalLB) + `local-path-provisioner`. Replaces `kind`
-for development. See driving-range [ROADMAP](../../driving-range/docs/ROADMAP.md) and
+Per **D-025**, phase-1 development moved to the local **kind + Cilium** cluster ([E1e](../openspec/changes/e1e-kind-local-cluster/))
+after the 3-node Talos driving-range cost hours of libvirt/Talos yak-shaving without a working cluster.
+The long-lived **3-node Talos** driving-range (1 control plane + 2 workers on libvirt/KVM, OpenTofu-declared,
+**Cilium CNI + Gateway API + LB-IPAM/L2**, no MetalLB, `local-path-provisioner`) survives as a **deferred
+optional maturity-contrast spike** — it ships only if E1–E8 land early and interviewers prize bare-substrate
+bootstrapping. See driving-range [ROADMAP](../../driving-range/docs/ROADMAP.md) and
 [ARCHITECTURE](../../driving-range/docs/ARCHITECTURE.md).
 
 ---
 
 ## Suggested loop order
 
-**Phase 0 — driving-range (sibling repo)**
+**Phase 1 — kaddy on local kind ($0 cloud)**
 
-1. driving-range E0 (learn) → E1–E7 + **E10** (Cilium Gateway + LB-IPAM)
-
-**Phase 1 — kaddy on driving-range ($0 cloud)**
-
-2. E1 (handoff + ArgoCD) → E1b ∥ E1c  
+1. **E1e** (kind + Cilium substrate — ✅ landed)  
+2. E1 (kubeconfig handoff + ArgoCD) → E1b ∥ E1c  
 3. E2 (gateway spike)  
 4. E3 → E4 ∥ E5 → E6 → E7 → E8 (evidence from local cluster)
 

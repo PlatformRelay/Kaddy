@@ -4,16 +4,27 @@
 
 | Phase | Substrate | Edge | See |
 | --- | --- | --- | --- |
-| **1 · driving-range** | Local 3-node Talos ([driving-range](../../driving-range/)) | **Cilium Gateway** + LB-IPAM/L2 | Now — $0 cloud |
+| **1 · kind (local)** | Local **kind + Cilium** ([E1e](../openspec/changes/e1e-kind-local-cluster/), landed) — single control-plane node | **Cilium Gateway** + LB-IPAM/L2 | Now — $0 cloud |
 | **2 · gridscale lab** | GSK managed k8s | LBaaS + Let's Encrypt | After E3–E7 green locally |
+
+**Substrate reality (D-025).** Phase 1 develops on a local **kind** cluster (`kaddy-dev`,
+Kubernetes v1.33.1) running **Cilium 1.18** (CNI + Gateway API + LB-IPAM/L2, kube-proxy replacement),
+`cert-manager` v1.18.2 with a self-signed `kaddy-local-ca` issuer, and the built-in local-path
+StorageClass. The landed cluster is a **single control-plane node** with the Cilium operator forced to
+`replicas=1` — **no HA is exercised locally**; multi-node/HA is a phase-2 (GSK) concern. The LB pool is
+carved from the docker `kind` bridge subnet, and because that subnet is not host-routable on macOS,
+Gateway/LB IPs are asserted **assigned** (never host-curled) and HTTP smoke goes through loopback-bound
+`extraPortMappings`. The 3-node Talos [driving-range](../../driving-range/) that originally motivated the
+"local Talos" narrative is a **deferred optional maturity-contrast spike** (D-025), not the landed
+substrate.
 
 ## System context (phase 2 target)
 
 ```mermaid
 flowchart TB
   reviewer[Reviewer / Operator]
-  subgraph local [Phase 1 — driving-range]
-    dr[Talos 3-node cluster]
+  subgraph local [Phase 1 — kind local cluster E1e]
+    dr[kind single-node cluster + Cilium]
     cilium[Cilium Gateway + LB-IPAM]
   end
   subgraph gs [Phase 2 — gridscale]
@@ -63,7 +74,7 @@ flowchart TB
 | Platform login | Dex → GitHub OAuth ([PlatformRelay](https://github.com/PlatformRelay)) | Same (public Dex issuer on LBaaS) |
 | Secrets | SOPS + age in git ([ADR-0110](adr/0110-secrets-sops-age.md)) | Same |
 | Crossplane → cloud | N/A (XRD only) | gridscale API via SOPS/ProviderConfig |
-| Remote access | Tailscale to driving-range host | gridscale public LBaaS |
+| Remote access | Local host (kind on loopback) | gridscale public LBaaS |
 
 ## Label flow
 
@@ -80,7 +91,8 @@ See [ADR-0301](adr/0301-resource-labeling-convention.md).
 | Rollouts demo | mulligan | E7 |
 | Alert pipeline | marshal | E5 |
 | Sample site | clubhouse | E4 |
-| Local Talos cluster | driving-range | phase 0 (sibling repo) |
+| Local kind substrate | kind + Cilium | E1e (landed) |
+| Deferred Talos spike | driving-range | optional maturity-contrast (D-025) |
 | Tenant Caddy (brief) | Backstage scaffold | E10 (optional) |
 
 **Platform ingress is Cilium Gateway API** — not Caddy. Caddy satisfies the hiring brief as a **tenant**
