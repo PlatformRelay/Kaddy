@@ -332,6 +332,30 @@ tasks:
     cmds:
       - bash tests/smoke/e3-exit.sh
 
+  bootstrap:e4:
+    desc: E4 — apply the clubhouse workload + platform Gateway + TLS cert (idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        # SAFETY: never apply into a non-kind context (mirrors bootstrap:e3).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        kubectl apply -f deploy/gateway/namespace.yaml
+        kubectl apply -f deploy/cert-manager/clubhouse-certificate.yaml
+        kubectl apply -f deploy/workloads/clubhouse/
+        kubectl apply -f deploy/gateway/gateway.yaml
+        kubectl apply -f deploy/gateway/httproute.yaml
+        kubectl apply -f deploy/gateway/httproute-redirect.yaml
+        echo "E4 clubhouse + Gateway + TLS applied. Watch: kubectl -n gateway get certificate,gateway,httproute"
+
+  test:smoke:e4:
+    desc: E4 — live smoke bundle (clubhouse over verified HTTPS via the Cilium edge; needs a green cluster)
+    cmds:
+      - bash tests/smoke/e4-exit.sh
+
   demo:
     desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
     cmds:
