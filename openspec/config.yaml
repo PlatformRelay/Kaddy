@@ -13,7 +13,7 @@ context: |
   Progressive delivery: Argo Rollouts blue/green + canary; Prometheus AnalysisTemplate gates promotion (mulligan).
   Self-service: Crossplane XRD Website claim; phase 2 nginx VM via Upjet provider-gridscale.
   Security: default-deny NetworkPolicies; Trivy CI; cosign + Kyverno verify; NIS2/KRITIS-style classification labels.
-  Labeling: mandatory core — owner, service, component, part-of, managed-by, data-classification, track (stable|canary|preview).
+  Labeling: mandatory core (bare keys, ADR-0301) — owner, service, part-of, managed-by, data-classification, business-criticality, track (stable|canary|preview); component optional. app.kubernetes.io/* = documented additive mirror.
   No dev/prod environment dimension — single lab platform for hiring exercise.
   Sanitization: no employer names, internal policy IDs, or internal EAM system references in committed artifacts.
   Commits: :gitmoji: type(scope): summary — ASCII shortcode only.
