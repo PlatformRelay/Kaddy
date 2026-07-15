@@ -1,0 +1,39 @@
+# CaddyTargetDown — REQ-E5-S03-01 / REQ-E5-S06-01
+# PrometheusRule CR. metadata.labels carry the ADR-0301 mandatory core set.
+# Alert labels carry severity/service/owner for self-routing (ADR-0301 Enforcement).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: marshal-caddy-down
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: caddy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: gateway
+    prometheus: kaddy
+    role: alert-rules
+spec:
+  groups:
+    - name: marshal.caddy
+      rules:
+        - alert: CaddyTargetDown
+          # Caddy scrape target reporting down (up == 0) for longer than 2m.
+          expr: up{job="caddy"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy scrape target down'
+            description: >-
+              Caddy target {{ $labels.instance }} (job caddy) has been down for
+              more than 2 minutes. Requests may be failing at the gateway.

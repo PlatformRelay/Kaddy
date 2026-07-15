@@ -1,0 +1,77 @@
+# Marshal HTTP alerts — REQ-E5-S03-02/03/04 + REQ-E5-S06-02/03
+# HighHTTPErrorRate, HighHTTPLatency, HighRequestRate.
+# metadata.labels carry the ADR-0301 mandatory core set; alert labels carry
+# severity/service/owner for self-routing.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: marshal-http
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: caddy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: gateway
+    prometheus: kaddy
+    role: alert-rules
+spec:
+  groups:
+    - name: marshal.http
+      rules:
+        # REQ-E5-S03-02 / S06-02 — 5xx error ratio above 5% over a 5m window.
+        - alert: HighHTTPErrorRate
+          expr: >-
+            sum(rate(caddy_http_requests_total{job="caddy",code=~"5.."}[5m]))
+            /
+            sum(rate(caddy_http_requests_total{job="caddy"}[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy HTTP 5xx error rate above 5%'
+            description: >-
+              Caddy is returning 5xx responses for more than 5% of requests over
+              the last 5 minutes (sustained 5m).
+
+        # REQ-E5-S03-03 / S06-03 — p99 request latency above 500ms.
+        - alert: HighHTTPLatency
+          expr: >-
+            histogram_quantile(
+              0.99,
+              sum by (le) (rate(caddy_http_request_duration_seconds_bucket{job="caddy"}[5m]))
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy p99 HTTP latency above 500ms'
+            description: >-
+              Caddy p99 request latency has exceeded 500ms over the last 5
+              minutes (sustained 5m).
+
+        # REQ-E5-S03-04 / S06-03 — request rate above 100 rps.
+        - alert: HighRequestRate
+          expr: >-
+            sum(rate(caddy_http_requests_total{job="caddy"}[5m])) > 100
+          for: 2m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy request rate above 100 rps'
+            description: >-
+              Caddy is serving more than 100 requests per second (5m rate),
+              sustained for 2 minutes. Verify capacity / possible traffic spike.
