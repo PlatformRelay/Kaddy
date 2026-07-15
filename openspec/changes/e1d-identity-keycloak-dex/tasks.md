@@ -26,4 +26,7 @@
 
 ## Exit
 
+- [ ] **[TEST-4]** Un-skip `tests/chainsaw/identity/chainsaw-test.yaml` (currently `skip: true`).
+      Gate: un-skip once `deploy/identity/` manifests land (E1d-S01 Dex + ExternalSecret);
+      un-skipping now breaks the gate because the underlying identity manifests are unbuilt.
 - [ ] `chainsaw test tests/chainsaw/identity` green (non-skipped)

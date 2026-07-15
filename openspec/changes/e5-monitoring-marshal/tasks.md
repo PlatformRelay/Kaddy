@@ -21,4 +21,13 @@ assert (L2) before the ServiceMonitor/PrometheusRule manifest.
 - [ ] Alertmanager receiver smoke (REQ-E5-S04-*)
 - [ ] Loki log-based checks (REQ-E5-S07-*)
 - [ ] Grafana dashboards + Loki datasource (REQ-E5-S05-*)
+- [ ] **[TEST-3]** Write missing smoke test artifacts referenced in spec but not yet on disk
+      (landed slices S01–S03 only; S04/S05 tests ride with their still-pending bullets above):
+      `tests/smoke/e5-s01-01.sh` (REQ-E5-S01 ServiceMonitor present),
+      `tests/smoke/e5-s01-02.sh` (REQ-E5-S01 scrape endpoint reachable),
+      `tests/smoke/e5-s02-01.sh` (REQ-E5-S02 blackbox probe up),
+      `tests/smoke/e5-s02-02.sh` (REQ-E5-S02 probe target responds),
+      `tests/smoke/e5-s03-03.sh` (REQ-E5-S03 PrometheusRule loaded). Gate: implement once a
+      cluster is available (e1e green); S04/S05 tests (`e5-s04-01.sh`, `e5-s05-01.sh`) remain
+      with their owning slices (Alertmanager receiver + Grafana).
 - [ ] Gate: `task test:promrules` (promtool L1, `monitoring.yaml`) + rule-coverage assertion + PromQL smoke

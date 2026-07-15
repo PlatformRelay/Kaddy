@@ -77,13 +77,16 @@ for ci"*.
 
 TEST-3, TEST-4.
 
-- [ ] **[epic: E1b/E5]** **Plan** the missing landed-epic test artifacts (operator: *"make sure
+- [x] **[epic: E1b/E5]** **Plan** the missing landed-epic test artifacts (operator: *"make sure
       they are planned"*): enumerate `tests/smoke/e1b-*.sh`, `tests/smoke/e5-s01-01.sh` and the
       other spec-referenced smoke/meta tests as tasks in their owning epics (TEST-3).
-- [ ] **[epic: owning epics]** Plan un-skipping the four Chainsaw suites
-      (`labeling/portal/tls/identity`, currently `skip:true`) (TEST-4, operator: *"we shouldn't
-      skip them, add as task"*). **Gated on the relevant epics landing** — un-skipping now breaks
-      the gate because the underlying manifests are unbuilt.
+      Added to e1b-labeling-module/tasks.md (4 files) + e5-monitoring-marshal/tasks.md (5 landed-slice files).
+- [x] **[epic: owning epics]** Plan un-skipping the three remaining Chainsaw suites
+      (`labeling/identity/portal`, currently `skip:true`; `tls` already un-skipped this session)
+      (TEST-4, operator: *"we shouldn't skip them, add as task"*). **Gated on the relevant epics
+      landing** — un-skipping now breaks the gate because the underlying manifests are unbuilt.
+      Added to e1b-labeling-module/tasks.md (labeling), e1d-identity-keycloak-dex/tasks.md
+      (identity), e10-portal-stretch/tasks.md (portal).
 - Gate (owning epic): `task test:chainsaw` non-vacuous once manifests exist.
 
 ## WS5 · Governance reconcile — P2

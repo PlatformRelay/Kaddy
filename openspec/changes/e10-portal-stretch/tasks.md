@@ -29,3 +29,9 @@ Only start if E1–E8 land early (ADR-0109 scope guard). Orchestrator-first: E6 
 ## E10-S05 — Runbook + demo
 
 - [ ] `docs/runbooks/portal-new-site.md`
+
+## Test hygiene
+
+- [ ] **[TEST-4]** Un-skip `tests/chainsaw/portal/chainsaw-test.yaml` (currently `skip: true`).
+      Gate: un-skip once `deploy/portal/` manifests land (E10-S01 Backstage + OIDC);
+      un-skipping now breaks the gate because the underlying portal manifests are unbuilt.
