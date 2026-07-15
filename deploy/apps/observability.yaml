@@ -1,0 +1,45 @@
+# REQ-E3-S02-*: observability child Application (a nested app-of-apps).
+#
+# Points Argo CD at `deploy/observability/`, which holds the Helm-based grandchild
+# Applications: kube-prometheus-stack (metrics + Grafana + Alertmanager), Loki
+# (single-binary + filesystem logs) and Grafana Alloy (log-collector DaemonSet),
+# plus the Grafana Loki datasource ConfigMap.
+#
+# selfHeal is intentionally OFF here: these are heavier / stateful components
+# (Prometheus TSDB, Loki WAL) where a human should stay in the loop for drift
+# (documented exception — see deploy/apps/README.md). Auto-sync (create/update)
+# is still on so new/changed manifests roll out without manual `argocd app sync`.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: observability
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: observability
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/observability
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    # selfHeal OFF — human-in-the-loop for stateful observability drift.
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

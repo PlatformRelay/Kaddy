@@ -1,0 +1,31 @@
+# REQ-E3-S02-03: Loki (single-binary + filesystem) pod Ready in ns monitoring.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: monitoring-loki-ready
+  annotations:
+    kaddy.io/req: REQ-E3-S02-03
+spec:
+  description: Loki single-binary pod reaches Ready
+  namespace: monitoring
+  steps:
+    - name: loki-pod-ready
+      try:
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: monitoring
+                labels:
+                  app.kubernetes.io/name: loki
+              status:
+                conditions:
+                  - type: Ready
+                    status: "True"
+      catch:
+        - describe:
+            apiVersion: v1
+            kind: Pod
+            namespace: monitoring
+            selector: app.kubernetes.io/name=loki

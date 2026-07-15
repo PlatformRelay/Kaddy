@@ -1,0 +1,135 @@
+# REQ-E3-S02-01/02/05: kube-prometheus-stack (Prometheus Operator + Prometheus +
+# Alertmanager + Grafana + node-exporter + kube-state-metrics) as a Helm
+# Application in ns `monitoring`.
+#
+# CAPACITY TRIMS (8GB single kind node — defaults OOM):
+#   - Prometheus & Alertmanager: single replica, HA off, Thanos off.
+#   - Prometheus retention 12h, small TSDB.
+#   - Explicit small requests/limits on every component.
+#   - Grafana sidecars kept ON only for datasource discovery (label
+#     grafana_datasource=1) so the Loki datasource ConfigMap (S02-05) is picked
+#     up; dashboard sidecar left on (cheap) for the demo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: kube-prometheus-stack
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: kube-prometheus-stack
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 87.16.1
+    helm:
+      releaseName: kube-prometheus-stack
+      # Server-side apply not needed here; the chart CRDs install via the
+      # bundled crds. Skip CRD hooks handled by syncOptions below.
+      valuesObject:
+        # --- global / HA off ---
+        fullnameOverride: kps
+        defaultRules:
+          create: true
+        alertmanager:
+          alertmanagerSpec:
+            replicas: 1
+            retention: 24h
+            resources:
+              requests:
+                cpu: 25m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 96Mi
+        prometheus:
+          prometheusSpec:
+            replicas: 1
+            shards: 1
+            retention: 12h
+            retentionSize: 1GB
+            # Discover ServiceMonitors/PodMonitors cluster-wide, not just those
+            # carrying the chart's release label (so E5 marshal monitors match).
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            probeSelectorNilUsesHelmValues: false
+            resources:
+              requests:
+                cpu: 200m
+                memory: 400Mi
+              limits:
+                cpu: 500m
+                memory: 700Mi
+            # No PVC — ephemeral TSDB is fine for a 12h-retention lab.
+        grafana:
+          enabled: true
+          replicas: 1
+          defaultDashboardsEnabled: true
+          # admin creds: chart default (admin/prom-operator) — lab only, no
+          # ingress exposure; a real env would source this from a Secret/KSOPS.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          # Sidecar watches ConfigMaps labelled grafana_datasource=1 and
+          # provisions them — this is how the Loki datasource (S02-05) is wired.
+          sidecar:
+            datasources:
+              enabled: true
+              label: grafana_datasource
+              labelValue: "1"
+            dashboards:
+              enabled: true
+        # --- keep small, useful exporters ---
+        nodeExporter:
+          enabled: true
+        prometheus-node-exporter:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+        kubeStateMetrics:
+          enabled: true
+        kube-state-metrics:
+          resources:
+            requests:
+              cpu: 20m
+              memory: 48Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+        prometheusOperator:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    # The chart bundles large CRDs; give the first sync room to install them.

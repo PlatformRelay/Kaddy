@@ -1,0 +1,33 @@
+# REQ-E3-S02-05: Loki wired as a Grafana datasource (default logs source). The
+# provisioning ConfigMap carries the sidecar discovery label and a type: loki,
+# isDefault: true datasource body.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: monitoring-grafana-loki-datasource
+  annotations:
+    kaddy.io/req: REQ-E3-S02-05
+spec:
+  description: Grafana Loki datasource ConfigMap is present and default
+  namespace: monitoring
+  steps:
+    - name: loki-datasource-configmap
+      try:
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                namespace: monitoring
+                name: grafana-loki-datasource
+                labels:
+                  grafana_datasource: "1"
+        - script:
+            # The provisioning body must declare a type: loki default datasource.
+            content: |
+              kubectl -n monitoring get cm grafana-loki-datasource -o yaml \
+                | grep -qi 'type: loki'
+              kubectl -n monitoring get cm grafana-loki-datasource -o yaml \
+                | grep -qi 'isDefault: true'
+            check:
+              ($error): ~

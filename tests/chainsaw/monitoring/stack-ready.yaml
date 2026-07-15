@@ -1,0 +1,53 @@
+# REQ-E3-S02-01/02: kube-prometheus-stack — ServiceMonitor CRD Established and
+# Prometheus + Alertmanager pods Running. Runs in CI (chainsaw) after the
+# observability Application has synced the chart into ns monitoring.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: monitoring-stack-ready
+  annotations:
+    kaddy.io/req: REQ-E3-S02-02
+spec:
+  description: kube-prometheus-stack CRDs + Prometheus/Alertmanager pods Running
+  # No test namespace needed — assertions target existing cluster objects.
+  namespace: monitoring
+  steps:
+    - name: servicemonitor-crd-established
+      try:
+        - assert:
+            resource:
+              apiVersion: apiextensions.k8s.io/v1
+              kind: CustomResourceDefinition
+              metadata:
+                name: servicemonitors.monitoring.coreos.com
+              status:
+                conditions:
+                  - type: Established
+                    status: "True"
+    - name: prometheus-and-alertmanager-running
+      try:
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: monitoring
+                labels:
+                  app.kubernetes.io/name: prometheus
+              status:
+                phase: Running
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: monitoring
+                labels:
+                  app.kubernetes.io/name: alertmanager
+              status:
+                phase: Running
+      catch:
+        - describe:
+            apiVersion: v1
+            kind: Pod
+            namespace: monitoring

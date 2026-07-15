@@ -1,0 +1,60 @@
+# REQ-E3-S03-00: cert-manager controller installed — Deployments Available,
+# CRDs Established. cert-manager is installed at E1e bootstrap; this suite asserts
+# it is healthy before the ACME issuers are relied upon.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: tls-cert-manager-ready
+  annotations:
+    kaddy.io/req: REQ-E3-S03-00
+spec:
+  description: cert-manager controller/webhook/cainjector Available + CRDs Established
+  namespace: cert-manager
+  steps:
+    - name: deployments-available
+      try:
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: cert-manager
+                name: cert-manager
+              status:
+                conditions:
+                  - type: Available
+                    status: "True"
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: cert-manager
+                name: cert-manager-webhook
+              status:
+                conditions:
+                  - type: Available
+                    status: "True"
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: cert-manager
+                name: cert-manager-cainjector
+              status:
+                conditions:
+                  - type: Available
+                    status: "True"
+    - name: crds-established
+      try:
+        - assert:
+            resource:
+              apiVersion: apiextensions.k8s.io/v1
+              kind: CustomResourceDefinition
+              metadata:
+                name: clusterissuers.cert-manager.io
+              status:
+                conditions:
+                  - type: Established
+                    status: "True"

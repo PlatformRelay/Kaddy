@@ -1,0 +1,45 @@
+# REQ-E3-S01-01 (partial): identity child Application — PLACEHOLDER, sync DISABLED.
+#
+# DEFERRED: identity (Dex + the GitHub OIDC connector) depends on decrypting
+# `deploy/secrets/identity/*.enc.yaml` at render time, which needs the KSOPS
+# repo-server plugin (REQ-E3-S01-03, ADR-0110). KSOPS is NOT on the demoable path
+# tonight and is explicitly deferred, so this Application is registered for a
+# complete app-of-apps set but points at an empty directory and has NO automated
+# syncPolicy — it will never try to apply un-decryptable secrets.
+#
+# Follow-up (see openspec/changes/e3-gitops-core/tasks.md): once KSOPS lands,
+# repoint `path` at deploy/secrets/identity (or a Dex overlay) and enable sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: identity
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: identity
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: confidential
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/status: deferred-needs-ksops
+    kaddy.io/req: REQ-E3-S01-03
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/identity
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: identity
+  # NO syncPolicy.automated — manual only, and the directory is empty until KSOPS.
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false

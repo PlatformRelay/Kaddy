@@ -281,6 +281,57 @@ tasks:
     cmds:
       - bash tests/smoke/e1-exit.sh
 
+  bootstrap:e3:
+    desc: E3 — apply the app-of-apps (idempotent; ARGO_TARGET_REV overrides branch)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    vars:
+      # Steady-state truth is committed `main`. Set ARGO_TARGET_REV=<branch> for a
+      # LIVE pre-merge proof against an un-merged lane (see deploy/apps/README.md).
+      ARGO_TARGET_REV: '{{.ARGO_TARGET_REV | default "main"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        # SAFETY: never sync into a non-kind context (mirrors bootstrap:argocd).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        rev="{{.ARGO_TARGET_REV}}"
+        if [ "${rev}" = "main" ]; then
+          # Steady state: apply root only; Argo CD generates the children verbatim
+          # from git (all pinned to main), which resolves once this lane is merged.
+          kubectl apply -f deploy/apps/root.yaml
+        else
+          # LIVE pre-merge proof: the committed children hard-code targetRevision:
+          # main, and the paths they reference do not exist on main yet. So we can
+          # NOT rely on the root to generate usable children. Instead we override
+          # targetRevision on root AND every child, and apply the children directly.
+          # The root override also drops selfHeal so it never reverts our
+          # branch-pinned children back to the main-pinned git copy. Committed
+          # files are untouched (steady-state truth stays main + selfHeal:true).
+          tmp="$(mktemp -d)"; trap 'rm -rf "${tmp}"' EXIT
+          yq e ".spec.source.targetRevision = \"${rev}\"
+               | del(.spec.syncPolicy.automated)" \
+            deploy/apps/root.yaml > "${tmp}/root.yaml"
+          for f in deploy/apps/*.yaml; do
+            b="$(basename "${f}")"; [ "${b}" = "root.yaml" ] && continue
+            yq e ".spec.source.targetRevision = \"${rev}\"" "${f}" > "${tmp}/${b}"
+          done
+          kubectl apply -f "${tmp}/root.yaml"
+          # Apply children directly so they are branch-pinned regardless of the
+          # root's generated (git-verbatim) copies.
+          for f in "${tmp}"/*.yaml; do
+            [ "$(basename "${f}")" = "root.yaml" ] && continue
+            kubectl apply -f "${f}"
+          done
+        fi
+        echo "app-of-apps applied (targetRevision=${rev}). Watch: kubectl get applications -n argocd"
+
+  test:smoke:e3:
+    desc: E3 — live smoke bundle (app-of-apps + observability + TLS; needs a green cluster)
+    cmds:
+      - bash tests/smoke/e3-exit.sh
+
   demo:
     desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
     cmds:

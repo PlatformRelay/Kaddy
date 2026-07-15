@@ -1,0 +1,46 @@
+# REQ-E3-S01-01/02, REQ-E3-S03-*: platform-core child Application.
+#
+# Owns the always-on, non-destructive platform plumbing that is safe to
+# continuously reconcile: the ACME ClusterIssuers (Let's Encrypt staging + prod)
+# layered on the cert-manager controller that E1e already installed.
+#
+# selfHeal is enabled ONLY on this app (documented exception in
+# deploy/apps/README.md): its resources are declarative, cluster-scoped, and
+# idempotent — drift here should snap straight back to Git. The observability /
+# gateway / workloads apps keep selfHeal OFF so a human stays in the loop for the
+# heavier, stateful, or Rollouts-managed components.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-core
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: platform-core
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/cert-manager
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    # selfHeal ON — platform-core only (see file header + README).
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

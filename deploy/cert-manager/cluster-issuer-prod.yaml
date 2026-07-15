@@ -1,0 +1,40 @@
+# REQ-E3-S03-02: Let's Encrypt PRODUCTION ClusterIssuer.
+#
+# Committed for completeness. Like staging, ACME account registration is
+# outbound-only, so this CAN reach Ready=True on kind (the account registers).
+# But ISSUING a trusted prod cert requires a solvable HTTP-01 challenge over a
+# PUBLIC inbound path, which a local kind cluster does not have — so DO NOT expect
+# real prod certificates here. The demoable TLS path uses kaddy-local-ca (E1e);
+# a hostname must pass STAGING first before it is ever pointed at this prod
+# issuer (documented promotion gate, ADR-0103 / brief TLS story).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: letsencrypt-prod
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/not-ready-on: kind (no public HTTP-01 inbound path — see file header)
+spec:
+  acme:
+    # ACME v2 PRODUCTION directory — real rate limits; use only after staging.
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: kaddy
+                namespace: default
+                kind: Gateway
+                group: gateway.networking.k8s.io

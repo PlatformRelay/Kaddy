@@ -1,0 +1,41 @@
+# REQ-E3-S01-01: gateway child Application (placeholder wiring).
+#
+# The Gateway API CRDs, the Cilium GatewayClass and the LB-IPAM pool are
+# installed at cluster-bootstrap time by E1e (they must exist before Argo CD or
+# any HTTPS listener can come up), so this app does NOT re-own them. It exists so
+# the app-of-apps set is complete and so E2 has a home to hang gateway-layer
+# HTTPRoutes / Gateways off later. Points at an empty-but-tracked directory;
+# selfHeal OFF (gateway objects front live traffic — human in the loop).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: gateway
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/gateway
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

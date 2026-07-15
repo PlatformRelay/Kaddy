@@ -1,0 +1,31 @@
+# REQ-E3-S02-04: Grafana Alloy DaemonSet — desiredNumberScheduled == numberReady.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: monitoring-alloy-daemonset
+  annotations:
+    kaddy.io/req: REQ-E3-S02-04
+spec:
+  description: Alloy DaemonSet is scheduled and ready on all nodes
+  namespace: monitoring
+  steps:
+    - name: alloy-ds-ready
+      try:
+        - assert:
+            # desired == ready (and at least 1). Chainsaw JMESPath binding asserts
+            # the two status fields are equal.
+            resource:
+              apiVersion: apps/v1
+              kind: DaemonSet
+              metadata:
+                namespace: monitoring
+                labels:
+                  app.kubernetes.io/name: alloy
+              status:
+                (numberReady == desiredNumberScheduled && numberReady > `0`): true
+      catch:
+        - describe:
+            apiVersion: apps/v1
+            kind: DaemonSet
+            namespace: monitoring
+            selector: app.kubernetes.io/name=alloy

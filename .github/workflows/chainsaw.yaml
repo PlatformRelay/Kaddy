@@ -46,5 +46,50 @@ jobs:
             kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.18.2/install.yaml || true
             kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
           fi
+      # E3: install cert-manager (the ACME issuers + tls suites need it) — the
+      # ephemeral CI kind cluster has no E1e bootstrap. Pinned to the same version
+      # the live cluster runs (see runbook). The letsencrypt-staging issuer needs
+      # only outbound reachability, which GitHub runners have.
+      - name: Install cert-manager (tls suites)
+        if: ${{ hashFiles('tests/chainsaw/tls/*.yaml') != '' }}
+        run: |
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager --create-namespace \
+            --version v1.18.2 --set crds.enabled=true --wait --timeout 5m
+          kubectl apply -f deploy/cert-manager/
+      # E3: install the observability stack (monitoring suites) directly with Helm,
+      # reusing the SAME pinned chart versions + values embedded in the Argo CD
+      # Application manifests (extracted with yq) so CI mirrors the GitOps source of
+      # truth without standing up Argo CD in the ephemeral cluster.
+      - name: Install observability stack (monitoring suites)
+        if: ${{ hashFiles('tests/chainsaw/monitoring/*.yaml') != '' }}
+        run: |
+          set -euo pipefail
+          if ! command -v yq >/dev/null 2>&1; then
+            sudo wget -qO /usr/local/bin/yq \
+              https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+            sudo chmod +x /usr/local/bin/yq
+          fi
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+          install_app() {
+            local file="$1"
+            local repo chart ver
+            repo="$(yq e '.spec.source.repoURL' "$file")"
+            chart="$(yq e '.spec.source.chart' "$file")"
+            ver="$(yq e '.spec.source.targetRevision' "$file")"
+            yq e '.spec.source.helm.valuesObject' "$file" > /tmp/vals.yaml
+            helm upgrade --install "$chart" "$chart" --repo "$repo" \
+              --version "$ver" -n monitoring -f /tmp/vals.yaml --wait --timeout 8m
+          }
+          install_app deploy/observability/kube-prometheus-stack.yaml
+          install_app deploy/observability/loki.yaml
+          install_app deploy/observability/alloy.yaml
+          # The Grafana Loki datasource ConfigMap is a plain manifest (not Helm).
+          kubectl apply -f deploy/observability/grafana-loki-datasource.yaml
       - name: Run Chainsaw suites
         run: task test:chainsaw

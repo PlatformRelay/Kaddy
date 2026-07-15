@@ -1,0 +1,44 @@
+# REQ-E3-S03-01: Let's Encrypt STAGING ClusterIssuer.
+#
+# ACME account registration is outbound-only (cert-manager POSTs to the ACME
+# directory), so this issuer reaches Ready=True on kind without any inbound
+# reachability — registering the account is enough for the condition. Actually
+# ISSUING a cert would need the HTTP-01 challenge to be solved, which on kind has
+# no public inbound path; the demoable TLS path therefore leans on the
+# kaddy-local-ca ClusterIssuer (E1e). This issuer proves the ACME wiring is real.
+#
+# Solver: HTTP-01 via the Gateway API (gatewayHTTPRoute), matching the Cilium
+# `cilium` GatewayClass the platform uses. cert-manager creates a solver
+# HTTPRoute during an order (REQ-E3-S03-03).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: letsencrypt-staging
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  acme:
+    # ACME v2 STAGING directory — high rate limits, untrusted chain (lab-safe).
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # No contact email on purpose: Let's Encrypt rejects a non-public/.local
+    # contact domain, and an anonymous account still reaches Ready=True. A real
+    # notification address would be injected from non-secret config in a real env.
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: kaddy
+                namespace: default
+                kind: Gateway
+                group: gateway.networking.k8s.io

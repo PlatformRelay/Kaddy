@@ -1,0 +1,39 @@
+# REQ-E3-S01-01: workloads child Application (placeholder wiring).
+#
+# Home for the demoable sample apps (Caddy/nginx MVP variants, clubhouse) once
+# they are scaffolded. Points at an empty-but-tracked directory today so the
+# app-of-apps set is complete; selfHeal OFF (workloads may be Rollouts-managed in
+# E7, which needs ignoreDifferences on HTTPRoute weights — human in the loop).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workloads
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: workloads
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: workloads
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/workloads
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

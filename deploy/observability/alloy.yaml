@@ -1,0 +1,119 @@
+# REQ-E3-S02-04: Grafana Alloy log collector (ADR-0108).
+#
+# Alloy runs as a DaemonSet (one pod per schedulable node) tailing pod logs from
+# the node filesystem and shipping them to Loki. Promtail is deprecated in favour
+# of Alloy (OTel-native), per ADR-0108.
+#
+# The Alloy River config below: discovers pods, relabels kubernetes metadata into
+# Loki stream labels (incl. the kaddy `service`/`part-of` mirror so logs correlate
+# with metrics + marshal routing), and writes to the in-cluster Loki single-binary
+# service. CAPACITY: small requests; clustering off (single node).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: alloy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: 1.10.1
+    helm:
+      releaseName: alloy
+      valuesObject:
+        controller:
+          # DaemonSet — one collector per node (REQ-E3-S02-04).
+          type: daemonset
+        alloy:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          # Mount the node log dirs so the local.file_match can tail pod logs.
+          mounts:
+            varlog: true
+          clustering:
+            enabled: false
+          configMap:
+            content: |-
+              // Discover all pods on this node and tail their container logs.
+              discovery.kubernetes "pods" {
+                role = "pod"
+              }
+
+              // Keep only pods scheduled on THIS node (DaemonSet-local tailing),
+              // and relabel k8s metadata into Loki stream labels — including the
+              // kaddy `service`/`part-of` mirror (ADR-0301) for log/metric correlation.
+              discovery.relabel "pod_logs" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "__host__"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  target_label  = "service"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_part_of"]
+                  target_label  = "part_of"
+                }
+                // Compose the on-disk log path for source.kubernetes / file tailing.
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+                  separator     = "/"
+                  target_label  = "__path__"
+                  replacement   = "/var/log/pods/*$1/*.log"
+                }
+              }
+
+              // Read container logs discovered above.
+              loki.source.kubernetes "pods" {
+                targets    = discovery.relabel.pod_logs.output
+                forward_to = [loki.write.default.receiver]
+              }
+
+              // Ship to the in-cluster Loki single-binary service.
+              loki.write "default" {
+                endpoint {
+                  url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+                }
+              }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,49 @@
+# REQ-E3-S01-01: App-of-apps ROOT Application (ADR-0103).
+#
+# The root Application points Argo CD at `deploy/apps/` and lets it discover the
+# child Applications there (directory recursion is off — the children are the
+# flat *.yaml siblings of this file). Committed steady-state truth is
+# `targetRevision: main`; merging this lane to main makes Argo CD sync for real.
+#
+# LIVE proof before merge (per the lane runbook): apply a runtime-overridden copy
+# of THIS file with targetRevision set to the pushed lane branch, so Argo CD syncs
+# the un-merged manifests. The committed file must still say `main`.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: root
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: root
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  # The app-of-apps root is the one Application allowed to prune its children so
+  # deleting a child manifest de-registers the child (GitOps convergence).
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/apps
+    directory:
+      recurse: false
+      # Do not let Argo CD treat root.yaml itself as a child manifest.
+      exclude: root.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
