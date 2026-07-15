@@ -1,0 +1,91 @@
+# E1 platform bootstrap overlay (REQ-E1-S02-01, REQ-E1-EXIT).
+#
+# Applied AFTER the pinned upstream ArgoCD core install (see `task bootstrap:argocd`,
+# which applies https://raw.githubusercontent.com/argoproj/argo-cd/<version>/manifests/install.yaml
+# into the `argocd` namespace). This overlay:
+#   - ensures the argocd namespace,
+#   - runs argocd-server with `server.insecure` (TLS terminates at the Gateway,
+#     the server speaks plain HTTP on :80),
+#   - issues a serving Certificate from the existing kaddy-local-ca ClusterIssuer,
+#   - exposes argocd-server on the Cilium HTTPS Gateway (listener terminates TLS),
+#   - routes / -> argocd-server via an HTTPRoute.
+#
+# Reachability (macOS-safe): the Gateway surfaces as the selectorless LoadBalancer
+# service `cilium-gateway-argocd`; the bootstrap task pins its nodePort to 30443,
+# which kind maps to host 127.0.0.1:30443. Curl https://127.0.0.1:30443/ -k -> 200.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+# Run argocd-server in insecure mode: it serves plain HTTP on :80, and the
+# Cilium Gateway terminates TLS in front of it (no double-TLS).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  server.insecure: "true"
+---
+# Serving certificate for the ArgoCD Gateway HTTPS listener, issued by the
+# local CA cert-manager ClusterIssuer that E1e provisioned.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-server-tls
+  namespace: argocd
+spec:
+  secretName: argocd-server-tls
+  dnsNames:
+    - argocd.kaddy.local
+    - localhost
+  ipAddresses:
+    - 127.0.0.1
+  issuerRef:
+    name: kaddy-local-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# Cilium Gateway on the HTTPS listener, terminating the local-CA cert.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: argocd-server-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# Route all paths on the HTTPS listener to argocd-server (:80, insecure/HTTP).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: argocd
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: argocd-server
+          port: 80

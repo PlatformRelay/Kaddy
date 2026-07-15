@@ -16,13 +16,18 @@ OVERLAY="${SMOKE_ROOT}/deploy/bootstrap/argocd.yaml"
 # ArgoCD version and applies the overlay.
 ( cd "${SMOKE_ROOT}" && task bootstrap:argocd ) || smoke_fail "task bootstrap:argocd failed"
 
-echo "waiting for argocd-server to be Ready"
+echo "waiting for argocd-server rollout + Ready"
+# Wait on the Deployment first so we don't race a rollout (old pods terminating).
+kubectl -n argocd rollout status deploy/argocd-server --timeout=300s \
+  || smoke_fail "argocd-server deployment did not roll out"
 kubectl wait --for=condition=Ready pod \
   -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s \
   || smoke_fail "argocd-server pod not Ready within timeout"
 
-phase="$(kubectl -n argocd get pod -l app.kubernetes.io/name=argocd-server \
-  -o jsonpath='{.items[0].status.phase}')"
-[[ "${phase}" == "Running" ]] || smoke_fail "argocd-server phase is ${phase}, expected Running"
+# At least one argocd-server pod must be in phase Running (ignore any old pod
+# left in Succeeded/Failed during a rollout).
+running="$(kubectl -n argocd get pod -l app.kubernetes.io/name=argocd-server \
+  -o json | jq '[.items[] | select(.status.phase=="Running")] | length')"
+[[ "${running:-0}" -ge 1 ]] || smoke_fail "no argocd-server pod in phase Running"
 
 smoke_ok "REQ-E1-S02-01 argocd-server Running"

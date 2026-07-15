@@ -10,6 +10,10 @@ run: once
 vars:
   MARKDOWNLINT_CONFIG: hack/tooling/.markdownlint-cli2.yaml
   DENYLIST: hack/tooling/sanitize-denylist.txt
+  # Pinned upstream ArgoCD version (E1 bootstrap). No floating tags — the
+  # install manifest and every image it references are versioned to this tag.
+  ARGOCD_VERSION: v3.4.5
+  KUBECONFIG: '{{.KUBECONFIG | default "./.state/kubeconfig"}}'
 
 tasks:
   default:
@@ -230,6 +234,44 @@ tasks:
     desc: E1e — live smoke bundle (needs a running kaddy-dev cluster; task cluster:up first)
     cmds:
       - bash tests/smoke/e1e-exit.sh
+
+  bootstrap:argocd:
+    desc: E1 — install pinned ArgoCD + bootstrap Gateway overlay (idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        VER="{{.ARGOCD_VERSION}}"
+        # 1) Namespace + cmd-params-cm (server.insecure) + Gateway/Certificate/Route.
+        #    Apply the overlay FIRST so argocd-server reads server.insecure on first boot.
+        kubectl apply -f deploy/bootstrap/argocd.yaml
+        # 2) Pinned upstream ArgoCD core install (all images versioned to VER).
+        #    Server-side apply: the applicationsets CRD exceeds kubectl's client-side
+        #    last-applied annotation size limit (262144 bytes).
+        kubectl apply --server-side --force-conflicts -n argocd \
+          -f "https://raw.githubusercontent.com/argoproj/argo-cd/${VER}/manifests/install.yaml"
+        # 3) Re-apply the overlay: the upstream install ships an argocd-cmd-params-cm
+        #    without server.insecure and would otherwise overwrite ours.
+        kubectl apply -f deploy/bootstrap/argocd.yaml
+        # 4) Ensure argocd-server is actually running with --insecure. Only restart
+        #    when needed (a fresh install already boots with the cm in place; an
+        #    over-write by the upstream install would drop the flag). This keeps
+        #    re-runs fast and idempotent instead of forcing a rollout every time.
+        #    The flag surfaces as env ARGOCD_SERVER_INSECURE (from the cm).
+        if kubectl -n argocd get deploy argocd-server >/dev/null 2>&1; then
+          insecure="$(kubectl -n argocd exec deploy/argocd-server -c argocd-server -- \
+            printenv ARGOCD_SERVER_INSECURE 2>/dev/null || true)"
+          if [ "${insecure}" != "true" ]; then
+            kubectl -n argocd rollout restart deploy/argocd-server >/dev/null 2>&1 || true
+          fi
+        fi
+        kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+
+  test:smoke:e1:
+    desc: E1 — live smoke bundle (needs a running kaddy-dev cluster; task cluster:up first)
+    cmds:
+      - bash tests/smoke/e1-exit.sh
 
   demo:
     desc: Choreographed mulligan demo (E7 — not implemented until agent-loop)
