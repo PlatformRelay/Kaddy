@@ -1,0 +1,20 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.12.3",
+  "resource_changes": [
+    {
+      "address": "gridscale_server.cp",
+      "type": "gridscale_server",
+      "name": "cp",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "name": "kaddy-clubhouse-cp-01",
+          "labels": [
+            "app.kubernetes.io/name=clubhouse"
+          ]
+        }
+      }
+    }
+  ]
+}

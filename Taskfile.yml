@@ -76,11 +76,22 @@ tasks:
         fi
 
   test:policy:
-    desc: L1 — conftest on OpenTofu plan fixtures
+    desc: L1 — conftest on OpenTofu plan fixtures (asserts expected outcomes)
     cmds:
       - |
         if command -v conftest >/dev/null 2>&1 && [ -d policy ]; then
-          conftest test --policy policy tests/fixtures/plan-*.json
+          # Rego unit tests prove the deny rule fires (REQ-E1b-S03-01).
+          conftest verify --policy policy --policy tests/policy
+          # Good fixture must PASS (all mandatory ADR-0301 keys present).
+          conftest test --policy policy tests/fixtures/plan-with-tags.json
+          # Bad fixture must be DENIED — invert the exit code so the gate is
+          # green only when the deny genuinely fires on the missing-tags plan.
+          if conftest test --policy policy tests/fixtures/plan-missing-tags.json; then
+            echo "FAIL: plan-missing-tags.json was NOT denied (expected deny)" >&2
+            exit 1
+          else
+            echo "OK: plan-missing-tags.json correctly denied"
+          fi
         else
           echo "conftest or policy/ not ready — skip (E1b)"
         fi
