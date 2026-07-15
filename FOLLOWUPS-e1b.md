@@ -3,7 +3,7 @@
 Offline gates green (tofu test, conftest, verify all exit 0). NOT ready to integrate: one P1 pending
 operator ratification. Held for operator — remote/CI is blocked (foreign PocketIDP origin).
 
-- **F1 (P1, BLOCKS):** REQ-E1b-S04-01 (Terramate codegen, priority `must`) is unimplemented. It targets
+- **F1 (P1) — RESOLVED 2026-07-15 (operator-ratified descope):** REQ-E1b-S04-01 (Terramate codegen, `must`) is unimplemented. It targets
   `stacks/ovh/*`, but OVH was killed by decisions D-013 (gridscale pivot) and D-017 (driving-range
   local-first); no `stacks/` tree exists in phase 1. Do NOT implement against dead OVH infra.
   **Recommended resolution (needs operator ratification):** descope REQ-E1b-S04-01 from E1b and defer to
