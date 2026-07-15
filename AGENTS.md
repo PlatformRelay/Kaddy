@@ -2,7 +2,7 @@
 
 Entry point for humans and automated assistants working on **kaddy**: a security-first,
 spec-driven internal developer platform for monitored, TLS-terminated websites on Kubernetes
-(Cilium Gateway API · driving-range Talos · ArgoCD · Crossplane · Prometheus · Argo Rollouts).
+(Cilium Gateway API · kind local substrate · ArgoCD · Crossplane · Prometheus · Argo Rollouts).
 
 ## Documentation map
 
@@ -35,13 +35,13 @@ Branded components (use in docs, not everywhere):
 
 ## Stack (target)
 
-**Phase 1 (now):** [driving-range](../driving-range/) local Talos → kaddy GitOps platform.  
+**Phase 1 (now):** local **kind + Cilium** substrate (E1e, D-025) → kaddy GitOps platform (driving-range Talos deferred to an optional maturity-contrast spike).  
 **Phase 2 (deferred):** gridscale GSK + LBaaS + Upjet Crossplane.
 
 | Layer | Phase 1 | Phase 2 |
 | --- | --- | --- |
-| Substrate | driving-range Talos (3-node) | GSK managed k8s (E1g) |
-| Day-0 IaC | driving-range repo | Terramate on gridscale |
+| Substrate | local kind + Cilium (E1e; single control-plane node) | GSK managed k8s (E1g) |
+| Day-0 IaC | hack/cluster (kind bring-up) | Terramate on gridscale |
 | Ingress | Cilium Gateway + LB-IPAM/L2 | LBaaS + Cilium (GSK default CNI) |
 | Infra self-service | Crossplane Website XRD | + Upjet provider-gridscale (E6g) |
 | GitOps | ArgoCD app-of-apps | Same manifests on GSK |
@@ -89,7 +89,7 @@ use subdomains (e.g. `clubhouse.lab.platformrelay.dev`). DNS at Cloudflare.
 
 Session handoff: [`agent-context/LAB-ACCESS.md`](agent-context/LAB-ACCESS.md) (gitignored — local coordination).
 
-Day-0 is **local-first** on [driving-range](../driving-range/) (D-017); gridscale GSK lands in
+Day-0 is **local-first** on the **kind + Cilium** substrate (E1e; D-025 amends D-017); gridscale GSK lands in
 phase 2 (E1g). See decisions.md D-013/D-015/D-016/D-017.
 
 ## Coordination (gitignored)
