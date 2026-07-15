@@ -1,0 +1,37 @@
+# kaddy design/implementation gate — replaces the removed PocketIDP ci.yaml.
+# Runs the Taskfile gate matrix that needs no cluster: verify (scrub + lint +
+# openspec structure + spec coverage), L0 tofu test, L1 conftest policy.
+# L2 chainsaw and L1 promtool live in chainsaw.yaml / monitoring.yaml.
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+      - name: Install conftest
+        run: |
+          CONFTEST_VERSION="0.56.0"
+          curl -sSL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin conftest
+      - name: task verify (scrub + lint + openspec + spec coverage)
+        run: task verify
+      - name: task test:unit (L0 tofu test — modules/labels)
+        run: task test:unit
+      - name: task test:policy (L1 conftest — ADR-0301 labels)
+        run: task test:policy
