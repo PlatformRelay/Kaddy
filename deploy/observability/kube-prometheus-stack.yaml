@@ -125,6 +125,26 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
+  # The chart re-derives Grafana's `checksum/*` pod annotations and its admin
+  # Secret on every render, which Argo CD otherwise reports as perpetual
+  # OutOfSync even though Grafana is Healthy. Ignore exactly those fields (a
+  # documented, well-known kube-prometheus-stack + Argo CD interaction) so the
+  # app settles Synced/Healthy without masking real drift elsewhere.
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: kube-prometheus-stack-grafana
+      namespace: monitoring
+      jsonPointers:
+        - /spec/template/metadata/annotations/checksum~1config
+        - /spec/template/metadata/annotations/checksum~1secret
+        - /spec/template/metadata/annotations/checksum~1sc-dashboard-provider-config
+    - group: ""
+      kind: Secret
+      name: kube-prometheus-stack-grafana
+      namespace: monitoring
+      jsonPointers:
+        - /data
   syncPolicy:
     automated:
       prune: true
