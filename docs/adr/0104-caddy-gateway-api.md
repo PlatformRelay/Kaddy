@@ -1,6 +1,19 @@
 # ADR-0104: Platform ingress — Cilium Gateway API (Caddy is a tenant product)
 
-**Theme:** 01 · Foundations · **Status:** Current · **Supersedes:** Caddy-as-platform-gateway (D-019)
+**Theme:** 01 · Foundations · **Status:** Current · **Supersedes:** Caddy-as-platform-gateway (D-019) · **Retconned:** ARCH-2 / D-026 (2026-07-15)
+
+> **Retcon note (ARCH-2 / D-026, 2026-07-15).** The 2026-07-15 health audit (ARCH-2/ARCH-3) confirmed
+> and hardened this ADR's decision: the **platform edge = Cilium Gateway API (Envoy)**; **Caddy is the
+> tenant MVP (Website-as-a-Service), NOT the platform gateway/ingress** (D-019). Platform-edge monitoring
+> is therefore **decoupled from Caddy** — the Cilium/Envoy edge never emits a `job="caddy"` scrape target,
+> so the landed E5 `caddy_*` marshal alerts could never fire against the platform as wired. Per the
+> operator-confirmed marshal decision (**Option A — park**, `agent-context/decisions.md` D-026), those
+> `caddy_*` PrometheusRules + their promtool fire/silent tests were **migrated out of active platform
+> monitoring** into the **`e-caddy-mvp` VM-variant alerting slice**
+> ([`openspec/changes/e-caddy-mvp/`](../../openspec/changes/e-caddy-mvp/), REQ-CADDY-S01-03), where
+> in-cluster Prometheus scrapes the Caddy VM's external `/metrics`. See
+> [`deploy/caddy-mvp/monitoring/`](../../deploy/caddy-mvp/monitoring/). The decision below stands; this
+> note only records the ARCH-2 monitoring consequence.
 
 ## Context
 
@@ -42,7 +55,9 @@ controller `LoadBalancer` Service (phase 2).
 ## Consequences
 
 - E2 validates Cilium Gateway, not Caddy controller.
-- E5 platform monitoring focuses on Gateway/Cilium metrics; **Caddy scrape rules live in tenant scaffolds**.
+- E5 platform monitoring focuses on Gateway/Cilium metrics; the **`caddy_*` scrape rules + alerts belong
+  to the `e-caddy-mvp` VM-variant slice** ([`deploy/caddy-mvp/monitoring/`](../../deploy/caddy-mvp/monitoring/),
+  REQ-CADDY-S01-03), parked out of active platform monitoring (ARCH-2, D-026).
 - ADR-0401 Caddy operator remains optional for tenant lifecycle, not platform ingress.
 
 ## References
