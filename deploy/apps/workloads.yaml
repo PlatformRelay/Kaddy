@@ -26,6 +26,11 @@ spec:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
     path: deploy/workloads
+    directory:
+      # recurse ON so Argo descends into per-workload subdirs (deploy/workloads/
+      # clubhouse/, and future tenants). recurse:true is non-default so Argo keeps
+      # it (unlike recurse:false, which it normalises away → perpetual OutOfSync).
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: default
