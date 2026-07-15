@@ -1,6 +1,7 @@
 # kaddy design/implementation gate — replaces the removed PocketIDP ci.yaml.
-# Runs the Taskfile gate matrix that needs no cluster: verify (scrub + lint +
-# openspec structure + spec coverage), L0 tofu test, L1 conftest policy.
+# Runs the Taskfile gate matrix that needs no cluster: gitleaks secret scan
+# (SEC-1), verify (scrub + lint + openspec structure + spec coverage), L0 tofu
+# test, L1 conftest policy, and the E1e offline meta gates (TEST-2).
 # L2 chainsaw and L1 promtool live in chainsaw.yaml / monitoring.yaml.
 name: verify
 
@@ -17,6 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # SEC-1: secret scan in CI (not just bypassable pre-commit). Pinned to the
+      # same gitleaks version as .pre-commit-config.yaml, using the repo config.
+      - name: Install gitleaks
+        run: |
+          GITLEAKS_VERSION="8.30.1"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+      - name: gitleaks (secret scan)
+        run: gitleaks dir . --config .github/gitleaks.toml --no-banner --redact
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
@@ -35,3 +45,7 @@ jobs:
         run: task test:unit
       - name: task test:policy (L1 conftest — ADR-0301 labels)
         run: task test:policy
+      # TEST-2: E1e offline meta gates (kind config + secure install) run in a
+      # workflow so an E1e regression goes red in CI. No cluster required.
+      - name: task test:meta:e1e (E1e offline meta gates)
+        run: task test:meta:e1e
