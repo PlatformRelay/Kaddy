@@ -3,8 +3,8 @@ schema: spec-driven
 
 context: |
   Project: kaddy (github.com/PlatformRelay/kaddy) — security-first Website-as-a-Service on Kubernetes.
-  Phase 1 substrate: local Talos via driving-range (sibling repo); phase 2: gridscale GSK + LBaaS.
-  Day-0: driving-range OpenTofu (phase 1); Terramate + gridscale provider v2 (phase 2, E1g).
+  Phase 1 substrate: local kind + Cilium (E1e, D-025); driving-range Talos = optional maturity contrast; phase 2: gridscale GSK + LBaaS.
+  Day-0: kind bring-up via hack/cluster (phase 1, E1e); Terramate + gridscale provider v2 (phase 2, E1g).
   Ingress: **Cilium Gateway API** on platform cluster — no MetalLB, no caddyserver/gateway on platform (ADR-0104, D-019).
   Tenant Caddy: Backstage scaffold / tenant product (E10), not platform ingress.
   Identity: Dex + GitHub connector scoped to **PlatformRelay** org (D-018).

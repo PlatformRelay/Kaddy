@@ -1,18 +1,18 @@
-# Spec — E1 platform bootstrap (driving-range handoff)
+# Spec — E1 platform bootstrap (on E1e local substrate)
 
-Epic: E1 · ADR: [0102](../../../docs/adr/0102-talos-immutable-substrate.md) · **Phase:** 1  
-**Depends:** [driving-range](../../../driving-range/) E10 (Cilium Gateway + LB-IPAM/L2) Ready
+Epic: E1 · ADR: [0104](../../../docs/adr/0104-caddy-gateway-api.md) · **Phase:** 1  
+**Depends:** [e1e-kind-local-cluster](../../e1e-kind-local-cluster/) (Cilium Gateway + LB-IPAM/L2) Ready — see D-025
 
 ---
 
 ## REQ-E1-S01-01: Handoff runbook exists
 
 **Priority:** must  
-**When** operator reads `docs/runbooks/driving-range-handoff.md`  
-**Then** steps cover kubeconfig export, **Cilium LB-IPAM pool** (`192.168.100.200–.220`), **Gateway API / Cilium GatewayClass**, default StorageClass, tailnet access — **no MetalLB**  
+**When** operator reads `docs/runbooks/local-substrate-handoff.md`  
+**Then** steps cover `task cluster:up` (E1e substrate bring-up), kubeconfig export, **Gateway API / Cilium GatewayClass**, reaching ArgoCD via its Gateway HTTPRoute through the kind port-mapping / `port-forward` (macOS-safe), default StorageClass — **no MetalLB**  
 **Test:** `tests/smoke/e1-s01-01.sh`
 
-**Verify:** `test -f docs/runbooks/driving-range-handoff.md && ! rg -i metallb docs/runbooks/driving-range-handoff.md`
+**Verify:** `test -f docs/runbooks/local-substrate-handoff.md && ! rg -i metallb docs/runbooks/local-substrate-handoff.md`
 
 ---
 
@@ -51,7 +51,7 @@ kubectl get ciliumloadbalancerippool
 
 **Priority:** must  
 **When** E1 smoke bundle runs  
-**Then** ArgoCD reachable via a Cilium-assigned Gateway/LB IP; handoff doc complete  
+**Then** ArgoCD reachable via its Gateway HTTPRoute through the kind port-mapping / `port-forward` (macOS-safe — not the raw LB IP); handoff doc complete  
 **Test:** `tests/smoke/e1-exit.sh`
 
 **Verify:** `task test:smoke:e1`

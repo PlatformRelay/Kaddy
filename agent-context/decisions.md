@@ -186,3 +186,41 @@ Format: **Decision** · date · context · operator choice · agent counterpoint
 **Context:** With the config fixed (correct filename/structure, MD013 disabled), markdownlint reports **77 residual findings** (mostly `--fix`-able). `verify.yaml` currently runs lint advisory (`continue-on-error`).  
 **Decision:** **Option A — advisory now, one focused cleanup lane (tracked in `testing-foundation/tasks.md`), then flip to required.**  
 **Counterpoints (agent, kept):** Rejected C (disable noisy rules — hollows out the gate, cargo-cult) and B (fix all 77 now — balloons this change into a docs sweep). A keeps the gate green immediately while genuinely enforcing lint after one PR.
+
+## D-024 — Next unblocked kaddy work after the auto-merge batch
+
+**Date:** 2026-07-15 (answered via /open-questions)
+**Context:** `/agent-loop-auto` landed PR #3 (e5-F2/F3, `51a90b8`) + PR #4 (e1b-F4, `516a0f7`); the loop
+halted because every remaining offline lane is a stop-condition item or risks colliding with the active
+WIP lint session.
+**Decision:** **Do not hold.** Proceed with the work lanes as next steps: (a) **Taskfile lint-hardening**
+(e1b-F3 `test:policy` glob + e5-F4 broaden shellcheck to `hack/**/*.sh`) — run once the WIP lint session
+commits, to avoid collision; (b) **e1c-security-baseline** offline subset (NetworkPolicy/Kyverno manifests
++ digest-pin + SOPS scaffolds, excl. Trivy CI) — opens a PR for **operator review, NOT auto-merged**
+(security); (c) **e12-slidev** deck + Pages — **operator-reviewed** before merge (outward-facing). Plus:
+add **`kyverno test` (CLI, offline)** cases for the `require-kaddy-labels` ClusterPolicy and the e1c
+Kyverno policies as they are authored.
+**Counterpoints (agent, kept):** Agent recommended **Hold (A)** since none of these are autonomously
+auto-mergeable (security / outward-facing / can't-fully-gate-offline). Operator chose to proceed with
+operator-reviewed PRs for e1c/e12 and the safe offline lanes. Guardrails preserved: e1c + e12 do **not**
+auto-merge (open for review); Taskfile-lint deferred until the WIP lint session lands.
+
+## D-025 — Local substrate: kind + Cilium (phase 1 dev); driving-range Talos deferred (amends D-017)
+
+**Date:** 2026-07-15 (operator directive in session)
+**Context:** Phase-1 development stalled on the local Talos [driving-range](../../driving-range/) cluster
+(D-017) — hours of libvirt/Talos yak-shaving with no working cluster, blocking every E1–E8 lane. The
+operator directed a pivot to a local **kind** cluster. The open sub-question was the edge: kindnet +
+kind-native gateway (easy, but diverges from D-019/D-022 and breaks the E1–E8 Cilium assertions) vs.
+**Cilium on kind** (matches the ratified edge, keeps specs passing). Operator confirmed **Cilium on kind**.
+**Decision:** **kind + Cilium is the phase-1 local substrate** (new change [e1e-kind-local-cluster](../openspec/changes/e1e-kind-local-cluster/), **P0**). kind runs Cilium CNI + Gateway API + LB-IPAM/L2 so the
+edge stays **Cilium Gateway API, no MetalLB** (D-019, D-022); the LB pool is carved from the docker `kind`
+bridge subnet instead of driving-range's `192.168.100.200–.220`. **driving-range Talos becomes an optional
+maturity-contrast spike** (like Talos-on-gridscale in D-015), no longer a blocker for E1. **gridscale GSK
+remains phase 2** (D-015). E1e owns substrate+edge; E1 owns platform bootstrap (ArgoCD) on top.
+**Counterpoints (agent, kept):** kind loses the immutable-Talos showpiece and reboot persistence that
+motivated D-017; accepted because scarce time should buy E1–E8 progress, not libvirt debugging. Reintroduces
+`kind` which D-017 explicitly replaced — scoped to local dev only; phase-2 substrate (GSK) unchanged.
+**macOS guard:** the docker `kind` subnet is not host-routable on Docker Desktop/colima, so LB/Gateway IPs
+are asserted **assigned** (`status.addresses`), never host-curled; HTTP smoke goes through kind
+`extraPortMappings` / `port-forward`. **Guard:** keep Cilium (not kindnet) so the edge still matches GSK.
