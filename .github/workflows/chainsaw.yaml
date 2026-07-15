@@ -2,6 +2,15 @@
 name: chainsaw
 
 on:
+  # Runs on push to main (local-merge workflow — no PR required; L2 gate lands
+  # in parallel and we fix-forward if a later commit trips it) AND on PRs.
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'tests/chainsaw/**'
+      - 'Taskfile.yml'
+      - '.github/workflows/chainsaw.yaml'
   pull_request:
     paths:
       - 'deploy/**'

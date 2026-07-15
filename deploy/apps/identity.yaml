@@ -34,8 +34,6 @@ spec:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
     path: deploy/identity
-    directory:
-      recurse: false
   destination:
     server: https://kubernetes.default.svc
     namespace: identity

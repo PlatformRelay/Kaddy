@@ -31,8 +31,6 @@ spec:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
     path: deploy/cert-manager
-    directory:
-      recurse: false
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

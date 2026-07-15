@@ -28,8 +28,6 @@ spec:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
     path: deploy/gateway
-    directory:
-      recurse: false
   destination:
     server: https://kubernetes.default.svc
     namespace: default
