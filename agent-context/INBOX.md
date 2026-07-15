@@ -4,6 +4,24 @@ Items waiting on the operator. Answered decisions move to `decisions.md`.
 
 ## Decisions
 
+### D-026 — ANSWERED 2026-07-15 → decisions.md — Marshal `caddy_*` alerts direction
+
+**Decision needed:** what to do with the broken E5 `caddy_*` marshal alerts (audit ARCH-2/ARCH-3) — they
+scrape a Caddy edge target the Cilium/Envoy edge never emits, so they can't fire against the platform as
+designed.
+
+- **(A) Park with the Caddy epic** — move the `caddy_*` alerts + their promtool tests into the deferred
+  `e-caddy-mvp` VM-variant alerting slice and disable them from active platform monitoring; they light up
+  (serve→scrape→fire) when the Caddy tenant lands. Promtool fire/silent rigor preserved, scoped to the epic.
+- **(B) Re-point to Cilium/Envoy Gateway metrics** — keep them live in platform monitoring against the edge.
+
+**Recommendation: A (park).** Rationale: B requires enabling Envoy/Cilium metrics in the E1e substrate =
+scope creep on the local dev substrate; A puts the alert where its real target (the Caddy tenant) will exist.
+
+**Status:** ANSWERED 2026-07-15 — operator chose **(A) park** (confirmed via the coordinator's direct
+question). Recorded ANSWERED in decisions.md (D-026). WS1 ARCH-2/ARCH-3 alert migration + ADR-0104 retcon
+are **unblocked** and assigned to the monitoring/Caddy lane.
+
 ### D-025 — ANSWERED 2026-07-15 → decisions.md
 
 Pivot phase-1 substrate to **local kind + Cilium** (new **P0** change `e1e-kind-local-cluster`); amends D-017.
@@ -39,3 +57,12 @@ _(none open — PR #3, PR #4 merged 2026-07-15 via /agent-loop-auto)_
 ## PRs to merge
 
 _(none)_
+
+## Audits
+
+- **AUDIT 2026-07-15** — Health & direction baseline (deep): **NEEDS-WORK** overall, **direction AT-RISK**.
+  39 findings (P0×2, P1×11). Top 3: (1) propagate D-025 kind substrate pivot to docs — currently in zero top
+  docs; (2) make the brief spine demonstrable + fix marshal scraping `caddy_*` the Cilium/Envoy edge never
+  emits; (3) wire the good gates (STRICT_TEST_FILES, E1e meta, gitleaks) into CI.
+  → `agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md` · register: `TECH-DEBT-REGISTER.md`
+  → **Remediation plan:** `openspec/changes/audit-remediation-2026-07/` (WS1–WS5 + WONTFIX + ROADMAPPED). Minted platform MVP epic `e-caddy-mvp`; marshal decision D-026 **ANSWERED (A — park)**; WS1 unblocked.

@@ -224,3 +224,32 @@ motivated D-017; accepted because scarce time should buy E1–E8 progress, not l
 **macOS guard:** the docker `kind` subnet is not host-routable on Docker Desktop/colima, so LB/Gateway IPs
 are asserted **assigned** (`status.addresses`), never host-curled; HTTP smoke goes through kind
 `extraPortMappings` / `port-forward`. **Guard:** keep Cilium (not kindnet) so the edge still matches GSK.
+
+## D-026 — Marshal `caddy_*` alerts: ANSWERED — park with the Caddy-MVP epic (option A)
+
+> **STATUS: ANSWERED 2026-07-15 — operator chose Option A (park).** Confirmed directly by the operator
+> via the coordinator's question tool ("Park with Caddy epic"), and reinforced by the operator's Caddy/nginx
+> MVP vision (VM variant = Caddy + alerting). WS1 ARCH-2/ARCH-3 alert migration + ADR-0104 retcon are
+> unblocked and assigned to the monitoring/Caddy lane.
+
+**Date:** 2026-07-15 (operator-confirmed via direct question)
+**Context:** The 2026-07-15 health audit (ARCH-2/ARCH-3) found the landed E5 `caddy_*` marshal alerts scrape
+a Caddy edge target that the platform's Cilium/Envoy edge never emits, and that only exists via cut scope —
+so the showpiece alert can never fire against the platform as designed. Two options were surfaced:
+**(A)** park the `caddy_*` alerts with the deferred Caddy-tenant epic and disable them from active platform
+monitoring; **(B)** re-point them to Cilium/Envoy Gateway metrics.
+**Recommendation:** **Option A — park** (operator-confirmed). The `caddy_*` marshal PrometheusRules + their promtool tests move out of
+active platform monitoring into the **VM-variant alerting slice** of the new `e-caddy-mvp` epic; they light
+up (serve→scrape→fire) when the Caddy tenant lands and fire against the VM's external metrics endpoint.
+Promtool **fire + silent** rigor is **preserved**, just scoped to the epic. Platform-edge monitoring is
+**decoupled** from Caddy. ADR-0104 to be retconned by the monitoring/Caddy lane: platform edge = Cilium/Envoy
+Gateway; Caddy = tenant MVP (Website-as-a-Service), **not** a gateway (D-019).
+**Rationale for A over B:** Option B would require enabling Envoy/Cilium metrics in the E1e substrate = scope
+creep on the local dev substrate. Parking keeps the substrate minimal and puts the alert where its real
+target (the Caddy tenant) will exist.
+**Counterpoints (agent, kept):** B would keep the alerts "live" in the platform monitoring path; rejected
+because they would then assert against synthetic/edge metrics unrelated to the tenant product, defeating the
+demo's point. Parking risks the alerts bit-rotting while deferred; guarded by keeping the promtool suite
+green in the epic's gate so a regression is still caught.
+**Traceability:** audit ARCH-2, ARCH-3 · epic `openspec/changes/e-caddy-mvp/` · remediation WS1
+`openspec/changes/audit-remediation-2026-07/`.
