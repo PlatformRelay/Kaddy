@@ -23,6 +23,33 @@ artifacts, not claims of a running production cluster.
 13. Why this answers the exercise
 14. Thank you
 
+Each content slide is preceded by a **section-cover divider** (`§ 00`–`§ 13`) —
+a full-bleed AI-artwork slide rendered by `components/CoverArt.vue`, telling one
+continuous golf/caddie story (see [`image-prompts.md`](./image-prompts.md)).
+
+## Generating the art
+
+The visual layer is prompt-driven and drop-in:
+
+- **Prompts** live in [`image-prompts.md`](./image-prompts.md) — one cover per
+  slide (`S00`–`S13`) as a continuous Mœbius / *ligne claire* story in the
+  platform's golf/caddie universe, plus a global style block, a global negative
+  prompt, and a **Branding** section (logo dark/light, GitHub og-image).
+- **Target filenames** are final and already referenced by the deck:
+  - covers → `slides/public/covers/section-NN-<slug>.png` — **16:9** (e.g.
+    1600×900); keep the left third calm for the title, bottom-right quiet
+  - branding → `slides/public/branding/logo-dark.png` + `logo-light.png`
+    (**1:1**, legible at 512 px and favicon scale) and `og-image.png`
+    (**1280×640**, GitHub social preview)
+- **Drop-in behaviour:** until a PNG exists, `components/CoverArt.vue` falls
+  back to `public/covers/placeholder-section.svg` via an `onError` handler —
+  the build stays green and generated art lands with zero code changes.
+- **Guardrail (mandatory):** every rendered cover carries a small, low-opacity
+  **"AI generated"** footer — `CoverArt` renders it on every divider; do not
+  remove it, and do not bake fake footers into the images themselves.
+- **Consistency:** generate `S00` first, lock the cast's look, then reuse it
+  (seed / reference images) for `S01`–`S13` and the branding set.
+
 ## Run it
 
 ```bash

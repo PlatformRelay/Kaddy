@@ -6,9 +6,28 @@ info: |
   ## kaddy — a caddie for your websites
   Security-first, spec-driven, Kubernetes-native Website-as-a-Service.
   Built for the gridscale Platform Engineer exercise.
-class: text-center
+layout: none
 transition: slide-left
 mdc: true
+---
+
+<!--
+Section covers (E12b): every <CoverArt> `src` already points at the FINAL
+artwork filename under slides/public/covers/ (prompts + name map live in
+slides/image-prompts.md). Until a PNG is generated and dropped in, CoverArt
+falls back to covers/placeholder-section.svg — no code change needed later.
+The low-opacity "AI generated" footer it renders is a mandatory guardrail.
+-->
+
+<CoverArt
+  src="/covers/section-00-first-tee.png"
+  kicker="§ 00 · The first tee"
+  title="kaddy — a caddie for your websites"
+/>
+
+---
+layout: cover
+class: text-center
 ---
 
 # kaddy
@@ -31,6 +50,16 @@ I could have written a bash script on a VM. Instead I built the platform that
 script would be one tenant of — and I did it spec-first, secured, and gated.
 That is the story this deck tells.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-01-one-line-letter.png"
+  kicker="§ 01 · The one-line letter"
+  title="The brief, reframed"
+/>
 
 ---
 layout: statement
@@ -57,6 +86,16 @@ The exercise is a proxy for "can you build and operate a platform." So I treated
 the Caddy-on-a-VM task as ONE tenant of a Website-as-a-Service platform —
 "clubhouse" — rather than the whole deliverable.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-02-one-hole-whole-course.png"
+  kicker="§ 02 · One hole, whole course"
+  title="From task to platform"
+/>
 
 ---
 layout: two-cols
@@ -95,6 +134,16 @@ platform edge, not as a bespoke script.
 Naming is not decoration: each name maps to a capability and a directory. It
 keeps incident conversations precise — "marshal is firing" beats "the alert thing."
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-03-honest-scorecard.png"
+  kicker="§ 03 · The honest scorecard"
+  title="What is actually landed vs designed"
+/>
 
 ---
 layout: statement
@@ -145,6 +194,16 @@ This is the single most important slide for credibility. Everything I claim as
 "running" I can defend; everything else I call designed. That honesty IS the
 senior signal.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-04-two-courses-one-blueprint.png"
+  kicker="§ 04 · Two courses, one blueprint"
+  title="Architecture — two phases, one set of manifests"
+/>
 
 ---
 layout: default
@@ -199,6 +258,16 @@ rewrite. Caddy is a tenant reached THROUGH the edge, never the edge itself.
 -->
 
 ---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-05-practice-green.png"
+  kicker="§ 05 · The practice green"
+  title="Substrate — local kind + Cilium"
+/>
+
+---
 layout: two-cols
 layoutClass: gap-8
 ---
@@ -241,6 +310,16 @@ D-025 is a good story to tell live: I tried the harder path (bare Talos), it cos
 hours without a cluster, so I pivoted to kind to keep momentum and parked Talos as
 an optional "look how deep I can go" spike. That is real engineering judgment.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-06-greenkeepers-scroll.png"
+  kicker="§ 06 · The greenkeepers' scroll"
+  title="GitOps — ArgoCD app-of-apps"
+/>
 
 ---
 layout: default
@@ -296,6 +375,16 @@ The root Application's committed targetRevision stays `main`; a lane proves itse
 by applying a runtime-overridden copy pointed at the branch. Committed truth is
 never the un-merged branch. That discipline keeps main always-deployable.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-07-marshals-tower.png"
+  kicker="§ 07 · The marshal's tower"
+  title="Observability spine — marshal"
+/>
 
 ---
 layout: default
@@ -354,6 +443,16 @@ The differentiator: I don't just write alert rules, I TEST them with promtool in
 CI. "Alert on server down" is a claim you can regress. That is the part most
 candidates skip, and it directly answers the brief's "alerting correctness."
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-08-gatehouse-inspection.png"
+  kicker="§ 08 · The gatehouse inspection"
+  title="Security & governance"
+/>
 
 ---
 layout: default
@@ -417,6 +516,16 @@ to real regulation, sanitized from public sources only.
 -->
 
 ---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-09-mulligans-second-chance.png"
+  kicker="§ 09 · Mulligan's second chance"
+  title="Caddy-MVP tenant & mulligan"
+/>
+
+---
 layout: two-cols
 layoutClass: gap-8
 ---
@@ -470,6 +579,16 @@ target. I caught that in my own audit and fixed the story.
 -->
 
 ---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-10-five-hole-walkthrough.png"
+  kicker="§ 10 · The five-hole walkthrough"
+  title="Demo flow"
+/>
+
+---
 layout: default
 ---
 
@@ -506,6 +625,16 @@ I keep the demo honest: I'll say which beats run live now (GitOps tree, promtool
 tests) vs which are the designed choreography. The scorecard turns the demo into a
 durable artifact — that's the evidence the brief asks for, upgraded.
 -->
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-11-back-nine-at-dawn.png"
+  kicker="§ 11 · The back nine at dawn"
+  title="Roadmap & honest status"
+/>
 
 ---
 layout: default
@@ -560,6 +689,16 @@ zero until the platform is proven locally.
 -->
 
 ---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-12-signed-scorecard.png"
+  kicker="§ 12 · The signed scorecard"
+  title="Why this answers the exercise"
+/>
+
+---
 layout: statement
 ---
 
@@ -578,6 +717,16 @@ layout: statement
 <div class="pt-6 text-2xl font-bold text-teal-400">
 A platform team can adopt this. That was the point.
 </div>
+
+---
+layout: none
+---
+
+<CoverArt
+  src="/covers/section-13-nineteenth-hole.png"
+  kicker="§ 13 · The nineteenth hole"
+  title="Thank you"
+/>
 
 ---
 layout: center
