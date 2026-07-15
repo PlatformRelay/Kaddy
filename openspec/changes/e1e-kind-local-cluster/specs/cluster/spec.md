@@ -7,11 +7,33 @@ Owns **substrate + edge** for phase-1 local development: a reproducible `kind` c
 (CNI + Gateway API + LB-IPAM/L2), plus `cert-manager`, installed **securely** (pinned versions, no `:latest`,
 loopback-bound ports, no secrets in git). E1 (platform bootstrap: ArgoCD/GitOps) runs **on top** of this.
 
-**macOS note:** on Docker Desktop / colima the docker `kind` bridge subnet is not host-routable, so a
+**macOS note:** on Docker Desktop / colima / podman the `kind` bridge subnet is not host-routable, so a
 LoadBalancer/Gateway IP is asserted as **assigned** (`status.addresses`), never curled from the host.
-Actual HTTP reachability is verified through kind `extraPortMappings` / `kubectl port-forward`.
+Actual HTTP reachability is verified through the loopback-bound kind `extraPortMappings`: the smoke
+Gateway service's `nodePort` is pinned to `30080` (the host-loopback-mapped port) and `curl 127.0.0.1:30080`
+is used. (`kubectl port-forward` does **not** work against the Cilium gateway LB service — it is
+selectorless, backed by Cilium's Envoy datapath rather than pods.)
 
-**Prerequisite:** Docker (or nerdctl/podman) running; `kind`, `kubectl`, `helm` on `PATH`.
+**Prerequisite:** Docker (or nerdctl/podman) running; `kind`, `kubectl`, `helm`, `jq` on `PATH`.
+
+---
+
+## Implementation deviations (rootless-podman reality, recorded 2026-07-15)
+
+Brought up green on this workstation with **rootful** podman. Two honest deviations from the naive
+Helm-values path, both benign and documented (no gate was weakened to accommodate them):
+
+1. **Rootful podman is required for the Cilium agent.** Under **rootless** podman the Cilium agent's
+   `mount-bpf-fs` init container fails with `mount: /sys/fs/bpf: permission denied` (and
+   `apply-sysctl-overwrites` likewise). This is a runtime-privilege limitation, **not** a
+   `kubeProxyReplacement` one — so the tasks.md S02 `kubeProxyReplacement=false` fallback would **not**
+   have helped (the bpf mount fails regardless). Escalating to rootful podman
+   (`podman machine set --rootful`) resolves it, and **`kubeProxyReplacement=true` then comes up clean**
+   (`KubeProxyReplacement: True`) — the secure default is kept, no fallback taken. The install scripts
+   still support `CILIUM_KUBE_PROXY_REPLACEMENT=false` as an env override, unused here.
+2. **`operator.replicas=1`.** The Cilium operator defaults to 2 replicas with anti-affinity, which cannot
+   both schedule on a single-node kind cluster (the 2nd stays `Pending` and hangs Helm `--wait`). Set to
+   `1` for the single-node local substrate.
 
 ---
 
