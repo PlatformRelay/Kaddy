@@ -98,3 +98,65 @@ Cross-cutting requirements for verifiable development. ADR: [0701](../../../docs
 **Test:** `tests/meta/tf-06-checklist.md`
 
 **Verify:** manual review + agent-loop pick-next-story skill
+
+---
+
+## REQ-TF-09: Spec format — Level tag mandatory
+
+**Priority:** must · **Level:** meta  
+**Given** any requirement in `openspec/changes/*/specs/`  
+**When** `hack/verify-spec-coverage.sh` runs  
+**Then** each REQ declares a **Level:** value in `{L0,L1,L2,L3,L4,meta}` matching the tier of its **Test:** artifact per the mapping in [`docs/development/testing.md`](../../../docs/development/testing.md)  
+**Test:** `hack/verify-spec-coverage.sh`
+
+**Verify:** `task test:spec` — reported Level count equals REQ count; no REQ missing a Level
+
+---
+
+## REQ-TF-10: Design-gate CI runs `task verify` on every PR
+
+**Priority:** must · **Level:** meta  
+**Given** a GitHub Actions workflow gating pull requests  
+**When** a PR touches `openspec/`, `docs/`, `deploy/`, `modules/`, or `hack/`  
+**Then** the workflow installs the toolchain and runs `task scrub`, `task openspec:validate`, and `task test:spec` as **required** checks; `task lint` runs **advisory** (`continue-on-error`) until the markdown-cleanup lane flips it to required  
+**Test:** `.github/workflows/verify.yaml`
+
+**Verify:** `grep -q 'task scrub' .github/workflows/verify.yaml && grep -q 'task test:spec' .github/workflows/verify.yaml`  
+**Refs:** stale `ci.yaml` (Humanitec `make`/`humctl` leftover) removed
+
+---
+
+## REQ-TF-11: Spec validator is unambiguous and CI-runnable
+
+**Priority:** must · **Level:** meta  
+**Given** the Taskfile `openspec:validate` target names an `openspec` CLI, but kaddy specs use a custom `## REQ- / **Verify:** / **Test:**` format that the Fission-AI OpenSpec CLI (`@fission-ai/openspec`) rejects  
+**When** the canonical validator runs in CI on a clean tree  
+**Then** exactly one of: **(a)** `hack/verify-spec-coverage.sh` + folder-structure check is declared canonical and the Taskfile target is renamed so it no longer implies the Fission-AI CLI; or **(b)** specs are migrated to OpenSpec delta/scenario format and `openspec validate --all` exits 0  
+**Test:** `tests/meta/spec-validator.sh`
+
+**Verify:** chosen validator exits 0 in CI; decision recorded in [`docs/development/testing.md`](../../../docs/development/testing.md) and INBOX  
+**Refs:** empirical — `npx @fission-ai/openspec@1.6.0 validate --all` fails 21/21 against current format
+
+---
+
+## REQ-TF-12: terraform-docs keeps module README in sync
+
+**Priority:** must · **Level:** L0  
+**Given** `modules/labels/` with `.terraform-docs.yml` at repo root  
+**When** `task docs:tf:check` runs  
+**Then** the injected README section matches generated inputs/outputs  
+**Test:** `.terraform-docs.yml`, `modules/labels/README.md`
+
+**Verify:** `task docs:tf:check`
+
+---
+
+## REQ-TF-13: OpenTofu fmt gate on modules
+
+**Priority:** must · **Level:** L0  
+**Given** OpenTofu modules under `modules/`  
+**When** `task test:fmt` runs  
+**Then** `tofu fmt -check -recursive modules` exits 0  
+**Test:** `Taskfile.yml` (`test:fmt` target)
+
+**Verify:** `task test:fmt`

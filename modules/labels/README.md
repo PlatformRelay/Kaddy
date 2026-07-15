@@ -4,29 +4,33 @@ OpenTofu module implementing [ADR-0301](../../docs/adr/0301-resource-labeling-co
 
 **Status:** implemented (E1b).
 
-## Inputs
-
-Required: `owner`, `service`, `part_of`, `track`, `managed_by`, `data_classification`,
-`business_criticality`.
-Optional: `component`, `personal_data`, `pci`.
-Naming: `name_prefix` (default `kaddy`), `name_suffix`.
-
-Values are validated against the strictest syntax (lowercase `^[a-z0-9_-]{0,63}$`).
-`track` must be `stable | canary | preview`; `data_classification` must be
-`public | internal | confidential | restricted`.
-
-## Outputs
-
-- `labels` — `map(string)` with all mandatory ADR-0301 keys, using the
-  `app.kubernetes.io/*` mapping for `service`/`component`/`part-of`/`managed-by`.
-- `gridscale_labels` — `list(string)` of `key=value`, lowercase, each value
-  matching `^[a-z0-9_-]{0,63}$`.
-- `name` — deterministic resource name `{name_prefix}-{service}-{name_suffix}`,
-  length ≤ 63, charset `^[a-z0-9-]+$` (no underscores).
-
-OpenTofu has no user-defined functions, so the name helper is exposed as the
-`name` output driven by the `name_prefix` / `name_suffix` variables.
-
 ## Tests
 
 `tofu test` in `tests/` (TDD — tests written first). Run via `task test:unit`.
+
+<!-- BEGIN_TF_DOCS -->
+## Inputs
+
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| business\_criticality | Blast radius tier (ADR-0301 mandatory). | `string` | n/a | yes |
+| data\_classification | Data classification (ADR-0301 mandatory). | `string` | n/a | yes |
+| managed\_by | IaC tool -> app.kubernetes.io/managed-by (ADR-0301 mandatory). | `string` | n/a | yes |
+| owner | DRI for incidents (ADR-0301 mandatory). | `string` | n/a | yes |
+| part\_of | Platform/product -> app.kubernetes.io/part-of (ADR-0301 mandatory). | `string` | n/a | yes |
+| service | App identity -> app.kubernetes.io/name (ADR-0301 mandatory). | `string` | n/a | yes |
+| track | Release track (replaces environment/stage). | `string` | n/a | yes |
+| component | Role -> app.kubernetes.io/component (ADR-0301 optional). | `string` | `null` | no |
+| name\_prefix | Prefix for resource-name helper: {prefix}-{service}-{suffix}. | `string` | `"kaddy"` | no |
+| name\_suffix | Suffix for resource-name helper: {prefix}-{service}-{suffix}. | `string` | `""` | no |
+| pci | PCI-DSS scoping flag (ADR-0301 optional). | `bool` | `null` | no |
+| personal\_data | GDPR personal-data classification (ADR-0301 optional). | `string` | `null` | no |
+
+## Outputs
+
+| Name | Description |
+| ---- | ----------- |
+| gridscale\_labels | List of key=value strings for gridscale resource labels. |
+| labels | Canonical ADR-0301 label map (map(string)) for Kubernetes / unified use. |
+| name | Deterministic resource name {prefix}-{service}-{suffix}, <= 63 chars, ^[a-z0-9-]+$. |
+<!-- END_TF_DOCS -->
