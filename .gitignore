@@ -54,3 +54,6 @@ evidence/runs/
 
 # Local cluster state (kubeconfig, generated certs) — never commit
 .state/
+
+# Un-ignore the committed harness charter (overrides global ~/.config/git/ignore)
+!AGENTS.md
