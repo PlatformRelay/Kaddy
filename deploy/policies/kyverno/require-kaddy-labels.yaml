@@ -1,10 +1,31 @@
 # REQ-E1b-S05-01: Kyverno ClusterPolicy enforcing the mandatory ADR-0301
-# label set on Pods. Manifest only — not applied by this lane (L2 admission
-# behaviour is covered by the deferred Chainsaw suite).
+# label set on Pods. AUTHORED, NOT YET APPLIED — Kyverno is not installed on
+# the cluster and no Application syncs deploy/policies/ yet (see
+# deploy/policies/README.md for the cutover plan; security review 2026-07-16
+# P2-1). Admission behaviour is covered by the deferred Chainsaw suite
+# (TEST-4); offline behaviour is covered by
+# `kyverno test tests/kyverno/require-kaddy-labels/`.
+#
+# Infra namespaces are excluded: kube-* system pods and Helm/upstream-managed
+# platform pods (cert-manager, Argo CD core, kube-prometheus-stack/Loki/Alloy,
+# Kyverno itself) do not carry the bare kaddy keys — the ADR-0301 contract is
+# enforced on kaddy-authored workloads. Without this exclusion an in-cluster
+# Enforce would deny every system pod restart.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: require-kaddy-labels
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: require-kaddy-labels
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
   annotations:
     kaddy.io/adr: "0301"
     kaddy.io/req: REQ-E1b-S05-01
@@ -25,6 +46,18 @@ spec:
           - resources:
               kinds:
                 - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - local-path-storage
+                - kyverno
+                - cert-manager
+                - argocd
+                - monitoring
       validate:
         message: >-
           Pods must set the mandatory ADR-0301 labels (canonical bare keys):

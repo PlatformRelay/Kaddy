@@ -1,0 +1,68 @@
+# ADR-0106 pod-security baseline: disallow privileged containers.
+# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+#
+# Audit (not Enforce) on first sync: the observability stack inherits chart
+# defaults (security review P2-2) and must be proven clean in Audit before the
+# flip to Enforce (cutover step 3). kube-* namespaces are excluded — CNI and
+# node agents legitimately run privileged there.
+# Offline test: kyverno test tests/kyverno/disallow-privileged-containers/.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: disallow-privileged-containers
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-BASELINE
+    policies.kyverno.io/title: Disallow privileged containers
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Privileged mode disables most security mechanisms and grants access to
+      host devices. Containers, init containers and ephemeral containers must
+      not set securityContext.privileged to true.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: privileged-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - local-path-storage
+      validate:
+        message: >-
+          Privileged mode is disallowed (ADR-0106). Set
+          securityContext.privileged to false or omit it on all containers,
+          init containers and ephemeral containers.
+        pattern:
+          spec:
+            =(ephemeralContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            containers:
+              - =(securityContext):
+                  =(privileged): "false"

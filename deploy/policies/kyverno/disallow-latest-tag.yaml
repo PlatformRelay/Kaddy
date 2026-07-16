@@ -1,0 +1,79 @@
+# ADR-0106 / SEC-4 image hygiene: every image must carry a tag, and that tag
+# must not be the mutable `latest`. Complements REQ-E1c-S03-01 (digest
+# pinning, follow-up) — tag pinning is the floor, digests are the target.
+# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+#
+# Audit (not Enforce) on first sync, flipped to Enforce at cutover step 3
+# once the Audit report is clean (all kaddy manifests already pin exact
+# tags, so this is expected to be a fast flip).
+# Offline test: kyverno test tests/kyverno/disallow-latest-tag/.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: disallow-latest-tag
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-BASELINE
+    policies.kyverno.io/title: Disallow latest tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      A floating `latest` tag (or a missing tag, which defaults to latest)
+      makes rollbacks and provenance impossible. Images must be pinned to an
+      exact tag (digests preferred — REQ-E1c-S03-01).
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - local-path-storage
+      validate:
+        message: An explicit image tag is required (ADR-0106 / SEC-4).
+        pattern:
+          spec:
+            containers:
+              - image: "*:*"
+    - name: validate-image-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - local-path-storage
+      validate:
+        message: The mutable `latest` tag is not allowed (ADR-0106 / SEC-4).
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"

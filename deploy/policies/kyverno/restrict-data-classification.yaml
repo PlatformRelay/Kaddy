@@ -1,0 +1,67 @@
+# REQ-E1b-S05-02: Kyverno ClusterPolicy validating that the ADR-0301
+# `data-classification` label carries an ALLOWED VALUE (not just presence,
+# which require-kaddy-labels covers). Allowed set per ADR-0301:
+# public / internal / confidential / restricted.
+#
+# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md for the cutover
+# plan. Offline behaviour is covered by
+# `kyverno test tests/kyverno/restrict-data-classification/`; in-cluster
+# admission behaviour un-skips the Chainsaw labeling suite (TEST-4).
+#
+# Same infra-namespace excludes as require-kaddy-labels (see that file).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-data-classification
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: restrict-data-classification
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0301"
+    kaddy.io/req: REQ-E1b-S05-02
+    policies.kyverno.io/title: Restrict data-classification values
+    policies.kyverno.io/category: Governance
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      The ADR-0301 data-classification label must be one of the allowed
+      values (public, internal, confidential, restricted) so DLP queries and
+      compliance audits can rely on a closed vocabulary.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: validate-data-classification-value
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kube-node-lease
+                - local-path-storage
+                - kyverno
+                - cert-manager
+                - argocd
+                - monitoring
+      validate:
+        message: >-
+          The data-classification label must be one of: public, internal,
+          confidential, restricted (ADR-0301 closed vocabulary).
+        pattern:
+          metadata:
+            labels:
+              data-classification: public | internal | confidential | restricted

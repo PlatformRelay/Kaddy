@@ -1,0 +1,70 @@
+# REQ-E1c-S03-02: Kyverno verifyImages policy — cosign signature verification
+# for kaddy-published images. AUTHORED, NOT ACTIVE — per the spec this stays
+# skipped "until cosign wired": no kaddy release image is signed yet and no
+# release signing key exists.
+#
+# PLACEHOLDER KEY: the public key below is a throwaway ECDSA P-256 key
+# generated solely so this manifest is schema-valid; the matching private key
+# was never persisted. It MUST be replaced with the real kaddy cosign release
+# public key when the release-signing pipeline lands (SEC-8 follow-up).
+# Until then: Audit mode + an imageReferences scope that only matches
+# kaddy-published images (none are deployed today), so syncing this policy
+# can never block third-party/platform images.
+#
+# NO OFFLINE TEST: `kyverno test` for verifyImages rules requires registry
+# access to fetch signatures, so this policy is the one deliberate gap in
+# tests/kyverno/ (documented in deploy/policies/README.md). In-cluster
+# behaviour is REQ-E1c-S03-02's Chainsaw test
+# `tests/chainsaw/security/unsigned-image-denied.yaml` (skip until cosign
+# wired).
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-signed-images
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: verify-signed-images
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S03-02
+    kaddy.io/status: placeholder-key-awaiting-cosign
+    policies.kyverno.io/title: Verify kaddy image signatures
+    policies.kyverno.io/category: Software Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      kaddy-published images must carry a valid cosign signature from the
+      kaddy release key before they are admitted. Third-party images are out
+      of scope (they are pinned and Trivy-scanned instead — ADR-0106).
+spec:
+  validationFailureAction: Audit
+  background: false
+  webhookTimeoutSeconds: 30
+  failurePolicy: Ignore
+  rules:
+    - name: verify-kaddy-image-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/platformrelay/*"
+          failureAction: Audit
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrv1BbCna5C1SUmE8Bk0RAWD/dN6
+                      bmwLi3MEko+JFXqwIUG9eULd80OZWcy2cg0Ek+qHDWbmxo9iAGBtCgGIig==
+                      -----END PUBLIC KEY-----
