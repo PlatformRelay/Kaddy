@@ -6,7 +6,8 @@
   - [x] Pages site enabled (`build_type=workflow`, html_url https://platformrelay.github.io/Kaddy/)
   - [x] Workflow hardened: `enablement: true`, `hack/scorecard/**` path filter, `_site/index.html` layout
   - [x] Smoke contract: offline fixture→index.html + optional `SCORECARD_PAGES_LIVE=1` curl 200
-  - [ ] Live URL HTTP 200 after first successful `scorecard-pages` deploy on main
+  - [x] Live URL HTTP 200 after first successful `scorecard-pages` deploy on main
+        (workflow_dispatch run 29511538700 success 2026-07-16; site returns 200)
 - [x] **E8-S04 · Getting Started + reviewer demo**
   - [x] Write the failing documentation contract
         `tests/meta/e8-s04-getting-started.sh` (REQ-E8-S04-01/03/05/06).
@@ -25,4 +26,4 @@
         README (REQ-E8-S04-02).
   - [x] Green: `tests/meta/e8-s04-getting-started.sh` +
         `tests/smoke/e8-s04-demo.sh`.
-- [ ] Gate: `task test:scorecard`
+- [x] Gate: `task test:scorecard` (offline fixtures default; `SCORECARD_FIXTURES=1`)
