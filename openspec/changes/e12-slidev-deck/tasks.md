@@ -28,10 +28,14 @@ TDD-ordered, vertical slices — each story is independently verifiable via its 
 ## E12-S01 — Slidev scaffold + reproducible build
 
 - [x] Add failing `tests/deck/slidev-build.sh` (asserts `slidev build` exit 0 + `slides/dist/` refreshed)
-- [x] `slides/package.json` (Slidev dep) — landed (deck v1); still open: wire `task deck:build`
-- [ ] CI job builds the deck; static SPA is the artifact the clubhouse/Caddy tenant serves
-      *(Taskfile/.github outside the E12 file-only lane — follow-up: `task deck:build` wrapping
-      `tests/deck/slidev-build.sh` + a deck job in `verify.yaml` running `tests/deck/exit-recording-ready.sh`)*
+- [x] `slides/package.json` (Slidev dep) — landed (deck v1); `task deck:build` wired
+      (wraps `tests/deck/slidev-build.sh`)
+- [x] CI job builds the deck; static SPA is the artifact the clubhouse/Caddy tenant serves
+      *(landed as the dedicated SHA-pinned `.github/workflows/deck.yaml` — runs
+      `tests/deck/exit-recording-ready.sh` on `slides/**` + `tests/deck/**` changes and uploads
+      `slides/dist/` as the `deck-dist` artifact — rather than a job inside `verify.yaml`; the
+      wiring is guarded by `tests/meta/e12-deck-ci-wired.yaml`, run via `task test:meta:ci`
+      inside `task verify`)*
 - [x] Gate: `tests/deck/slidev-build.sh`
 
 ## E12-S02 — Word-by-word speaker notes on every slide
