@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# REQ-E1b-S02-03: CI runs tofu test on module change.
+# Offline meta test — scans .github/workflows/verify.yaml to assert that
+# `task test:unit` (L0 tofu test on modules/labels) and `task test:policy`
+# (L1 conftest) are both invoked in CI. No cluster required.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/verify.yaml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf"
+
+# REQ-E1b-S02-03 Then: task test:unit executes (tofu test on modules/labels).
+grep -q 'task test:unit' "$wf" \
+  || fail "verify.yaml does not invoke 'task test:unit' (REQ-E1b-S02-03)"
+
+# The spec's full requirement includes the conftest policy gate running alongside
+# the unit gate in the same CI pipeline (REQ-E1b-S03-01 is the conftest REQ;
+# verify.yaml is the single CI workflow, so both must appear there).
+grep -q 'task test:policy' "$wf" \
+  || fail "verify.yaml does not invoke 'task test:policy'"
+
+echo "OK: REQ-E1b-S02-03 verify.yaml invokes task test:unit + task test:policy"
