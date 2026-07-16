@@ -1,5 +1,8 @@
 # e-caddy-mvp — VM-variant alerting slice (parked E5 `caddy_*` marshal)
 
+**Status:** parked + promtool suite landed; live scrape target still pending (Variant A VM /
+showcase Caddy origin — see `openspec/changes/e-caddy-mvp/tasks.md`).
+
 These manifests are **parked with the `e-caddy-mvp` epic**, migrated **out of active
 platform monitoring** by audit-remediation WS1 (operator-confirmed **Option A — park**,
 `agent-context/decisions.md` D-026; audit ARCH-2/ARCH-3).

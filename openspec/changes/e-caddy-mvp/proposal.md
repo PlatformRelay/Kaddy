@@ -3,8 +3,11 @@
 > **Epic ID minted:** `e-caddy-mvp` (new slug). Supersedes the framing of the optional
 > `e9-caddy-operator` and the cuttable `e10-portal-stretch` for the *served-website* concern —
 > see "Relationship to E9 / E10" below. This is a **stub/design-first** change opened by the
-> `audit-remediation-2026-07` planning lane to give the platform MVP a home; implementation is
-> gated on the phase-1 precondition epics landing.
+> `audit-remediation-2026-07` planning lane to give the platform MVP a home.
+>
+> **Status (2026-07-16):** Phase-1 preconditions **E1 / E3 / E4 / E7 are green** on `main`.
+> **Variant B (Kubernetes) may proceed** (specs → S02). **Variant A (VM) stays gated** on
+> phase-2 **E6g / E1g** (still open). S01/S02 product implementation is not started.
 
 ## Why
 
@@ -69,8 +72,8 @@ E7 (mulligan / Argo Rollouts) → Variant B progressive-delivery slice
 E6 + E6g (Crossplane Website + provider-gridscale) → Variant A VM provisioning + nginx parallel
 ```
 
-Implementation of this epic is **gated** on those preconditions (Variant A on E6g/E1g VM path;
-Variant B on E7 for Rollouts, E3 for in-cluster Prometheus).
+**Variant B** preconditions (E1 / E3 / E4 / E7) are **met** — implementation may start after
+S00 specs. **Variant A** remains **gated** on E6g / E1g (phase-2 VM path).
 
 ## Non-goals
 

@@ -1,18 +1,23 @@
 # Tasks — E-Caddy-MVP (stub / design-first story map)
 
-> This epic is **gated on the phase-1 precondition epics** (E1 → E3 → E4; E7 for Rollouts;
-> E6/E6g/E1g for the VM path). Tasks below are the **story map**, not yet TDD-decomposed —
-> full REQ IDs + Test:/Verify: get authored when the epic activates (after preconditions land).
-> Do **not** start implementation until the gating epics are green.
+> **Activation status (2026-07-16):** Phase-1 preconditions **E1 / E3 / E4 / E7 are green on
+> `main`** (see `docs/ROADMAP.md`). **Variant B (Kubernetes)** may proceed — author full specs
+> (S00 second bullet) then implement S02. **Variant A (VM)** remains blocked on phase-2
+> **E6g / E1g** (still ⬜). Story map below is not yet fully TDD-decomposed — REQ IDs +
+> Test:/Verify: land when Variant B (or A) activates. S01/S02 implementation is **not** done.
 
 ## S00 — Epic activation gate (do first when activating)
 
-- [ ] Confirm preconditions green: E1 (GitOps bootstrap), E3 (observability / in-cluster
-      Prometheus), E4 (sample site). Variant B additionally: E7 (Argo Rollouts). Variant A
-      additionally: E6g/E1g (gridscale VM provisioning).
-- [ ] Author full specs (`specs/**/spec.md`) with REQ IDs, Level tags, Test: + Verify: per REQ.
+- [x] Confirm phase-1 preconditions green on `main`: **E1** (GitOps bootstrap), **E3**
+      (observability / in-cluster Prometheus), **E4** (sample site), **E7** (Argo Rollouts —
+      Variant B). **Still open for Variant A:** **E6g / E1g** (gridscale VM provisioning —
+      phase 2, deferred).
+- [ ] Author full specs (`specs/**/spec.md`) with REQ IDs, Level tags, Test: + Verify: per REQ
+      (Variant B path unblocked; Variant A specs wait on E6g/E1g).
 
 ## S01 — Variant A · VM-based (MINIMAL) — the brief spine (serve → scrape → fire)
+
+> **Blocked** on E6g/E1g (phase 2). Do not start VM/cluster provisioning here.
 
 - [ ] Caddy on a VM (nginx parallel — same structure, legacy stand-in).
 - [ ] VM provisioning via sibling Crossplane **provider-gridscale** (`gridscale_server`) — E6g/E1g.
@@ -23,6 +28,8 @@
 - [ ] Gate (when active): `task test:promrules` + PromQL smoke against the VM metrics endpoint.
 
 ## S02 — Variant B · Kubernetes-based (RICH) — preferred/primary path
+
+> **Unblocked** (E1/E3/E4/E7 green). Implementation not started — specs first (S00).
 
 - [ ] Caddy tenant Deployment/Service in-cluster (nginx parallel), reached **through** the
       Cilium Gateway API edge (HTTPRoute), never as the edge itself.
