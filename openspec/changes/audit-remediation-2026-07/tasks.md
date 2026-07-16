@@ -30,45 +30,45 @@ active lane executes · **[epic]** = folded into an epic's own tasks.
       sequence E1 → E3 → E4; VM path via E6g/E1g; Rollouts via E7 (DIR-2). Gated on preconditions.
 - Gate (this lane): `task test:spec` (structure valid; new epic dir present).
 
-## WS2 · Substrate + status retcon — P1 · **in progress this session (docs lane)**
+## WS2 · Substrate + status retcon — P1 · **DONE 2026-07-16 (docs lane, `fa81b37`)**
 
 ARCH-1, ARCH-6, DOC-1, DOC-2, DOC-3, DOC-4, DOC-5, DOC-6, DOC-7, DOC-8, DOC-9, DIR-5, TEST-5,
 TEST-6, TEST-7. Operator: *"retcon the adrs / reconcile docs with reality / fix"*.
 
-- [ ] **[sibling: docs lane]** Propagate D-025 kind+Cilium substrate to ARCHITECTURE/ROADMAP/
+- [x] **[sibling: docs lane]** Propagate D-025 kind+Cilium substrate to ARCHITECTURE/ROADMAP/
       README/AGENTS + retcon ADR-0102; demote Talos/driving-range to deferred spike (ARCH-1,
       DOC-1, DIR-5).
-- [ ] **[sibling: docs lane]** Correct "design phase / all ⬜ pending" framing; flip landed-epic
+- [x] **[sibling: docs lane]** Correct "design phase / all ⬜ pending" framing; flip landed-epic
       `tasks.md` checkboxes (E1b/E5/E1e) (DOC-2, DOC-3, TEST-7).
-- [ ] **[sibling: docs lane]** Fix `docs/development/testing.md`: real Chainsaw dirs
+- [x] **[sibling: docs lane]** Fix `docs/development/testing.md`: real Chainsaw dirs
       (`identity/labeling/portal/tls`) + real workflows (`verify/chainsaw/monitoring.yaml`)
       (DOC-4, DOC-5, **TEST-6** — same docs-drift class).
-- [ ] **[sibling: docs lane]** Fix stale gate ref `tests/chainsaw/monitoring` in
+- [x] **[sibling: docs lane]** Fix stale gate ref `tests/chainsaw/monitoring` in
       `e5-*/tasks.md` (DOC-6); audits README skill path + placeholder rot (DOC-7, DOC-8);
       rename ADR-0107 file off `keycloak` (DOC-9); single-node vs "3-node" narrative (ARCH-6).
-- [ ] **[sibling: docs/E1b lane]** Fix malformed Test paths (stray backtick) in E1b spec
+- [x] **[sibling: docs/E1b lane]** Fix malformed Test paths (stray backtick) in E1b spec
       (TEST-5) so the strict gate won't false-flag landed tofu tests.
 - Gate (sibling): `task check` (lint + scrub + spec + docs).
 
-## WS3 · CI + gate wiring — P1 · runs **after live E1 lane merges** (holds Taskfile.yml)
+## WS3 · CI + gate wiring — P1 · **DONE 2026-07-16 except ARCH-5 (blocked)** — CI lane `19b0db7`
 
 TEST-2, SEC-1, SEC-2, SEC-4, ARCH-5, TEST-8, TEST-1 (advisory). Operator TEST-2: *"we need code
 for ci"*.
 
-- [ ] **[sibling: CI lane]** Wire E1e offline meta gates (`tests/meta/e1e-*.sh`) into a workflow
+- [x] **[sibling: CI lane]** Wire E1e offline meta gates (`tests/meta/e1e-*.sh`) into a workflow
       so an E1e regression goes red (TEST-2).
-- [ ] **[sibling: CI lane]** Add **gitleaks to CI** (not just bypassable pre-commit) (SEC-1);
+- [x] **[sibling: CI lane]** Add **gitleaks to CI** (not just bypassable pre-commit) (SEC-1);
       extend scrub `PATHS` to `deploy/`, `.github/`, `hack/`, `tests/` (SEC-2).
-- [ ] **[sibling: CI lane]** Pin `@latest` / `releases/latest` tool installs (chainsaw, kyverno,
+- [x] **[sibling: CI lane]** Pin `@latest` / `releases/latest` tool installs (chainsaw, kyverno,
       yq) to versions Renovate can track (SEC-4); fix markdownlint config path mismatch + remove
       `|| true` that swallows failures (TEST-8).
-- [ ] **[sibling: CI lane]** **TEST-1 = advisory/deferred, NOT blocking** — wire
+- [x] **[sibling: CI lane]** **TEST-1 = advisory/deferred, NOT blocking** — wire
       `STRICT_TEST_FILES=1` as an advisory job (operator: *"having a gate is difficult at this
       point"*). Do not make it a required check yet.
 - [ ] **[sibling: CI lane]** **ARCH-5 — BLOCKED on REQ-TF-11** (option (a), unratified, on
       `testing-foundation-wip`). Do **not** apply `openspec:validate`→`spec:validate` rename
       until REQ-TF-11 is ratified.
-- [ ] **[sibling: CI lane]** Reconcile with `testing-foundation-wip` `verify.yaml` — it currently
+- [x] **[sibling: CI lane]** Reconcile with `testing-foundation-wip` `verify.yaml` — it currently
       **drops `test:unit` / `test:policy`; these MUST be restored**.
 - Gate (sibling): workflow green on a PR; `act` / CI dry-run; `task test:unit` + `task test:policy`
       present in the workflow.
