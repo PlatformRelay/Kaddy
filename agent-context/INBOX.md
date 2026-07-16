@@ -37,6 +37,8 @@ Do **not** hold.
 
 ## Operator tasks
 
+- [ ] **Follow-up (backlog):** DOC-10 roadmap-status guard doesn't assert release-provenance — 'E9 shipped in v0.1.1' (false) passed it. Extend `tests/meta/doc10-roadmap-status.yaml` to check an epic's commits are ancestors of the claimed tag. (retro-2026-07-16-eve)
+
 - [ ] **Phase 2 STARTED** (operator asked 2026-07-16 eve) — E1g→E6g→E8b; author IaC offline first; live gridscale provisioning PERMITTED but RUTHLESSLY cost-sensitive — smallest footprint, no parallel/idle resources, `tofu destroy` after every test (full lab ~€115/mo if left up). See memory `handover-2026-07-16-eve`.
 
 - [x] **Re-sync Argo apps `policies` + `workloads`** — DONE 2026-07-16 via D-036 land + sync.
@@ -76,3 +78,26 @@ Do **not** hold.
 
 - Residual: release/phase-2; optional live Chainsaw netpol enforcement probe polish; E12b art
   (operator/manual); deferred Loki-ruler / Grafana OAuth→E10.
+
+---
+
+## Phase 2 loop — decisions (2026-07-16 late / session start)
+
+### 🔴 DECIDED (awaiting approval) — Definition of "phase-2 complete" reconciles with cost-sensitivity
+Context: Several phase-2 exit criteria are live-gated (E1g "apps sync on GSK / LBaaS URL works", E6g-S04 "real VM", E13-S03 "alert fires against gridscale VM", **E8b-S01 literally "keep stack running through interview window"**). E8b-S01 as written contradicts the standing rule "tear down every resource the moment a test is done".
+Options: (A) leave lab running for E8b [violates cost rule] · (B) offline gates green for every stack + ONE ephemeral live proof-cycle per live-gated story (create→verify→capture evidence→`tofu destroy`); E8b becomes an on-demand bring-up (task target + runbook), proven once ephemerally, NOT a standing env — the "interview window" is a future operator-triggered event · (C) author IaC only, never go live.
+Chose: **(B)**. Best balances "all backlog complete" with "ruthlessly cost-sensitive". E8b deliverable = reproducible bring-up + teardown, evidence captured once.
+Revert: if you want a standing demo env, run `task e8b:up` and leave it (est. ~€115/mo); teardown is `task e8b:down`.
+
+### 🔴 DECIDED — Object-storage bucket is the one cheap persistent anchor (state backend)
+Context: tofu remote-state backend needs an object-storage bucket that doesn't exist yet (chicken-and-egg), and every other resource must be ephemeral.
+Chose: bootstrap the bucket ONCE with **local** state and keep it (~€0.06/GB, a few MB of state = negligible); all expensive compute (GSK, LBaaS, VMs) cycles create→verify→destroy. Resolves backend bootstrap + cost model together.
+Revert: `tofu destroy` the bucket stack (loses remote state; re-bootstrap when needed).
+
+### 🟡 DECIDED — gridscale provider auth env-var mapping
+Context: provider v1/v2 reads `GRIDSCALE_UUID`/`GRIDSCALE_TOKEN` (+ optional `GRIDSCALE_URL`); `.envrc` exports `GRIDSCALE_USER_UUID`/`GRIDSCALE_API_KEY`. Mismatch → silent live-auth failure on first apply.
+Chose: map at the stack boundary via `TF_VAR_gridscale_uuid`/`_token` wired in the live Task target (keeps `.envrc` secrets untouched, offline gates need no creds). Documented in the E1g runbook.
+Revert: instead add `export GRIDSCALE_UUID=$GRIDSCALE_USER_UUID` / `GRIDSCALE_TOKEN=$GRIDSCALE_API_KEY` to `.envrc`.
+
+### note — E6g sibling reuse
+`../provider-gridscale` E6g-S01 (Upjet codegen) is DONE: `package/crds/*` (incl. k8ses, loadbalancers, servers, firewalls, ipv4s) + `package/crossplane.yaml`. No built `.xpkg` yet; registry path is a placeholder. kaddy E6g consumes this package (build/push or local install) — do NOT re-run Upjet generation.
