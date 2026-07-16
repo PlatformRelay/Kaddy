@@ -37,9 +37,11 @@ Do **not** hold.
 
 ## Operator tasks
 
+- [ ] **Phase 2 STARTED** (operator asked 2026-07-16 eve) — E1g→E6g→E8b; author IaC offline, live gridscale provisioning is operator-run (~€115/mo). See memory `handover-2026-07-16-eve`.
+
 - [x] **Re-sync Argo apps `policies` + `workloads`** — DONE 2026-07-16 via D-036 land + sync.
       `policies`/`workloads`/`root` Synced+Healthy; mulligan NetPol×2 (+CNP); caddy-mvp NetPol×5 (+CNP).
-- [ ] **release-0.1.1** — changelog / tag / publish when you want packaging (do not auto-start).
+- [x] **release** — **v0.2.0 RELEASED** 2026-07-16 (tag 42e3eee + GitHub release; git-cliff CHANGELOG).
 - [ ] **Affirm D-036 (A)** — or override.
 - [x] Enable GitHub Pages — DONE.
 - [x] Container runtime Podman-only (D-035).
