@@ -58,6 +58,29 @@ spec:
                 - cert-manager
                 - argocd
                 - monitoring
+          # argo-rollouts runs the vendored upstream Argo Rollouts controller
+          # (deploy/rollouts/install.yaml) — upstream pods do not carry the
+          # bare kaddy keys, same class of exclusion as argocd above.
+          - resources:
+              namespaces:
+                - argo-rollouts
+          # e1e-smoke is the ephemeral E1e smoke-fixture namespace: the live
+          # smoke (tests/smoke/e1e-s02-03.sh) creates unlabeled probe
+          # deployments there on every run (cluster-hygiene follow-up: P2-5).
+          - resources:
+              namespaces:
+                - e1e-smoke
+          # The E4 redirect smoke (tests/smoke/e4-s03-03.sh) runs a transient
+          # `kubectl run clubhouse-redir-$$` curl pod in the gateway
+          # namespace. Name+namespace-scoped — everything else in gateway
+          # stays enforced.
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - gateway
+              names:
+                - "clubhouse-redir-*"
       validate:
         message: >-
           Pods must set the mandatory ADR-0301 labels (canonical bare keys):

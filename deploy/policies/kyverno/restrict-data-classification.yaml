@@ -57,6 +57,24 @@ spec:
                 - cert-manager
                 - argocd
                 - monitoring
+          # Mirrors require-kaddy-labels (the pattern below also fails pods
+          # that carry NO data-classification label, so the same narrow
+          # excludes apply): vendored upstream Argo Rollouts controller,
+          # ephemeral E1e smoke fixtures, and the E4 redirect smoke's
+          # transient curl pod (name+namespace-scoped).
+          - resources:
+              namespaces:
+                - argo-rollouts
+          - resources:
+              namespaces:
+                - e1e-smoke
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - gateway
+              names:
+                - "clubhouse-redir-*"
       validate:
         message: >-
           The data-classification label must be one of: public, internal,

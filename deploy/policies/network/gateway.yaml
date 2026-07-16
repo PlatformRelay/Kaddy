@@ -147,3 +147,44 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+---
+# Cilium-specific: allow transient smoke-probe pods (kubectl run — they all
+# carry the kubectl `run` label) to egress to the in-cluster edge. The E4
+# redirect smoke (tests/smoke/e4-s03-03.sh) curls the clubhouse Gateway
+# service from inside the gateway namespace; that hairpin terminates at the
+# Cilium Envoy proxy, whose identity is the reserved `ingress` entity — so
+# this must be a CNP, and the default-deny egress above would otherwise
+# drop it. clubhouse itself has no `run` label and initiates nothing.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-probe-egress-to-edge
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-probe-egress-to-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: run
+        operator: Exists
+  egress:
+    - toEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "443"
+              protocol: TCP
