@@ -13,7 +13,7 @@ L1 conftest (OpenTofu plans) + promtool (PrometheusRule alerts)
 L0 tofu test (modules/labels)
 ```
 
-## Commands (target state)
+## Commands
 
 | Command | Level | Description |
 | --- | --- | --- |
@@ -85,18 +85,21 @@ live APIs land. Live L3 then needs `k6` + `BASE_URL` (and optional `RATE`).
 ```
 tests/chainsaw/
   README.md
-  .chainsaw.yaml          # global config (timeouts, namespaces)
-  labeling/
-    chainsaw-test.yaml    # Kyverno rejects unlabeled pods
-  identity/
-    chainsaw-test.yaml    # Dex + GitHub OIDC, Argo CD unauth denied
-  portal/
-    chainsaw-test.yaml    # Backstage-scaffolded WebsiteClaim reconciles
-  tls/
-    chainsaw-test.yaml    # cert-manager Certificate Ready / TLS route
+  .chainsaw.yaml            # global config (timeouts, namespaces)
+  labeling/                 # Kyverno rejects unlabeled resources (active)
+  security/                 # E1c — default-deny netpols, unsigned image denied (active)
+  gateway/                  # clubhouse HTTPRoute Ready + root path 200 (active)
+  tls/                      # cert-manager ClusterIssuer / Certificate renewal (active)
+  monitoring/               # marshal rules present, Loki/Alloy/stack Ready (active)
+  crossplane/               # E6 — WebsiteClaim composes workload+route+monitor (active)
+  rollouts/                 # E7 — canary weights, rollback, blue/green promotion gate (active)
+  identity/                 # E1d — Dex OIDC + Argo CD (skip: true — needs the live kaddy-dev cluster; flip skip to run)
+  portal/                   # E10 — Backstage WebsiteClaim (skip: true until the portal deploys)
+  caddy-mvp/edge-route/     # e-caddy-mvp — tenant Caddy through the edge (skip: true until scaffolded)
 ```
 
-Install: `go install github.com/kyverno/chainsaw@latest` or release binary from
+Install: `go install github.com/kyverno/chainsaw@v0.2.15` (pinned to the version CI uses —
+see `.github/workflows/chainsaw.yaml`) or the matching release binary from
 [kyverno/chainsaw](https://github.com/kyverno/chainsaw).
 
 ## Writing a Chainsaw test (pattern)
@@ -121,9 +124,12 @@ See epic specs under `openspec/changes/*/specs/` for per-story `Verify:` blocks.
 
 | Workflow | Levels |
 | --- | --- |
-| `verify.yaml` | `task verify` (scrub + lint + openspec + spec coverage) + L0 `tofu test` + L1 conftest |
+| `verify.yaml` | `task verify` (scrub + lint + openspec + spec coverage) + L0 `tofu test` + L1 conftest + L1 kyverno CLI + E1e offline meta gates |
 | `monitoring.yaml` | L1 promtool PrometheusRule unit tests (no cluster) |
-| `chainsaw.yaml` (E3+) | L2 Chainsaw on kind |
+| `chainsaw.yaml` | L2 Chainsaw on an ephemeral kind cluster (CI parity with the local substrate) |
+| `trivy.yaml` | Supply chain — Trivy scan |
+| `image-digests.yaml` / `showcase-image.yaml` | Image digest pinning / showcase image build |
+| `deck.yaml` / `scorecard-pages.yaml` | Slidev deck + scorecard evidence published to Pages |
 
 ## Spec traceability
 
