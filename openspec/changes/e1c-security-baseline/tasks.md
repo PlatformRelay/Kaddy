@@ -55,7 +55,7 @@
 
 - [ ] Trivy CI job (REQ-E1c-S02-*)
 - [ ] Digest verify script (REQ-E1c-S03-01)
-- [ ] ExternalSecret pattern (REQ-E1c-S04-*)
+- [x] ExternalSecret pattern (REQ-E1c-S04-*)
 - [ ] `.sops.yaml` + encrypted `deploy/secrets/identity/dex-github.enc.yaml`
       (REQ-E1c-S05-*) — partially landed via identity epic
 - [ ] Argo CD KSOPS plugin wiring (REQ-E1c-S05-02; pairs with E3-S01-03)
