@@ -14,9 +14,9 @@
 ## Context
 
 We need a Kubernetes substrate for Caddy and platform workloads. The **gridscale lab** is the
-employer-facing target ([D-013](../../agent-context/decisions.md)), but credits are finite and the
+employer-facing target (D-013, `agent-context/decisions.md`), but credits are finite and the
 operator wants to rehearse on a **local 3-node Talos cluster** first
-([driving-range](../../driving-range/)).
+(`driving-range/` — sibling repo).
 
 **driving-range** (sibling repo): 1 control plane + 2 workers on libvirt/KVM, OpenTofu-declared,
 survives reboot, **Cilium Gateway + LB-IPAM/L2** + `local-path-provisioner` (no MetalLB). It replaces
@@ -58,5 +58,5 @@ Let's Encrypt at the edge.
 
 ## References
 
-- [driving-range README](../../driving-range/README.md)
+- `driving-range/README.md` (sibling repo)
 - [gridscale_k8s resource](https://registry.terraform.io/providers/gridscale/gridscale/latest/docs/resources/k8s)

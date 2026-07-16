@@ -57,7 +57,7 @@ Brief note tying label coverage to public NIS2/KRITIS asset-management expectati
 
 | Date | Summary | Report |
 | --- | --- | --- |
-| 2026-07-15 | Baseline health & direction audit (NEEDS-WORK; direction AT-RISK) | [`agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md`](../../agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md) |
+| 2026-07-15 | Baseline health & direction audit (NEEDS-WORK; direction AT-RISK) | `agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md` |
 
 ## Tooling language
 

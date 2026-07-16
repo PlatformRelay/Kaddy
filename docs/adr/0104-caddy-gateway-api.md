@@ -23,7 +23,7 @@ ingress controller.
 
 The **platform cluster** needs Gateway API for HTTPRoute path routing, TLS, and Argo Rollouts weight
 mutation. On driving-range, **Cilium** is the CNI with kube-proxy replacement and native **Gateway API**
-+ **LB-IPAM/L2** ([driving-range ADR-0203](../../driving-range/docs/adr/0203-edge-cilium-gateway.md)).
++ **LB-IPAM/L2** (driving-range ADR-0203, `driving-range/docs/adr/0203-edge-cilium-gateway.md`).
 On **GSK 1.29+**, Cilium is the default CNI; edge uses **gridscale LBaaS** annotations on the Gateway
 controller `LoadBalancer` Service (phase 2).
 

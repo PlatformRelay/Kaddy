@@ -7,8 +7,7 @@
 ## Context
 
 ADR-0109 chose Backstage (portal) + Crossplane (orchestrator), and sketched a **hand-written**
-scaffolder template that opens a GitOps PR adding a `Website` claim. Research
-([agent-context/research/e10-portal-wiring-and-demo-presentation.md](../../agent-context/research/e10-portal-wiring-and-demo-presentation.md))
+scaffolder template that opens a GitOps PR adding a `Website` claim. Research (`agent-context/research/e10-portal-wiring-and-demo-presentation.md`)
 found that hand-written templates duplicate the XRD schema and drift the moment the platform API changes
 — and that the ecosystem now offers a materially stronger, more impressive path. This ADR records the
 three decisions that reshape E10 (and one E6 decision the portal depends on).

@@ -52,9 +52,9 @@
       no build toolchain at runtime, OCI + ADR-0301 labels; scannable for E11). Built + pushed +
       **keyless cosign-signed by digest** via `.github/workflows/showcase-image.yaml`
       (GitHub OIDC; signing = CI-proven only after the first main run — workflow authored,
-      first CI run pending). **DEVIATION (honest):** `mkdocs build` is NOT baked yet — the root
-      mkdocs.yml fails `mkdocs build --strict` (24 broken-link warnings), so shipping /docs/ now
-      would bake a known-broken build; it joins the image with the link fixes + material theme flip
+      first CI run pending). **DEVIATION (resolved):** `mkdocs build --strict` now exits 0 — all
+      24 broken-link warnings fixed (2026-07-16); `/docs/` can be baked once the material theme
+      flip lands
 - [ ] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material — flip theme to `material`;
       interim landing page in the image links /slides/ and marks /docs/ pending)
 - [ ] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge

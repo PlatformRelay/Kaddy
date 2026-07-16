@@ -1,6 +1,6 @@
 # ADR-0105: Crossplane self-service via Upjet-generated provider-gridscale
 
-**Theme:** 01 · Foundations · **Status:** Current · **Supersedes:** `provider-openstack` decision (see [D-016](../../agent-context/decisions.md))
+**Theme:** 01 · Foundations · **Status:** Current · **Supersedes:** `provider-openstack` decision (see D-016, `agent-context/decisions.md`)
 
 ## Context
 

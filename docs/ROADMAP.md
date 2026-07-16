@@ -400,8 +400,8 @@ after the 3-node Talos driving-range cost hours of libvirt/Talos yak-shaving wit
 The long-lived **3-node Talos** driving-range (1 control plane + 2 workers on libvirt/KVM, OpenTofu-declared,
 **Cilium CNI + Gateway API + LB-IPAM/L2**, no MetalLB, `local-path-provisioner`) survives as a **deferred
 optional maturity-contrast spike** — it ships only if E1–E8 land early and interviewers prize bare-substrate
-bootstrapping. See driving-range [ROADMAP](../../driving-range/docs/ROADMAP.md) and
-[ARCHITECTURE](../../driving-range/docs/ARCHITECTURE.md).
+bootstrapping. See driving-range `driving-range/docs/ROADMAP.md` and
+`driving-range/docs/ARCHITECTURE.md` (sibling repo).
 
 ---
 

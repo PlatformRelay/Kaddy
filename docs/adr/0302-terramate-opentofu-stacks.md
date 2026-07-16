@@ -1,6 +1,6 @@
 # ADR-0302: Terramate-managed OpenTofu stacks on gridscale
 
-**Theme:** 03 · IaC & labeling · **Status:** Current · **Amended:** provider OpenStack → gridscale (see [D-013](../../agent-context/decisions.md))
+**Theme:** 03 · IaC & labeling · **Status:** Current · **Amended:** provider OpenStack → gridscale (see D-013, `agent-context/decisions.md`)
 
 ## Context
 

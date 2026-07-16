@@ -13,7 +13,7 @@
 
 ## What had to be proven
 
-Per [`openspec/changes/e2-gateway-spike/specs/gateway/spec.md`](../../openspec/changes/e2-gateway-spike/specs/gateway/spec.md)
+Per `openspec/changes/e2-gateway-spike/specs/gateway/spec.md`
 and the ADR-0104 exit criteria:
 
 - **REQ-E2-S01** — Gateway API CRDs Established; a `cilium` GatewayClass accepted; a Cilium LB-IPAM
@@ -48,7 +48,7 @@ cilium   io.cilium/gateway-controller   True       133m
 
 The controller `io.cilium/gateway-controller` satisfies REQ-E2-S01-02 (`controllerName` references
 Cilium). CRD existence + the `Accepted=True` condition satisfy REQ-E2-S01-01. This is exactly what the
-**E1e** smoke test [`tests/smoke/e1e-s02-02.sh`](../../tests/smoke/e1e-s02-02.sh) asserts.
+**E1e** smoke test `tests/smoke/e1e-s02-02.sh` asserts.
 
 A Cilium LB-IPAM pool is programmed and assigning:
 
@@ -64,7 +64,7 @@ range.** ADR-0104 and REQ-E2-S01-03 quote the *driving-range* range `192.168.100
 kind/podman substrate programs `10.89.0.200–.250` on its own container network. The *capability* — a
 Ready LB-IPAM pool that assigns addresses to LoadBalancer Services — is what E2 proves; the exact CIDR
 is environment-specific and is asserted live by
-[`tests/smoke/e1e-s02-03.sh`](../../tests/smoke/e1e-s02-03.sh) (assignment only, never host-curled on
+`tests/smoke/e1e-s02-03.sh` (assignment only, never host-curled on
 macOS).
 
 ### REQ-E2-S02 — Gateway programmed + HTTPRoute (PARTIAL — weight mutation deferred to E7)
@@ -93,7 +93,7 @@ by putting **ArgoCD** behind a Cilium Gateway instead. That satisfies the same r
   `argocd-server` HTTPRoute routes `/ → argocd-server:80`. It is reachable at
   **`https://127.0.0.1:30443`** via the loopback-pinned NodePort
   (`cilium-gateway-argocd` LoadBalancer, `443:30443/TCP`), which is the macOS-safe pattern documented in
-  [`tests/smoke/e1e-s04-01.sh`](../../tests/smoke/e1e-s04-01.sh) (HTTP variant at `127.0.0.1:30080`).
+  `tests/smoke/e1e-s04-01.sh` (HTTP variant at `127.0.0.1:30080`).
   Both routes proved real request flow **through** the Gateway + HTTPRoute (the LB IP is never curled
   directly).
 
@@ -103,7 +103,7 @@ works end to end.
 
 **Deferred — REQ-E2-S02-03 (HTTPRoute weight mutation, 50/50 stable/canary).** This was **not**
 exercised by E1/E1e — neither Gateway carries two weighted backendRefs, and no weight patch was applied.
-It is owned by **E7 (mulligan-rollouts)**: [`e7 spec`](../../openspec/changes/e7-mulligan-rollouts/specs/rollouts/spec.md)
+It is owned by **E7 (mulligan-rollouts)**: `openspec/changes/e7-mulligan-rollouts/specs/rollouts/spec.md`
 REQ-E7-S02-01 drives HTTPRoute backend weights via Argo Rollouts `trafficRouting.plugins` gatewayAPI,
 and declares `Depends: E2 L0 for canary weights`. Marked deferred, not done — see §Decision.
 
@@ -153,9 +153,9 @@ The spike lands on **L0** — no fallback was required.
 ## References
 
 - [ADR-0104 — Platform ingress: Cilium Gateway API](../adr/0104-caddy-gateway-api.md)
-- [E2 spec](../../openspec/changes/e2-gateway-spike/specs/gateway/spec.md)
-- [E7 rollouts spec](../../openspec/changes/e7-mulligan-rollouts/specs/rollouts/spec.md)
-- E1/E1e smoke: [`e1e-s02-02.sh`](../../tests/smoke/e1e-s02-02.sh),
-  [`e1e-s02-03.sh`](../../tests/smoke/e1e-s02-03.sh),
-  [`e1e-s04-01.sh`](../../tests/smoke/e1e-s04-01.sh),
-  [`e1-s03-01.sh`](../../tests/smoke/e1-s03-01.sh)
+- E2 spec: `openspec/changes/e2-gateway-spike/specs/gateway/spec.md`
+- E7 rollouts spec: `openspec/changes/e7-mulligan-rollouts/specs/rollouts/spec.md`
+- E1/E1e smoke: `tests/smoke/e1e-s02-02.sh`,
+  `tests/smoke/e1e-s02-03.sh`,
+  `tests/smoke/e1e-s04-01.sh`,
+  `tests/smoke/e1-s03-01.sh`

@@ -10,7 +10,7 @@
 
 ### Lab credentials
 
-Copy [`.envrc.example`](../../.envrc.example) → `.envrc`, then `direnv allow`. **Never commit `.envrc`.**
+Copy `.envrc.example` → `.envrc`, then `direnv allow`. **Never commit `.envrc`.**
 
 | Variable | Purpose |
 | --- | --- |

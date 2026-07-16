@@ -1,6 +1,6 @@
 # ADR-0110: Secrets — SOPS + age, encrypted in git (IaC)
 
-**Theme:** 01 · Foundations · **Status:** Current · **Aligns with:** [driving-range ADR-0202](../../driving-range/docs/adr/0202-secrets-sops-age.md)
+**Theme:** 01 · Foundations · **Status:** Current · **Aligns with:** driving-range ADR-0202 (`driving-range/docs/adr/0202-secrets-sops-age.md`)
 
 ## Context
 
