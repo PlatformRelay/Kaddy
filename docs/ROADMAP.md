@@ -305,10 +305,10 @@ the page + feeds the `caddy_*` marshal alerts.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E8-S01 | k6 load profile tripping threshold alert | ⬜ |
-| E8-S02 | Capture script → HTML report | ⬜ |
-| E8-S03 | GitHub Pages publish workflow | ⬜ |
-| E8-S04 | Getting Started: safe bring-up, service access, reviewer demo, recovery + cost | ⬜ |
+| E8-S01 | k6 load profile tripping threshold alert | ✅ (offline profile + smokes; live k6 deferred) |
+| E8-S02 | Capture script → HTML report | ✅ (fixture capture + validate; live capture deferred) |
+| E8-S03 | GitHub Pages publish workflow | ✅ (workflow on main; Pages publish pending enablement) |
+| E8-S04 | Getting Started: safe bring-up, service access, reviewer demo, recovery + cost | ✅ |
 
 ### E8-S04 — Getting Started and reviewer demo
 
