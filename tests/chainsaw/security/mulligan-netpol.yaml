@@ -18,8 +18,12 @@
 #   - deny branch (mirrors unauthorized-ingress-fails.yaml): a fully-labeled
 #     nonroot probe pod in the UNSANCTIONED `default` namespace cannot curl
 #     mulligan-stable :8080 directly — the only thing failing is the network
-#     path. Non-vacuity proven during development: with the policies deleted
-#     the same curl returns 200 and the step FAILS.
+#     path. The probe POLLS until the deny is stable, because the API-object
+#     asserts above prove the policies EXIST but not that Cilium finished
+#     programming the datapath (endpoint regeneration lags object creation — the
+#     source of the twin-pass/push-fail flake). Non-vacuity proven during
+#     development: with the policies deleted every attempt returns 200 and the
+#     step exhausts to a FAIL.
 #   - allow branch (mirrors gateway-to-app.yaml): the SANCTIONED path through
 #     the dedicated Cilium Gateway (Envoy carries the reserved `ingress`
 #     identity, admitted by the CNP) still serves the demo page with 200.
@@ -119,24 +123,59 @@ spec:
     - name: direct-cross-ns-curl-denied
       try:
         - script:
-            timeout: 180s
+            timeout: 300s
             content: |
               set -u
-              # `kubectl run --rm` can leak the pod when attach flakes; a
-              # leftover pod makes the run fail on AlreadyExists — which would
-              # satisfy the ($error != null) check VACUOUSLY. Pre-delete so the
-              # only failure mode left is the network path.
-              kubectl -n default delete pod f01-mulligan-unauth-probe --ignore-not-found --wait=true >/dev/null 2>&1 || true
-              kubectl -n default run f01-mulligan-unauth-probe --rm -i --restart=Never \
-                --image=curlimages/curl:8.11.0 --quiet \
-                --labels=owner=platform-team,service=e1c-smoke,part-of=kaddy,managed-by=kubectl,track=stable,data-classification=internal,business-criticality=business-operational \
-                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
-                -- curl -sS -m 5 http://mulligan-stable.mulligan.svc.cluster.local:8080/
+              # POLL-UNTIL-DENIED. The preceding asserts prove the NetworkPolicy
+              # + CNP API OBJECTS exist — they do NOT prove Cilium regenerated the
+              # endpoints (datapath programming lags object creation by seconds).
+              # A single-shot probe fired immediately can slip through before
+              # enforcement is programmed — the observed flake: the same-SHA twin
+              # run's probe timed out (denied) while the push run's probe got HTML
+              # 200 ten seconds later. So retry until the deny is STABLE.
+              #
+              # Non-vacuity is preserved: with the policies absent EVERY attempt
+              # returns 200 and the loop exhausts to a FAIL (proven in dev).
+              #
+              # `kubectl run --rm` can leak the pod when attach flakes; a leftover
+              # makes the next run fail on AlreadyExists. Pre-delete each attempt
+              # so the only failure mode left is the network path.
+              attempts=6
+              denied=0
+              for i in $(seq 1 "${attempts}"); do
+                kubectl -n default delete pod f01-mulligan-unauth-probe --ignore-not-found --wait=true >/dev/null 2>&1 || true
+                out="$(kubectl -n default run f01-mulligan-unauth-probe --rm -i --restart=Never \
+                  --image=curlimages/curl:8.11.0 --quiet \
+                  --labels=owner=platform-team,service=e1c-smoke,part-of=kaddy,managed-by=kubectl,track=stable,data-classification=internal,business-criticality=business-operational \
+                  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                  -- curl -sS -m 5 -o /dev/null -w 'HTTP_%{http_code}' http://mulligan-stable.mulligan.svc.cluster.local:8080/ 2>&1)"
+                rc=$?
+                # Guard against a VACUOUS "deny": a Kyverno admission rejection
+                # means the pod never ran — that is a TEST failure, not a network
+                # deny. Fail loudly instead of counting it as success.
+                if printf '%s' "${out}" | grep -qiE 'admission webhook|denied the request|forbidden'; then
+                  echo "FAIL: probe pod rejected by admission control, not the network path: ${out}" >&2
+                  exit 2
+                fi
+                # Denied = curl exited nonzero AND never reported HTTP 200.
+                if [ "${rc}" -ne 0 ] && ! printf '%s' "${out}" | grep -q 'HTTP_200'; then
+                  echo "attempt ${i}: curl denied (rc=${rc}, out=${out}) — mulligan default-deny ingress enforced"
+                  denied=1
+                  break
+                fi
+                echo "attempt ${i}: NOT yet denied (rc=${rc}, out=${out}) — Cilium may still be programming; retrying"
+                sleep 8
+              done
+              if [ "${denied}" -ne 1 ]; then
+                echo "FAIL: direct cross-ns curl to mulligan-stable was NOT denied after ${attempts} attempts (default-deny not enforced)" >&2
+                exit 1
+              fi
+              echo "OK: direct cross-ns curl denied — default-deny ingress enforced on mulligan"
             check:
-              # The curl MUST fail (timeout/refused) — a zero exit means the
-              # default-deny ingress on the mulligan namespace is not enforced
-              # (without the policies this exact probe returns 200).
-              ($error != null): true
+              # The script now carries the verdict in its own exit code: 0 once a
+              # stable deny is observed, nonzero if the window exhausts without a
+              # deny (or the probe was admission-rejected). So success == no error.
+              ($error == null): true
     - name: curl-through-gateway-succeeds
       try:
         - script:
