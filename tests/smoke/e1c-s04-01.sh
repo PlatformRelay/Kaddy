@@ -41,12 +41,12 @@ ok "runbook documents ESO pattern + SOPS/KSOPS complement"
 grep -qiE 'example|not synced|do not apply|phase.?2' "${EXAMPLES}/README.md" \
   || fail "examples README must state these are examples / not synced"
 
-store="$(find "${EXAMPLES}" -type f \( -name '*.yaml' -o -name '*.yml' \) \
-  | xargs grep -l 'kind:[[:space:]]*ClusterSecretStore' 2>/dev/null | head -1 || true)"
+store="$(grep -RIl --include='*.yaml' --include='*.yml' \
+  -E '^kind:[[:space:]]*ClusterSecretStore[[:space:]]*$' "${EXAMPLES}" 2>/dev/null | head -1 || true)"
 [[ -n "${store}" ]] || fail "no ClusterSecretStore sample under ${EXAMPLES}"
 
-es="$(find "${EXAMPLES}" -type f \( -name '*.yaml' -o -name '*.yml' \) \
-  | xargs grep -l 'kind:[[:space:]]*ExternalSecret' 2>/dev/null | head -1 || true)"
+es="$(grep -RIl --include='*.yaml' --include='*.yml' \
+  -E '^kind:[[:space:]]*ExternalSecret[[:space:]]*$' "${EXAMPLES}" 2>/dev/null | head -1 || true)"
 [[ -n "${es}" ]] || fail "no ExternalSecret sample under ${EXAMPLES}"
 
 # Target Secret name + namespace required by REQ-E1c-S04-02.
