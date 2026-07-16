@@ -15,8 +15,18 @@ limitations under the License.
 */
 
 // Package admintest provides a fake Caddy admin API for unit and envtest
-// suites: it records every request and stores routes by their `@id`, so
-// tests can assert idempotency (REQ-E9-S02-02) without a live Caddy.
+// suites, faithful to the real verb semantics (caddyserver.com/docs/api):
+//
+//   - POST to an array path (e.g. .../routes) APPENDS — even when a route
+//     with the same `@id` already exists (duplicates are possible!)
+//   - PUT creates a new value / INSERTS into arrays — it is NOT a replace;
+//     PUT against an existing `@id` inserts a duplicate next to it
+//   - PATCH strictly REPLACES an existing value, 404 when the id is unknown
+//   - DELETE removes the value at the id, 404 when unknown
+//
+// Routes are stored as an ordered list (like Caddy's routes array) so tests
+// can assert that repeated reconciles do not pile up duplicate routes
+// (REQ-E9-S02-02) without a live Caddy.
 package admintest
 
 import (
@@ -38,14 +48,14 @@ type RequestRecord struct {
 type Server struct {
 	mu          sync.Mutex
 	httpSrv     *httptest.Server
-	routes      map[string]map[string]any // @id -> route object
+	routes      []map[string]any // ordered, like Caddy's routes array
 	log         []RequestRecord
 	unavailable bool
 }
 
 // NewServer starts the fake admin API. Callers must Close() it.
 func NewServer() *Server {
-	s := &Server{routes: map[string]map[string]any{}}
+	s := &Server{}
 	s.httpSrv = httptest.NewServer(http.HandlerFunc(s.handle))
 	return s
 }
@@ -72,19 +82,32 @@ func (s *Server) Requests() []RequestRecord {
 	return out
 }
 
-// Route returns the stored route for id and whether it exists.
+// Route returns the first stored route with the given `@id` and whether any exists.
 func (s *Server) Route(id string) (map[string]any, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	r, ok := s.routes[id]
-	return r, ok
+	if i := s.indexOfLocked(id); i >= 0 {
+		return s.routes[i], true
+	}
+	return nil, false
 }
 
-// RouteCount returns how many distinct routes are installed.
+// RouteCount returns how many routes are installed — duplicates included,
+// exactly like Caddy's routes array would carry them.
 func (s *Server) RouteCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return len(s.routes)
+}
+
+// indexOfLocked returns the index of the first route carrying the `@id`.
+func (s *Server) indexOfLocked(id string) int {
+	for i, r := range s.routes {
+		if got, _ := r["@id"].(string); got == id {
+			return i
+		}
+	}
+	return -1
 }
 
 func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
@@ -108,30 +131,48 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{}`))
 
 	case r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/id/"):
+		// Real Caddy PUT semantics: create new / INSERT — never replace.
+		// Against an existing array element id this inserts a duplicate
+		// right at that position; unknown id → error like real Caddy.
 		id := strings.TrimPrefix(r.URL.Path, "/id/")
-		if _, ok := s.routes[id]; !ok {
+		i := s.indexOfLocked(id)
+		if i < 0 {
 			http.Error(w, `{"error":"unknown object id"}`, http.StatusNotFound)
 			return
 		}
-		s.routes[id] = body
+		s.routes = append(s.routes[:i+1], s.routes[i:]...)
+		s.routes[i] = body
+		w.WriteHeader(http.StatusOK)
+
+	case r.Method == http.MethodPatch && strings.HasPrefix(r.URL.Path, "/id/"):
+		// Real Caddy PATCH semantics: strict replace of an EXISTING value.
+		id := strings.TrimPrefix(r.URL.Path, "/id/")
+		i := s.indexOfLocked(id)
+		if i < 0 {
+			http.Error(w, `{"error":"unknown object id"}`, http.StatusNotFound)
+			return
+		}
+		s.routes[i] = body
 		w.WriteHeader(http.StatusOK)
 
 	case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/id/"):
 		id := strings.TrimPrefix(r.URL.Path, "/id/")
-		if _, ok := s.routes[id]; !ok {
+		i := s.indexOfLocked(id)
+		if i < 0 {
 			http.Error(w, `{"error":"unknown object id"}`, http.StatusNotFound)
 			return
 		}
-		delete(s.routes, id)
+		s.routes = append(s.routes[:i], s.routes[i+1:]...)
 		w.WriteHeader(http.StatusOK)
 
 	case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/routes"):
-		id, _ := body["@id"].(string)
-		if id == "" {
+		// Real Caddy POST-to-array semantics: APPEND, even if a route with
+		// the same @id is already installed (that is how duplicates happen).
+		if id, _ := body["@id"].(string); id == "" {
 			http.Error(w, `{"error":"route without @id"}`, http.StatusBadRequest)
 			return
 		}
-		s.routes[id] = body
+		s.routes = append(s.routes, body)
 		w.WriteHeader(http.StatusOK)
 
 	default:

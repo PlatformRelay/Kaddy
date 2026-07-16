@@ -36,6 +36,7 @@ func TestRenderRoute(t *testing.T) {
 			Hosts:    []string{"demo.example.com", "www.example.com"},
 			Routes: []gatewayv1alpha1.CaddySiteRoute{
 				{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "clubhouse", Port: 8080}},
+				{Path: "/api", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "clubhouse-api", Port: 9090}},
 			},
 		},
 	}
@@ -56,12 +57,23 @@ func TestRenderRoute(t *testing.T) {
 	for _, want := range []string{
 		`"host":["demo.example.com","www.example.com"]`,
 		`"path":["/*"]`,
+		// non-slash-terminated prefix must match exact + subtree, and never
+		// a sibling like /apix — so exact path plus /api/* wildcard.
+		`"path":["/api","/api/*"]`,
 		`"dial":"clubhouse.default.svc.cluster.local:8080"`,
+		`"dial":"clubhouse-api.default.svc.cluster.local:9090"`,
 		`"handler":"reverse_proxy"`,
 		`"terminal":true`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("rendered route missing %s\nbody: %s", want, body)
+		}
+	}
+	for _, forbidden := range []string{
+		`"path":["/api*"]`, // would match /apix
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Errorf("rendered route contains over-broad matcher %s\nbody: %s", forbidden, body)
 		}
 	}
 	if strings.Contains(body, "@id") {
@@ -78,7 +90,9 @@ func TestDefaultAdminURL(t *testing.T) {
 		{"default port for empty listen", "", "http://edge-admin.default.svc:2019"},
 		{"port parsed from listen", ":2020", "http://edge-admin.default.svc:2020"},
 		{"host:port listen", "0.0.0.0:9999", "http://edge-admin.default.svc:9999"},
-		{"garbage falls back to default", ":not-a-port", "http://edge-admin.default.svc:2019"},
+		// Garbage listen strings are rejected at admission by the CRD
+		// pattern; this fallback is pure defense-in-depth.
+		{"garbage falls back to default (defense-in-depth)", ":not-a-port", "http://edge-admin.default.svc:2019"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

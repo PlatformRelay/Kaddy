@@ -24,6 +24,8 @@ package controller
 // and validation (replicas >= 0, caddyRef/hosts non-empty, port 1-65535).
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -89,6 +91,40 @@ var _ = Describe("E9-S01 API shape", func() {
 			}
 			err := k8sClient.Create(ctx, caddy)
 			Expect(apierrors.IsInvalid(err)).To(BeTrue(), "negative replicas must be Invalid, got: %v", err)
+		})
+
+		It("rejects a non host:port admin.listen at admission", func() {
+			for i, listen := range []string{":not-a-port", "2019", "no-colon-here", ":123456"} {
+				caddy := &gatewayv1alpha1.Caddy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("e9s01-caddy-badlisten-%d", i),
+						Namespace: ns,
+					},
+					Spec: gatewayv1alpha1.CaddySpec{
+						Admin: gatewayv1alpha1.CaddyAdmin{Listen: listen},
+					},
+				}
+				err := k8sClient.Create(ctx, caddy)
+				Expect(apierrors.IsInvalid(err)).To(BeTrue(),
+					"admin.listen %q must be Invalid, got: %v", listen, err)
+			}
+		})
+
+		It("accepts valid admin.listen forms", func() {
+			for i, listen := range []string{":2019", "0.0.0.0:2019", "localhost:9999"} {
+				caddy := &gatewayv1alpha1.Caddy{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      fmt.Sprintf("e9s01-caddy-oklisten-%d", i),
+						Namespace: ns,
+					},
+					Spec: gatewayv1alpha1.CaddySpec{
+						Admin: gatewayv1alpha1.CaddyAdmin{Listen: listen},
+					},
+				}
+				Expect(k8sClient.Create(ctx, caddy)).To(Succeed(),
+					"admin.listen %q must be accepted", listen)
+				DeferCleanup(func() { _ = k8sClient.Delete(ctx, caddy) })
+			}
 		})
 	})
 

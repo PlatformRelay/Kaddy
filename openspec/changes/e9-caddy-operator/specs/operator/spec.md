@@ -29,12 +29,14 @@ Epic: E9 · ADR: [0401](../../../docs/adr/0401-caddy-operator-design-first.md)
 
 ---
 
-## REQ-E9-S02-02: Admin API POST idempotent
+## REQ-E9-S02-02: Admin API upsert idempotent
 
 **Priority:** must  
 **Given** `CaddySite` with route `@id` annotation  
 **When** reconcile runs twice  
-**Then** mock Admin API receives PUT to same `@id`, not duplicate POST routes  
+**Then** mock Admin API receives PATCH (strict replace) to same `@id` — never duplicate
+POST-appended or PUT-inserted routes (Caddy admin API semantics: POST appends to
+arrays, PUT inserts, PATCH replaces)  
 **Test:** `internal/controller/e9-s02-02_test.go`
 
 **Verify:** envtest with fake Admin server request log assertion

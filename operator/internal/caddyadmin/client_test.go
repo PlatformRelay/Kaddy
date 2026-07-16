@@ -76,50 +76,57 @@ func TestClient_Ping_ConnectionRefused(t *testing.T) {
 	}
 }
 
-// REQ-E9-S02-02 (client half): upserting the same @id twice must create the
-// route exactly once (single POST) and replace it via PUT afterwards.
+// REQ-E9-S02-02 (client half): upserting the same @id repeatedly must create
+// the route exactly once (single POST) and strictly replace it via PATCH
+// afterwards. Real Caddy admin API semantics: POST appends to arrays and PUT
+// *inserts* — both pile up duplicate routes, so neither may ever hit an
+// existing @id.
 func TestClient_UpsertRoute_Idempotent(t *testing.T) {
+	const wantID = "kaddy.default.clubhouse"
+
 	srv := admintest.NewServer()
 	t.Cleanup(srv.Close)
 
 	c := caddyadmin.New(srv.URL())
-	route := testRoute("kaddy.default.clubhouse")
+	route := testRoute(wantID)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if err := c.UpsertRoute(ctxWithTimeout(t), routesPath, route); err != nil {
 			t.Fatalf("UpsertRoute #%d: %v", i+1, err)
 		}
 	}
 
 	if got := srv.RouteCount(); got != 1 {
-		t.Fatalf("route count after 3 upserts: want 1, got %d", got)
+		t.Fatalf("route count after 3 upserts: want 1, got %d (duplicates piled up)", got)
 	}
 
-	posts, puts := 0, 0
+	posts, patches := 0, 0
 	for _, r := range srv.Requests() {
 		switch r.Method {
 		case http.MethodPost:
 			posts++
 		case http.MethodPut:
-			puts++
-			if r.Path != "/id/kaddy.default.clubhouse" {
-				t.Fatalf("PUT to unexpected path %s", r.Path)
+			t.Fatalf("PUT %s observed: PUT inserts in the Caddy admin API and must never be used for upserts", r.Path)
+		case http.MethodPatch:
+			patches++
+			if r.Path != "/id/"+wantID {
+				t.Fatalf("PATCH to unexpected path %s", r.Path)
 			}
 		}
 	}
 	if posts != 1 {
 		t.Fatalf("POST count: want exactly 1 create, got %d", posts)
 	}
-	if puts < 2 {
-		t.Fatalf("PUT count: want >=2 in-place replaces, got %d", puts)
+	if patches < 2 {
+		t.Fatalf("PATCH count: want >=2 strict replaces, got %d", patches)
 	}
 
-	stored, ok := srv.Route("kaddy.default.clubhouse")
+	stored, ok := srv.Route(wantID)
 	if !ok {
 		t.Fatal("route not stored under its @id")
 	}
-	if stored["@id"] != "kaddy.default.clubhouse" {
-		t.Fatalf("stored route @id: want kaddy.default.clubhouse, got %v", stored["@id"])
+	if stored["@id"] != wantID {
+		t.Fatalf("stored route @id: want %s, got %v", wantID, stored["@id"])
 	}
 }
 

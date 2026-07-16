@@ -17,7 +17,9 @@ limitations under the License.
 package controller
 
 // REQ-E9-S02-02: Given a CaddySite whose route carries an `@id`, reconciling
-// twice must result in a PUT to the same `@id` — not duplicate POSTed routes.
+// twice must result in a PATCH (strict replace) to the same `@id` — not
+// duplicate POST-appended or PUT-inserted routes (Caddy admin API: POST
+// appends to arrays, PUT inserts, PATCH replaces).
 // Verified against the fake Admin server's request log.
 
 import (
@@ -76,7 +78,7 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 	req := reconcile.Request{NamespacedName: key}
 
 	// Reconcile twice (plus once more for the finalizer add pass).
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if _, err := r.Reconcile(tctx, req); err != nil {
 			t.Fatalf("reconcile #%d: %v", i+1, err)
 		}
@@ -85,13 +87,13 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 	const wantID = "kaddy.default.clubhouse"
 
 	if got := admin.RouteCount(); got != 1 {
-		t.Fatalf("routes installed after repeated reconciles: want exactly 1, got %d", got)
+		t.Fatalf("routes installed after repeated reconciles: want exactly 1, got %d (duplicates piled up)", got)
 	}
 	if _, ok := admin.Route(wantID); !ok {
 		t.Fatalf("route not stored under stable @id %q", wantID)
 	}
 
-	posts := 0
+	posts, patches := 0, 0
 	for _, rec := range admin.Requests() {
 		switch rec.Method {
 		case http.MethodPost:
@@ -100,13 +102,19 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 				t.Fatalf("POSTed route @id: want %q, got %q", wantID, got)
 			}
 		case http.MethodPut:
+			t.Fatalf("PUT %s observed: PUT inserts in the Caddy admin API and would duplicate the route", rec.Path)
+		case http.MethodPatch:
+			patches++
 			if rec.Path != "/id/"+wantID {
-				t.Fatalf("PUT to unexpected path %s, want /id/%s", rec.Path, wantID)
+				t.Fatalf("PATCH to unexpected path %s, want /id/%s", rec.Path, wantID)
 			}
 		}
 	}
 	if posts != 1 {
 		t.Fatalf("POST count across reconciles: want exactly 1 create, got %d", posts)
+	}
+	if patches < 2 {
+		t.Fatalf("PATCH count across reconciles: want >=2 strict replaces, got %d", patches)
 	}
 
 	fetched := &gatewayv1alpha1.CaddySite{}
@@ -165,10 +173,15 @@ func TestCaddySite_CaddyRefNotFound(t *testing.T) {
 	}
 	key := types.NamespacedName{Name: "orphan", Namespace: "default"}
 
-	// Terminal-ish config error: no reconcile error (no hot-loop), Ready=False.
-	for i := 0; i < 2; i++ {
-		if _, err := r.Reconcile(tctx, reconcile.Request{NamespacedName: key}); err != nil {
+	// Terminal-ish config error: no reconcile error (no hot-loop), Ready=False,
+	// but retry IS scheduled (RequeueAfter > 0) so a later caddyRef fix is seen.
+	for i := range 2 {
+		res, err := r.Reconcile(tctx, reconcile.Request{NamespacedName: key})
+		if err != nil {
 			t.Fatalf("reconcile #%d with missing caddyRef must not error: %v", i+1, err)
+		}
+		if res.RequeueAfter <= 0 {
+			t.Fatalf("reconcile #%d: want RequeueAfter > 0 for missing caddyRef, got %+v", i+1, res)
 		}
 	}
 
