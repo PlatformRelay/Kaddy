@@ -170,10 +170,13 @@ jobs:
           sed 's#gatewayapi-plugin-linux-arm64#gatewayapi-plugin-linux-amd64#' \
             deploy/rollouts/config.yaml | kubectl apply -f -
           # Server-side apply: the Rollout CRD exceeds client-side annotation
-          # limits. The plugin ConfigMap is applied BEFORE the controller starts,
-          # so it is loaded on first boot — no `rollout restart` needed (live
-          # needs one because Argo CD may sync the CM after the controller).
-          kubectl apply --server-side -f deploy/rollouts/install.yaml
+          # limits. -n argo-rollouts: the vendored upstream install.yaml carries
+          # NO namespace fields (live, the Argo CD Application destination
+          # supplies it — deploy/apps/rollouts.yaml). The plugin ConfigMap is
+          # applied BEFORE the controller starts, so it is loaded on first boot —
+          # no `rollout restart` needed (live needs one because Argo CD may sync
+          # the CM after the controller).
+          kubectl apply --server-side -n argo-rollouts -f deploy/rollouts/install.yaml
           kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=300s
       # E4/E7: the platform edge + demo workloads the un-skipped suites assert
       # against — applied from the SAME GitOps manifests the live cluster syncs.
