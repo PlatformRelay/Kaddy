@@ -43,3 +43,20 @@ _smoke_cluster_reachable() {
   [[ -f "${KUBECONFIG}" ]] \
     && kubectl cluster-info --context "kind-kaddy-dev" >/dev/null 2>&1
 }
+
+# Phase-2 GSK opt-in. smoke_require_cluster hard-pins kind-kaddy-dev (the local
+# prod-nuke guard); the gridscale live demo runs against a GSK cluster instead.
+# This helper preserves the guard by requiring the caller to NAME the target
+# context explicitly (E8B_GSK_CONTEXT) and honouring the operator's exported
+# KUBECONFIG — it NEVER auto-selects, so it can't wander onto a prod context.
+# The active context must already equal the named one (operator selected it).
+smoke_require_named_context() {
+  local want="${1:-}"
+  [[ -n "${want}" ]] || smoke_fail "smoke_require_named_context: no context name given"
+  local ctx; ctx="$(kubectl config current-context 2>/dev/null || true)"
+  [[ "${ctx}" == "${want}" ]] \
+    || smoke_fail "active context '${ctx}' != required '${want}' — export KUBECONFIG to the GSK kubeconfig and 'kubectl config use-context ${want}'"
+  kubectl cluster-info >/dev/null 2>&1 \
+    || smoke_fail "context '${want}' not reachable"
+  smoke_ok "GSK context '${want}' active + reachable"
+}

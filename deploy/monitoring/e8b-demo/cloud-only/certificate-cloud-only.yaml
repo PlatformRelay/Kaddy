@@ -1,0 +1,81 @@
+# REQ-E8b-S02 — phase-2 Let's Encrypt TLS for the live demo edge (CLOUD-ONLY —
+# NOT issuable on kind; deferred, documented, NOT applied to the local cluster).
+#
+# WHY CLOUD-ONLY (honest): Let's Encrypt validates domain control via an inbound
+# HTTP-01/DNS-01 challenge. On kind there is no public DNS record for the demo
+# host and no public inbound reachability, so the ACME order would hang forever.
+# These are therefore NOT part of the e8b-demo App sync set.
+#
+# EXCLUDED BY LOCATION: the e8b-demo Application directory-syncs
+# deploy/monitoring/e8b-demo with recurse OFF (the ArgoCD default), so this
+# `cloud-only/` subdirectory is never rendered/applied. On the cloud edge (phase-2
+# gridscale LBaaS + a real public hostname + DNS) point the platform `clubhouse`
+# Gateway's certificateRefs Secret at `e8b-demo-tls-le-staging` FIRST to validate
+# the pipeline against the LE staging directory (untrusted chain — expected),
+# then flip to `e8b-demo-tls-le-prod` for a publicly trusted chain. Staging→prod
+# mirrors the E4 acceptance path (REQ-E4-S03-01 → REQ-E4-S03-04).
+#
+# The `letsencrypt-staging` / `letsencrypt-prod` ClusterIssuers already exist
+# (E4) and their ACME account registration succeeds on kind (outbound-only);
+# account registration is not certificate issuance.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: e8b-demo-tls-le-staging
+  namespace: gateway
+  annotations:
+    kaddy.io/status: cloud-only-not-issuable-on-kind
+    kaddy.io/req: REQ-E8b-S02
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: e8b-demo-tls-le-staging
+  duration: 2160h
+  renewBefore: 720h
+  dnsNames:
+    # Replace with a real, publicly resolvable demo hostname on the cloud edge.
+    - demo.example.invalid
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: e8b-demo-tls-le-prod
+  namespace: gateway
+  annotations:
+    kaddy.io/status: cloud-only-not-issuable-on-kind
+    kaddy.io/req: REQ-E8b-S02
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: e8b-demo-tls-le-prod
+  duration: 2160h
+  renewBefore: 720h
+  dnsNames:
+    - demo.example.invalid
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io

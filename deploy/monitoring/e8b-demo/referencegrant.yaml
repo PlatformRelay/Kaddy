@@ -1,0 +1,38 @@
+# REQ-E8b-S02 — authorise the demo HTTPRoute (in `gateway` ns) to reference the
+# scorecard + read-only Grafana Services in THIS (`monitoring`) namespace.
+#
+# Gateway API forbids cross-namespace backendRefs unless the target namespace
+# publishes a ReferenceGrant naming the referrer. This grant is narrowly scoped:
+# only HTTPRoutes in the `gateway` namespace, and only to the two NAMED demo
+# Services (e8b-scorecard, e8b-grafana-readonly) — not every Service in
+# `monitoring` (a name-less `to` would authorise all of them).
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: e8b-demo-gateway-to-monitoring
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E8b-S02
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: gateway
+  to:
+    - group: ""
+      kind: Service
+      name: e8b-scorecard
+    - group: ""
+      kind: Service
+      name: e8b-grafana-readonly

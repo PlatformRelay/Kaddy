@@ -1,0 +1,56 @@
+# REQ-E8b-S02 — GitOps child Application for the live-demo read-only surfaces.
+#
+# Serves the scorecard static site + anonymous-viewer Grafana + ReferenceGrant
+# (in `monitoring`) plus the HTTPRoute (in `gateway`), all under
+# deploy/monitoring/e8b-demo/. Uses the dedicated `e8b-demo` AppProject
+# (deploy/apps/projects/e8b-demo.yaml) whose closed destination list is exactly
+# {monitoring, gateway} — the two namespaces this demo spans. No existing project
+# whitelists both, so a new one is the least-clobbering fit (the shared clubhouse
+# Gateway's listener selector, which we must not edit, forces the route into
+# `gateway`).
+#
+# recurse is OFF (ArgoCD default): the cloud-only/ subdir (phase-2 Let's Encrypt
+# Certificates, not issuable on kind) is excluded from sync BY LOCATION, mirroring
+# deploy/cert-manager/cloud-only/. selfHeal OFF — these surfaces front demo
+# traffic; keep a human in the loop for drift (matches observability children).
+#
+# ON-DEMAND (E8b-S01 / DECIDED-B): steady-state truth is main, but this App is
+# only meaningfully live during an operator-triggered `task e8b:up` → demo →
+# `task e8b:down` cycle on the gridscale substrate. It is NOT a standing service.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: e8b-demo
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E8b-S02
+spec:
+  project: e8b-demo
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/monitoring/e8b-demo
+    directory:
+      # recurse OFF — cloud-only/ (phase-2 LE certs) excluded by location.
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    # selfHeal OFF — demo surfaces front traffic; human-in-the-loop for drift.
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

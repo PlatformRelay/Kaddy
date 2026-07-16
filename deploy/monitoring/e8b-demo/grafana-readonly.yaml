@@ -1,0 +1,166 @@
+# REQ-E8b-S02 — read-only (anonymous Viewer) Grafana for the live demo.
+#
+# DECIDED-B (e8b): this is a NEW, standalone Grafana surface — it does NOT edit
+# the shared deploy/observability/kube-prometheus-stack.yaml (admin-creds
+# instance, owned by another lane). It reads the SAME in-cluster Prometheus as a
+# datasource but is exposed anonymously with the Viewer role only, no login
+# form, no sign-up, no editing — a reviewer can browse dashboards but cannot
+# mutate anything.
+#
+# Read-only enforcement (all via env, no secrets):
+#   GF_AUTH_ANONYMOUS_ENABLED=true         — no login needed
+#   GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer      — Viewer cannot create/edit/delete
+#   GF_AUTH_DISABLE_LOGIN_FORM=true        — no interactive elevation path
+#   GF_AUTH_BASIC_ENABLED=false            — no basic-auth escalation
+#   GF_USERS_ALLOW_SIGN_UP=false           — no self-registration
+#   GF_SECURITY_ADMIN_* left UNSET         — no admin identity provisioned here
+#
+# Served under /grafana behind the platform Gateway; GF_SERVER_ROOT_URL +
+# serve_from_sub_path make the sub-path routing work.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: e8b-grafana-datasource
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-grafana-readonly
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+data:
+  datasource.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        # The kube-prometheus-stack Prometheus Service in this namespace.
+        url: http://kps-prometheus.monitoring.svc:9090
+        isDefault: true
+        editable: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e8b-grafana-readonly
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-grafana-readonly
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: e8b-grafana-readonly
+  template:
+    metadata:
+      labels:
+        owner: platform-team
+        service: e8b-demo
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: internal
+        business-criticality: business-operational
+        track: stable
+        app.kubernetes.io/name: e8b-grafana-readonly
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        fsGroup: 472
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.2.0
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Viewer"
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            - name: GF_AUTH_BASIC_ENABLED
+              value: "false"
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            - name: GF_USERS_VIEWERS_CAN_EDIT
+              value: "false"
+            - name: GF_SERVER_ROOT_URL
+              value: "%(protocol)s://%(domain)s/grafana/"
+            - name: GF_SERVER_SERVE_FROM_SUB_PATH
+              value: "true"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+          readinessProbe:
+            httpGet:
+              path: /grafana/api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: storage
+              mountPath: /var/lib/grafana
+      volumes:
+        - name: datasources
+          configMap:
+            name: e8b-grafana-datasource
+        - name: storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: e8b-grafana-readonly
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-grafana-readonly
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  selector:
+    app.kubernetes.io/name: e8b-grafana-readonly
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000

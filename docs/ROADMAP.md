@@ -347,11 +347,18 @@ reviewer path.
 ## E8b · Live demo environment
 
 **OpenSpec:** [e8b-live-demo](../openspec/changes/e8b-live-demo/)
+**Runbook:** [gridscale-live-demo.md](runbooks/gridscale-live-demo.md)
+
+DECIDED-B (operator-approved): E8b ships as a reproducible **on-demand** bring-up
+(`task e8b:up` / `e8b:down`), proven ephemerally — **not a standing environment**
+(the ruthless-teardown cost rule holds; the "interview window" is
+operator-triggered). Offline-authored below; live bring-up/serve pending the live
+cycle.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E8b-S01 | Keep gridscale stack running through interview window | ⬜ |
-| E8b-S02 | Serve scorecard + read-only Grafana via Gateway TLS | ⬜ |
+| E8b-S01 | On-demand gridscale demo bring-up (`e8b:up`/`e8b:down`, ruthless teardown) | 🟨 (offline-authored: targets + runbook; live bring-up pending) |
+| E8b-S02 | Serve scorecard + read-only Grafana via Gateway TLS | 🟨 (offline-authored: GitOps surfaces + prefix-strip route/RBAC + kubeconform; scorecard serves a landing page linking to the published GitHub Pages scorecard — live evidence-bundle swap + live serve pending) |
 
 ---
 

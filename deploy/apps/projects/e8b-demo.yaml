@@ -1,0 +1,49 @@
+# REQ-E8b-S02 — restricted AppProject for the live-demo read-only surfaces.
+#
+# WHY A DEDICATED PROJECT (DECIDED): the demo needs resources in TWO namespaces —
+# the surfaces (scorecard + read-only Grafana + ReferenceGrant) in `monitoring`,
+# and the HTTPRoute in `gateway` (the ONLY namespaces the shared clubhouse
+# Gateway's https listener admits via its `In [gateway, websites]` selector,
+# which this lane must NOT edit). No existing project whitelists both monitoring
+# and gateway, so a new closed-list project is the least-clobbering fit — it
+# leaves observability/workloads/platform projects untouched.
+#
+# Namespace-scoped blast radius only: no clusterResourceWhitelist. The demo
+# creates no cluster-scoped objects (both namespaces pre-exist — monitoring via
+# observability, gateway via E1e), and the e8b-demo App's CreateNamespace is a
+# harmless no-op against those existing namespaces.
+#
+# WIRED like every other project: root recurses deploy/apps/ (projects/ included)
+# and `task bootstrap:e3` applies projects/ first so a child referencing this
+# project can be created.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: e8b-demo
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E8b-S02
+spec:
+  description: >-
+    kaddy live-demo (E8b): read-only scorecard evidence site + anonymous-viewer
+    Grafana in `monitoring`, exposed through the clubhouse Gateway via an
+    HTTPRoute in `gateway`. On-demand, torn down after each demo — not standing.
+  sourceRepos:
+    - https://github.com/PlatformRelay/Kaddy.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: gateway

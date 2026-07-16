@@ -86,6 +86,7 @@ tasks:
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e6g-offline.sh
+      - bash tests/smoke/e8b-offline.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)
@@ -377,6 +378,48 @@ tasks:
         done
         ( cd stacks/gridscale/object-storage && tofu destroy -auto-approve ) || true
         echo "teardown complete — verify in the gridscale panel that nothing lingers."
+
+  test:smoke:e8b:
+    desc: E8b — OFFLINE gate for the live-demo env (targets/runbook/manifests + kubeconform + shellcheck; no cluster/API/creds). Set E8B_LIVE=1 for the live serve check.
+    cmds:
+      - bash tests/smoke/e8b-offline.sh
+
+  e8b:up:
+    desc: "E8b — LIVE on-demand demo bring-up (COSTS MONEY; DECIDED-B on-demand, NOT standing). Composes the E1g GSK substrate, re-syncs the GitOps app-of-apps, waits healthy. Tear down with e8b:down after the demo."
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        echo "LIVE E8b demo bring-up — this COSTS MONEY (gridscale GSK + LBaaS). Ctrl-C within 5s to abort."
+        sleep 5
+        # 1) Bring up the E1g gridscale substrate (object-storage anchor, then
+        #    network → k8s → lbaas per docs/runbooks/gridscale-day0.md wiring).
+        task e1g:up
+        echo ""
+        echo "Now provision network/k8s/lbaas + thread outputs per gridscale-day0.md,"
+        echo "then export KUBECONFIG to the GSK kubeconfig before the steps below."
+        # 2) Re-sync the phase-1 GitOps app-of-apps onto the GSK substrate. This is
+        #    the SAME bootstrap the local cluster uses (E1g-S05 substrate swap):
+        #    install ArgoCD, apply the app-of-apps root — the e8b-demo child then
+        #    renders the read-only scorecard + Grafana surfaces (E8b-S02).
+        : "${KUBECONFIG:?export KUBECONFIG=<GSK kubeconfig> before re-syncing GitOps}"
+        task bootstrap:argocd
+        task bootstrap:e3
+        # 3) Wait for the demo surfaces to come up (serve/health proven by
+        #    tests/smoke/e8b-serve.sh; run `E8B_LIVE=1 task test:smoke:e8b`).
+        kubectl -n argocd rollout status deploy/argocd-server --timeout=600s
+        echo "E8b demo up. Verify + demo per docs/runbooks/gridscale-live-demo.md, then RUN 'task e8b:down'."
+
+  e8b:down:
+    desc: "E8b — RUTHLESS teardown of the on-demand demo. Delegates to e1g:down (destroy lbaas → k8s → network → object-storage). Run after EVERY demo (cost discipline)."
+    cmds:
+      - |
+        set -euo pipefail
+        # The demo surfaces are GitOps-managed on the ephemeral GSK cluster, so
+        # destroying the gridscale substrate reclaims everything. No standing env.
+        task e1g:down
+        echo "E8b demo torn down (gridscale substrate destroyed via e1g:down)."
 
   bootstrap:argocd:
     desc: E1 — install pinned ArgoCD + bootstrap Gateway overlay (idempotent)

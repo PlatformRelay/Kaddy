@@ -1,0 +1,179 @@
+# REQ-E8b-S02 — read-only static evidence (scorecard) site.
+#
+# Serves the committed scorecard landing page over HTTP behind the platform
+# Gateway. Deliberately a STATIC, read-only surface: nginx-unprivileged with a
+# read-only root filesystem, runAsNonRoot, no write paths mounted rw except the
+# ephemeral tmp/cache dirs nginx needs. The demo content is injected via a
+# ConfigMap so no image rebuild is needed; at the live cycle the full scorecard
+# HTML (hack/scorecard/capture.sh output) can replace this landing page via the
+# same ConfigMap key.
+#
+# READ-ONLY posture (kyverno require-run-as-nonroot + defence-in-depth): the
+# reviewer can browse evidence but the surface exposes no mutating endpoint.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: e8b-scorecard-content
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-scorecard
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+data:
+  index.html: |
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>kaddy — live demo scorecard</title>
+      <style>
+        body { font-family: system-ui, sans-serif; max-width: 44rem; margin: 3rem auto; padding: 0 1rem; }
+        h1 { font-size: 1.6rem; }
+        .surfaces a { display: block; margin: .4rem 0; }
+        .note { color: #555; font-size: .9rem; }
+      </style>
+    </head>
+    <body>
+      <h1>kaddy — live demo evidence</h1>
+      <p>Served read-only behind the platform Gateway (phase-2 LBaaS + Let's Encrypt TLS).</p>
+      <div class="surfaces">
+        <a href="/grafana/">Grafana (read-only, anonymous Viewer) →</a>
+        <a href="https://platformrelay.github.io/Kaddy/">Published scorecard (GitHub Pages) →</a>
+      </div>
+      <p class="note">On-demand demo (E8b-S01): brought up via <code>task e8b:up</code>,
+      torn down via <code>task e8b:down</code>. Not a standing environment.</p>
+    </body>
+    </html>
+  # nginx listening on an unprivileged port (8080) with a writable temp path so
+  # the read-only root filesystem holds. Keep-it-minimal: serve /usr/share only.
+  nginx.conf: |
+    worker_processes 1;
+    pid /tmp/nginx.pid;
+    events { worker_connections 128; }
+    http {
+      client_body_temp_path /tmp/client;
+      proxy_temp_path /tmp/proxy;
+      fastcgi_temp_path /tmp/fastcgi;
+      uwsgi_temp_path /tmp/uwsgi;
+      scgi_temp_path /tmp/scgi;
+      access_log /dev/stdout;
+      error_log /dev/stderr;
+      server {
+        listen 8080;
+        root /usr/share/nginx/html;
+        index index.html;
+        location / { try_files $uri $uri/ =404; }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e8b-scorecard
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-scorecard
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: e8b-scorecard
+  template:
+    metadata:
+      labels:
+        owner: platform-team
+        service: e8b-demo
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: public
+        business-criticality: business-operational
+        track: stable
+        app.kubernetes.io/name: e8b-scorecard
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          # nginxinc unprivileged image; pinned by digest at the live cycle
+          # (E1c image-digest gate applies to first-party refs; this upstream
+          # ref is pinned to a concrete tag here and digest-pinned when synced).
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports:
+            - containerPort: 8080
+              name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+          volumeMounts:
+            - name: content
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+              readOnly: true
+            - name: content
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: content
+          configMap:
+            name: e8b-scorecard-content
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: e8b-scorecard
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-scorecard
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  selector:
+    app.kubernetes.io/name: e8b-scorecard
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

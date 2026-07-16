@@ -1,0 +1,74 @@
+# REQ-E8b-S02 — expose the read-only demo surfaces behind the platform Gateway.
+#
+# Attaches to the existing `clubhouse` platform Gateway's `https` listener (the
+# phase-2 edge: LBaaS in front, cert-manager TLS on the listener). The route
+# lives in the `gateway` namespace because that listener's allowedRoutes selector
+# admits only the `gateway` and `websites` namespaces — putting the route there
+# needs no change to the shared Gateway manifest (disjoint-file rule).
+#
+# The backends live in `monitoring`, so each cross-namespace backendRef is
+# authorised by the ReferenceGrant in referencegrant.yaml (Gateway API requires
+# an explicit grant for gateway→monitoring Service references).
+#
+# Path routing under the shared clubhouse host:
+#   /scorecard  → e8b-scorecard    (read-only static evidence site)
+#   /grafana    → e8b-grafana-readonly (anonymous Viewer Grafana, sub-path)
+#
+# PREFIX HANDLING (Gateway API does NOT strip PathPrefix by default — a
+# `/scorecard` request is forwarded verbatim, so nginx would 404 on it):
+#   - scorecard: a URLRewrite ReplacePrefixMatch:/ STRIPS the /scorecard prefix
+#     so nginx serves its root index.html.
+#   - grafana:   NO rewrite — Grafana runs with serve_from_sub_path=true and
+#     expects the /grafana prefix intact (GF_SERVER_ROOT_URL=.../grafana/).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: e8b-demo
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E8b-S02
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: gateway
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https
+  hostnames:
+    - clubhouse.kaddy.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /scorecard
+      filters:
+        # Strip the /scorecard prefix so nginx serves its root index.html
+        # (PathPrefix does not strip on its own — without this, nginx 404s).
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: e8b-scorecard
+          namespace: monitoring
+          port: 8080
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /grafana
+      backendRefs:
+        - name: e8b-grafana-readonly
+          namespace: monitoring
+          port: 3000
