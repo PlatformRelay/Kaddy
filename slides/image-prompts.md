@@ -1,14 +1,20 @@
 <!-- markdownlint-disable MD013 -->
 # Section-Cover Image Prompts — Mœbius Continuous Story (kaddy)
 
-One AI-generated cover image per deck slide (`S00`–`S13`), forming a single continuous,
+One AI-generated cover image per deck slide (`S00`–`S14`), forming a single continuous,
 gently comedic story in the style of **Mœbius (Jean Giraud)** — kept for PlatformRelay
 brand consistency with the kubernetes-workshop covers. Slides are defined in
 [`slides.md`](./slides.md); the platform's golf/caddie naming *is* the story's universe.
 
-> The deck has 14 content slides; each gets one section-cover divider. If a delivery
+> The deck has 15 content slides; each gets one section-cover divider. If a delivery
 > trims slides, keep the story readable even when a beat (and its image) is switched
 > off — no beat may *depend* on another cover having been shown.
+>
+> **Filenames are stable art IDs in generation order** (S00–S14). The E12-S04
+> narrative-arc restructure renumbered the *displayed* `§` kickers in
+> [`slides.md`](./slides.md), so a filename's `NN` may differ from its display
+> position (e.g. `section-07-marshals-tower.png` now shows as `§ 10`;
+> `section-14-caddies-order-desk.png` shows as `§ 08`). Do not rename files.
 
 ## Hard requirement
 
@@ -193,6 +199,21 @@ the Greenkeepers, Mulligan asleep on a bench with a ball under one paw — and t
 Gopher, grudgingly included, sipping at the far end. The links glow behind; a small
 ferry light waits on the horizon for the next course. Warm, communal, "onward"
 ending.
+
+### S14 — Portal — *The caddie's order desk* — `section-14-caddies-order-desk.png`
+
+*(Displayed as `§ 08` in the deck — the self-service portal beat, between the
+gatehouse inspection (S08) and Mulligan's second chance (S09). Story-wise it sits
+mid-round; keep the light and cast continuity consistent with S08/S09, not with
+the golden-hour S13.)*
+
+At a polished wooden order desk beside the first tee, the Member writes a single
+wish — one more hole, please — into a large self-filling order book whose blank
+form redraws itself to match the glowing master course-scroll standing open behind
+the desk. Kaddy tears off the completed page and hands it to a waiting Greenkeeper,
+and far down the fairway a brand-new hole is already sketching itself into
+existence, flag rising. No haggling, no queue: the book always asks exactly the
+right questions. Delighted, effortless "wish becomes work order" magic.
 
 ---
 

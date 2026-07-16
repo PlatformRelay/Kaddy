@@ -9,14 +9,24 @@ info: |
 layout: none
 transition: slide-left
 mdc: true
+beat: pitch
+sectionTime: 40
 ---
 
 <!--
-Section covers (E12b): every <CoverArt> `src` already points at the FINAL
-artwork filename under slides/public/covers/ (prompts + name map live in
-slides/image-prompts.md). Until a PNG is generated and dropped in, CoverArt
-falls back to covers/placeholder-section.svg — no code change needed later.
-The low-opacity "AI generated" footer it renders is a mandatory guardrail.
+Section covers (E12b): every <CoverArt> `src` points at the FINAL artwork
+filename under slides/public/covers/ (prompts + name map live in
+slides/image-prompts.md). Cover filenames are STABLE ART IDS in generation
+order (S00–S14) — after the E12-S04 narrative-arc restructure the displayed
+§ numbers are renumbered to the new order, so a filename's NN may differ from
+the kicker's §. Until a PNG is generated and dropped in, CoverArt falls back
+to covers/placeholder-section.svg — no code change needed later. The
+low-opacity "AI generated" footer it renders is a mandatory guardrail.
+
+Narrative annotations (E12-S04): each section divider carries `sectionTime`
+(seconds budgeted for the section, summing to a 5–10 min walkthrough) and the
+seven spec beats carry `beat:` markers — pitch → architecture → security →
+portal-hero → mulligan → marshal → scorecard (tests/deck/narrative-beats.sh).
 -->
 
 <CoverArt
@@ -53,6 +63,7 @@ That is the story this deck tells.
 
 ---
 layout: none
+sectionTime: 35
 ---
 
 <CoverArt
@@ -89,6 +100,7 @@ the Caddy-on-a-VM task as ONE tenant of a Website-as-a-Service platform —
 
 ---
 layout: none
+sectionTime: 45
 ---
 
 <CoverArt
@@ -137,6 +149,7 @@ keeps incident conversations precise — "marshal is firing" beats "the alert th
 
 ---
 layout: none
+sectionTime: 45
 ---
 
 <CoverArt
@@ -163,11 +176,13 @@ I am going to be precise about this, because a senior audience will check.
 
 ### ✅ Landed & gated on `main`
 
-- **kind + Cilium** substrate (E1e)
-- **labels** module + `tofu test` + conftest + Kyverno policy (E1b)
-- **marshal** alert rules + **promtool** unit tests (E5)
-- **CI gates** — gitleaks, conftest, tofu test, pinned installs
-- **E2 gateway spike** proven (read-only)
+- **kind + Cilium** substrate (E1e) + **ArgoCD bootstrap** (E1)
+- **GitOps app-of-apps** — 9/9 apps Synced/Healthy (E3)
+- **Observability spine deployed** — Prometheus · Alertmanager · Grafana · Loki · Alloy
+- **clubhouse over verified HTTPS** through the Cilium edge (E4)
+- **marshal** rules + monitors + **promtool** unit tests (E5)
+- **mulligan** blue/green + canary — **live HTTPRoute weight shift** (E7)
+- **labels** + Rego + Kyverno · CI gates (gitleaks, conftest, `tofu test`, pins)
 
 </div>
 
@@ -175,18 +190,18 @@ I am going to be precise about this, because a senior audience will check.
 
 ### 🧭 Designed — specs + manifests, not yet running
 
-- ArgoCD app-of-apps **sync**
-- Observability spine **deployed** (Prometheus / Loki / Alloy / Grafana)
-- cert-manager Let's Encrypt at the edge
-- Crossplane `Website` XRD, Argo Rollouts
-- Dex OIDC · Caddy-MVP tenant
+- Alertmanager **receiver** · dashboards-as-code · Loki log checks (E5 rest)
+- Crossplane `Website` XRD (E6) · Dex OIDC (E1d)
+- **Backstage portal auto-generated from the XRD** (E10)
+- E1c enforcement **cutover** (policies authored + CLI-tested, runbook committed)
+- Phase 2: gridscale **GSK + LBaaS + Upjet**
 
 </div>
 
 </div>
 
 <div class="pt-6 text-center text-teal-400">
-Phase 1 is a $0 local cluster. The maturity is in the artifacts — ADRs, specs, real manifests, enforced policy, tested alerts, gated CI.
+Phase 1 runs live on a $0 local cluster — and every "landed" claim has a gate behind it: ADRs, specs, manifests, enforced policy, tested alerts, gated CI.
 </div>
 
 <!--
@@ -197,6 +212,8 @@ senior signal.
 
 ---
 layout: none
+beat: architecture
+sectionTime: 50
 ---
 
 <CoverArt
@@ -259,6 +276,7 @@ rewrite. Caddy is a tenant reached THROUGH the edge, never the edge itself.
 
 ---
 layout: none
+sectionTime: 35
 ---
 
 <CoverArt
@@ -313,6 +331,7 @@ an optional "look how deep I can go" spike. That is real engineering judgment.
 
 ---
 layout: none
+sectionTime: 45
 ---
 
 <CoverArt
@@ -331,10 +350,11 @@ layout: default
 
 <div>
 
-**Designed (ADR-0103), manifests in `deploy/apps/`**
+**Landed (E1 + E3) — running live on the local cluster**
 
 - A single **root** `Application` watches `deploy/apps/` and discovers child apps:
-  `gateway`, `observability`, `identity`, `platform-core`, `workloads`
+  `gateway`, `observability`, `identity`, `platform-core`, `workloads` —
+  **9/9 Synced/Healthy**
 - Committed steady-state truth is `targetRevision: main` — merging a lane is what
   makes ArgoCD sync it for real
 - **Self-heal + prune** on the root: delete a child manifest → the child
@@ -378,79 +398,13 @@ never the un-merged branch. That discipline keeps main always-deployable.
 
 ---
 layout: none
----
-
-<CoverArt
-  src="/covers/section-07-marshals-tower.png"
-  kicker="§ 07 · The marshal's tower"
-  title="Observability spine — marshal"
-/>
-
----
-layout: default
----
-
-# Observability spine — marshal
-
-<div class="grid grid-cols-2 gap-6">
-
-<div>
-
-**Landed (E5):**
-
-- **PrometheusRules** — instance down, error rate, latency, request rate
-- ServiceMonitor / PodMonitor + **blackbox_exporter** probes (uptime, status codes)
-- **promtool unit tests for every alert rule** — an alert's *correctness* is proven
-  in CI (L1), not assumed
-
-**Designed (E3 / E5 manifests in `deploy/observability/`):**
-
-- **kube-prometheus-stack** + **Alertmanager** receiver
-- **Loki + Grafana Alloy** — logs + metrics in one Grafana pane (ADR-0108)
-- Dashboards-as-code + Loki logs panel
-
-</div>
-
-<div>
-
-```mermaid {scale: 0.68}
-flowchart TB
-  T["tenant / gateway<br/>/metrics + logs"]
-  BB["blackbox_exporter<br/>probes"]
-  P["Prometheus"]
-  AL["Alloy<br/>(DaemonSet)"]
-  L["Loki"]
-  AM["Alertmanager"]
-  GR["Grafana"]
-  T --> P
-  BB --> P
-  T -. logs .-> AL --> L
-  P --> AM
-  P & L --> GR
-  P -.->|"promtool<br/>unit tests (CI)"| P
-```
-
-<div class="text-center text-sm text-teal-400 pt-2">
-An alert can fire end-to-end — and its rule is unit-tested.
-</div>
-
-</div>
-
-</div>
-
-<!--
-The differentiator: I don't just write alert rules, I TEST them with promtool in
-CI. "Alert on server down" is a claim you can regress. That is the part most
-candidates skip, and it directly answers the brief's "alerting correctness."
--->
-
----
-layout: none
+beat: security
+sectionTime: 45
 ---
 
 <CoverArt
   src="/covers/section-08-gatehouse-inspection.png"
-  kicker="§ 08 · The gatehouse inspection"
+  kicker="§ 07 · The gatehouse inspection"
   title="Security & governance"
 />
 
@@ -483,7 +437,7 @@ layout: default
 
 - **OPA / Rego** (`policy/labels.rego`) gates OpenTofu plans in CI (conftest)
 - **Kyverno** `ClusterPolicy` enforces the same 7 bare keys on Pods at admission
-- Default-deny **NetworkPolicies** (E1c, designed)
+- Default-deny **NetworkPolicies** authored + admission baseline CLI-tested (E1c, cutover runbook committed)
 
 </div>
 
@@ -496,7 +450,7 @@ layout: default
 - **gitleaks 8.30.1** secret scan — in CI, not just bypassable pre-commit
 - conftest · `tofu test` · E1e meta gates
 - **All installs pinned** (gitleaks, conftest, ripgrep) — Renovate-trackable, no `apt` floats
-- cosign + Trivy (E1c, designed)
+- Data-flow **security review committed** (`docs/security/`) · replayable audits (E11) specced
 
 </div>
 
@@ -517,6 +471,52 @@ to real regulation, sanitized from public sources only.
 
 ---
 layout: none
+beat: portal-hero
+sectionTime: 40
+---
+
+<CoverArt
+  src="/covers/section-14-caddies-order-desk.png"
+  kicker="§ 08 · The caddie's order desk"
+  title="Self-service portal — auto-generated from the XRD"
+/>
+
+---
+layout: two-cols
+layoutClass: gap-8
+---
+
+# Portal — auto-generated from the XRD
+
+**The money shot (E10, designed):** nobody hand-writes the portal form.
+
+- **kubernetes-ingestor** reads the Crossplane `Website` XRD and
+  **auto-generates** the Backstage scaffolder form
+- Edit the XRD → **the form updates itself** — the platform API stays the
+  single source of truth (ADR-0111)
+- Submitting opens a **GitOps PR** with a `Website` XR → ArgoCD applies →
+  Crossplane reconciles
+- Read-path plugins render live status in-portal: **Crossplane resource
+  graph**, ArgoCD apps, K8s workloads (D-029)
+
+::right::
+
+<div class="pt-10 text-sm opacity-80">
+
+**Honesty:** E10 is specced (ADR-0109 / ADR-0111, D-027…D-029) and gated behind
+the spine — shown here as design, not a running portal. Orchestrator-first:
+Crossplane (E6) *is* the platform API; Backstage is the experience layer on top.
+
+</div>
+
+<!--
+Placeholder note — replaced by the verbatim voiceover script in E12-S02.
+-->
+
+---
+layout: none
+beat: mulligan
+sectionTime: 50
 ---
 
 <CoverArt
@@ -563,9 +563,9 @@ flowchart LR
 
 <div class="text-sm opacity-75 pt-3">
 
-Argo Rollouts shifts traffic by mutating **Gateway API HTTPRoute weights**; a
-Prometheus **AnalysisTemplate** gates promotion. Bad canary → automatic rollback
-→ **marshal** alert. (E7, designed.)
+**Landed (E7):** Argo Rollouts mutates **Gateway API HTTPRoute weights** —
+proven live on the cluster: `100/0 → 20 → 50 → 100`. Blue/green promotion and
+abort→rollback proven; `hack/demo/mulligan.sh` choreographs the two-act demo.
 
 </div>
 
@@ -580,11 +580,84 @@ target. I caught that in my own audit and fixed the story.
 
 ---
 layout: none
+beat: marshal
+sectionTime: 45
+---
+
+<CoverArt
+  src="/covers/section-07-marshals-tower.png"
+  kicker="§ 10 · The marshal's tower"
+  title="Observability spine — marshal"
+/>
+
+---
+layout: default
+---
+
+# Observability spine — marshal
+
+<div class="grid grid-cols-2 gap-6">
+
+<div>
+
+**Landed (E5 rules + E3 spine, running via GitOps):**
+
+- **PrometheusRules** — instance down, error rate, latency, request rate
+- ServiceMonitor / PodMonitor + **blackbox_exporter** probes (uptime, status codes)
+- **promtool unit tests for every alert rule** — an alert's *correctness* is proven
+  in CI (L1), not assumed
+- **kube-prometheus-stack + Loki + Grafana Alloy deployed** — logs + metrics in
+  one Grafana pane (ADR-0108)
+
+**Open (E5 completion):**
+
+- **Alertmanager receiver** (ntfy/webhook) — the "fire" leg
+- Dashboards-as-code + Loki 5xx log checks
+
+</div>
+
+<div>
+
+```mermaid {scale: 0.68}
+flowchart TB
+  T["tenant / gateway<br/>/metrics + logs"]
+  BB["blackbox_exporter<br/>probes"]
+  P["Prometheus"]
+  AL["Alloy<br/>(DaemonSet)"]
+  L["Loki"]
+  AM["Alertmanager"]
+  GR["Grafana"]
+  T --> P
+  BB --> P
+  T -. logs .-> AL --> L
+  P --> AM
+  P & L --> GR
+  P -.->|"promtool<br/>unit tests (CI)"| P
+```
+
+<div class="text-center text-sm text-teal-400 pt-2">
+An alert can fire end-to-end — and its rule is unit-tested.
+</div>
+
+</div>
+
+</div>
+
+<!--
+The differentiator: I don't just write alert rules, I TEST them with promtool in
+CI. "Alert on server down" is a claim you can regress. That is the part most
+candidates skip, and it directly answers the brief's "alerting correctness."
+-->
+
+---
+layout: none
+beat: scorecard
+sectionTime: 40
 ---
 
 <CoverArt
   src="/covers/section-10-five-hole-walkthrough.png"
-  kicker="§ 10 · The five-hole walkthrough"
+  kicker="§ 11 · The five-hole walkthrough"
   title="Demo flow"
 />
 
@@ -617,7 +690,7 @@ The whole run is captured by **scorecard** (k6 + metrics/logs) into a self-conta
 </div>
 
 <div class="text-sm opacity-60 pt-3">
-`task demo` orchestrates beats 2–5 (E7-S03, designed). Beats 1 and 4's rule-testing are landed today.
+Beats 1–3 and 5 run live on the local cluster today (`hack/demo/mulligan.sh` drives the delivery act); beat 4's receiver leg is the remaining E5 work; scorecard capture is E8.
 </div>
 
 <!--
@@ -628,11 +701,12 @@ durable artifact — that's the evidence the brief asks for, upgraded.
 
 ---
 layout: none
+sectionTime: 30
 ---
 
 <CoverArt
   src="/covers/section-11-back-nine-at-dawn.png"
-  kicker="§ 11 · The back nine at dawn"
+  kicker="§ 12 · The back nine at dawn"
   title="Roadmap & honest status"
 />
 
@@ -651,12 +725,13 @@ layout: default
 | Epic | Scope | Status |
 | --- | --- | --- |
 | E1e | kind + Cilium substrate | ✅ landed |
+| E1 · E3 | ArgoCD bootstrap + GitOps core | ✅ landed |
+| E4 | clubhouse + verified TLS | ✅ landed |
 | E1b | labels module + policy | ✅ landed |
-| E5 | marshal rules + promtool | ✅ (rules) |
-| E1 | ArgoCD bootstrap | 🧭 designed |
-| E3 | GitOps core + observability | 🧭 designed |
-| E4 | clubhouse + TLS | 🧭 designed |
-| E6 / E7 | Crossplane · Rollouts | 🧭 designed |
+| E7 | mulligan rollouts (live weight shift) | ✅ landed |
+| E5 | marshal — receiver/dashboards leg | 🚧 rules ✅ |
+| E6 | Crossplane `Website` XRD | 🧭 designed |
+| E10 | Backstage portal (auto-gen) | 🧭 designed |
 
 </div>
 
@@ -690,11 +765,12 @@ zero until the platform is proven locally.
 
 ---
 layout: none
+sectionTime: 30
 ---
 
 <CoverArt
   src="/covers/section-12-signed-scorecard.png"
-  kicker="§ 12 · The signed scorecard"
+  kicker="§ 13 · The signed scorecard"
   title="Why this answers the exercise"
 />
 
@@ -706,11 +782,11 @@ layout: statement
 
 <div class="text-left max-w-3xl mx-auto pt-4 text-lg space-y-3">
 
-- **Serve · scrape · alert** — satisfied, but as a *repeatable tenant product*, with the alert rule **unit-tested in CI**
-- **IaC & automation** — GitOps app-of-apps, SOPS-encrypted secrets in git, pinned & gated supply chain
+- **Serve · scrape · alert** — satisfied live through the Cilium edge, as a *repeatable tenant product*, with the alert rules **unit-tested in CI**
+- **IaC & automation** — GitOps app-of-apps (9/9 Synced/Healthy), SOPS-encrypted secrets in git, pinned & gated supply chain
 - **Documentation** — README reviewer paths, ADRs, OpenSpec specs, this deck
 - **Evidence** — scorecard turns the demo into a reproducible HTML report, not screenshots
-- **Beyond the brief** — governance (NIS2-style labels, Rego + Kyverno), OIDC, progressive delivery, centralized logs
+- **Beyond the brief** — landed progressive delivery with live traffic shifting, governance (NIS2-style labels, Rego + Kyverno), centralized logs, OIDC designed
 
 </div>
 
@@ -720,11 +796,12 @@ A platform team can adopt this. That was the point.
 
 ---
 layout: none
+sectionTime: 15
 ---
 
 <CoverArt
   src="/covers/section-13-nineteenth-hole.png"
-  kicker="§ 13 · The nineteenth hole"
+  kicker="§ 14 · The nineteenth hole"
   title="Thank you"
 />
 
