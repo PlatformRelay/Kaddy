@@ -1,0 +1,53 @@
+# REQ-E1d-S04-01: default-deny holds in the identity namespace — the policy
+# objects exist AND a pod from an unrelated namespace cannot reach Dex :5556.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-netpol-deny-default
+  annotations:
+    kaddy.io/req: REQ-E1d-S04-01
+    # skip: true — needs Cilium netpol enforcement + the manual-sync policies
+    # app + a Kyverno-labeled probe pod (CI chainsaw kind cluster runs
+    # kindnet, no enforcement). Verified PASSING live 2026-07-16 (flip skip
+    # off, run, revert — see chainsaw-test.yaml).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+spec:
+  skip: true
+  concurrent: false
+  description: identity default-deny NetworkPolicy present and enforcing
+  steps:
+    - name: policy-objects-present
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: identity
+                name: default-deny-all
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Ingress
+                  - Egress
+    - name: cross-namespace-probe-denied
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -euo pipefail
+              dex_ip="$(kubectl -n identity get svc dex -o jsonpath='{.spec.clusterIP}')"
+              kubectl -n default delete pod e1d-cs-deny-probe --ignore-not-found --now >/dev/null 2>&1 || true
+              kubectl -n default run e1d-cs-deny-probe --restart=Never --image=curlimages/curl:8.11.0 \
+                --labels="owner=platform-team,service=identity,part-of=kaddy,managed-by=argocd,data-classification=internal,business-criticality=business-operational,track=stable,app.kubernetes.io/name=e1d-cs-deny-probe" \
+                --command -- curl -sf -m 5 "http://${dex_ip}:5556/healthz" >/dev/null
+              phase=""
+              for _ in $(seq 1 30); do
+                phase="$(kubectl -n default get pod e1d-cs-deny-probe -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+                { [ "${phase}" = "Succeeded" ] || [ "${phase}" = "Failed" ]; } && break
+                sleep 2
+              done
+              kubectl -n default delete pod e1d-cs-deny-probe --ignore-not-found --now >/dev/null 2>&1 || true
+              [ "${phase}" = "Failed" ] || { echo "probe REACHED dex :5556 (phase=${phase})" >&2; exit 1; }
+              echo "cross-namespace probe denied"

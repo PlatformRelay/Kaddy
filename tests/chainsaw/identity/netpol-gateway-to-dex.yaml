@@ -1,0 +1,39 @@
+# REQ-E1d-S04-02: the allow branch — Gateway (Envoy, reserved `ingress`
+# identity) reaches Dex :5556 through the CNP while default-deny holds, so
+# the issuer answers its discovery document end-to-end via the edge.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-netpol-gateway-to-dex
+  annotations:
+    kaddy.io/req: REQ-E1d-S04-02
+    # skip: true — needs Cilium Gateway + CNP enforcement + live Dex (CI
+    # substrate lacks all three). Verified PASSING live 2026-07-16 (flip
+    # skip off, run, revert — see chainsaw-test.yaml).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+spec:
+  skip: true
+  concurrent: false
+  description: gateway -> dex allow works under default-deny
+  steps:
+    - name: cnp-present
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: cilium.io/v2
+              kind: CiliumNetworkPolicy
+              metadata:
+                namespace: identity
+                name: allow-gateway-to-dex
+    - name: discovery-via-gateway
+      try:
+        - script:
+            timeout: 60s
+            content: |
+              set -euo pipefail
+              issuer="$(curl -fsk --resolve dex.kaddy.local:30443:127.0.0.1 \
+                https://dex.kaddy.local:30443/.well-known/openid-configuration | jq -r .issuer)"
+              [ "${issuer}" = "https://dex.kaddy.local:30443" ] \
+                || { echo "unexpected issuer '${issuer}'" >&2; exit 1; }
+              echo "discovery served through the Gateway (200, issuer ok)"

@@ -1,6 +1,12 @@
-# Golden file — Dex GitHub connector (PlatformRelay org)
-# Compare rendered ConfigMap/Helm values against this shape in tests/smoke/e1d-s01-03.sh
-
+# REQ-E1d-S01-03 — golden Dex GitHub connector. Compared by e1d-exit.sh
+# against `.connectors` of the LIVE identity/dex ConfigMap config.yaml.
+#
+# Reality of the kind lab (E1d): issuer/redirect ride the loopback-mapped
+# Gateway (dex.kaddy.local:30443, not dex.platformrelay.dev — that is the
+# phase-2 public issuer). Org-membership gate on PlatformRelay; the `teams:`
+# allowlist filter is deferred to E10 (see deploy/identity/dex/configmap.yaml
+# header) — Dex still emits org:team group claims, which argocd-rbac-cm
+# already maps for PlatformRelay:platform-admins.
 connectors:
   - type: github
     id: github
@@ -8,9 +14,6 @@ connectors:
     config:
       clientID: $GITHUB_CLIENT_ID
       clientSecret: $GITHUB_CLIENT_SECRET
-      redirectURI: https://dex.platformrelay.dev/callback
+      redirectURI: https://dex.kaddy.local:30443/callback
       orgs:
         - name: PlatformRelay
-          teams:
-            - platform-admins
-            - platform-readonly

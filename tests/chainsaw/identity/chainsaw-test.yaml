@@ -1,13 +1,51 @@
+# REQ-E1d-EXIT: the identity Application is real GitOps content — Synced,
+# Healthy, KSOPS-rendered Secrets tracked (no placeholder, no imperative
+# secret). Fine-grained behaviour lives in the sibling tests.
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
   name: identity-suite
+  annotations:
+    kaddy.io/req: REQ-E1d-EXIT
+    # skip: true — needs the live kind-kaddy-dev cluster (Cilium Gateway,
+    # KSOPS repo-server, synced identity app); the ephemeral CI chainsaw kind
+    # cluster has none of these. Verified PASSING against live kind-kaddy-dev
+    # (2026-07-16) with:
+    #   yq -i '.spec.skip = false' tests/chainsaw/identity/*.yaml
+    #   chainsaw test tests/chainsaw/identity   # then revert the flip
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-dex-ksops
 spec:
-  description: E1d — Dex + GitHub OIDC (skip until identity manifests land)
   skip: true
+  concurrent: false
+  description: E1d — identity app Synced/Healthy with KSOPS-rendered Secrets
   steps:
-    - try:
+    - name: identity-app-synced-healthy
+      try:
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Application
+              metadata:
+                namespace: argocd
+                name: identity
+              status:
+                sync:
+                  status: Synced
+                health:
+                  status: Healthy
+    - name: ksops-rendered-secrets-tracked
+      try:
         - script:
+            timeout: 60s
             content: |
-              echo "identity suite placeholder — enable when deploy/identity/ is synced"
-              exit 0
+              set -euo pipefail
+              for ref in identity/dex-github-oauth argocd/argocd-oidc-client; do
+                ns="${ref%%/*}"; name="${ref##*/}"
+                t="$(kubectl -n "${ns}" get secret "${name}" \
+                  -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/tracking-id}')"
+                case "${t}" in
+                  identity:*) echo "${ref} tracked by identity app";;
+                  *) echo "${ref} not KSOPS/ArgoCD-tracked (tracking-id='${t}')" >&2; exit 1;;
+                esac
+              done

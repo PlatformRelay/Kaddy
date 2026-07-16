@@ -1,0 +1,34 @@
+# REQ-E1d-S02-01: Argo CD login redirects to GitHub via Dex. Headless proof:
+# the settings endpoint advertises the OIDC provider and /auth/login 30x-es
+# to the Dex authorize endpoint (client_id=argocd); completing the GitHub
+# consent is the documented interactive operator step
+# (docs/runbooks/github-oauth-dex.md). Full chain incl. github.com authorize
+# + client_id equality against the SOPS source: tests/smoke/e1d-exit.sh.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-argocd-oidc-login
+  annotations:
+    kaddy.io/req: REQ-E1d-S02-01
+    # skip: true — needs the live Gateway at 127.0.0.1:30443 + Dex (CI
+    # substrate has neither). Verified PASSING live 2026-07-16 (flip skip
+    # off, run, revert — see chainsaw-test.yaml).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-dex-ksops
+spec:
+  skip: true
+  concurrent: false
+  description: argocd advertises OIDC and redirects /auth/login to Dex
+  steps:
+    - name: oidc-advertised-and-redirects-to-dex
+      try:
+        - script:
+            timeout: 60s
+            content: |
+              set -euo pipefail
+              name="$(curl -fsk https://127.0.0.1:30443/api/v1/settings | jq -r '.oidcConfig.name // empty')"
+              [ "${name}" = "GitHub (Dex)" ] || { echo "no OIDC provider advertised (got '${name}')" >&2; exit 1; }
+              loc="$(curl -sk -o /dev/null -w '%{redirect_url}' https://127.0.0.1:30443/auth/login)"
+              case "${loc}" in
+                https://dex.kaddy.local:30443/auth\?*client_id=argocd*) echo "redirects to dex authorize (client_id=argocd)";;
+                *) echo "unexpected login redirect: ${loc%%\?*}" >&2; exit 1;;
+              esac

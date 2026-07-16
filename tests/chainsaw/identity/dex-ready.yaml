@@ -1,0 +1,42 @@
+# REQ-E1d-S01-01: Dex pods Running/Ready in the identity namespace.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-dex-ready
+  annotations:
+    kaddy.io/req: REQ-E1d-S01-01
+    # skip: true — needs the live cluster with the identity app synced (CI
+    # chainsaw kind cluster runs no argocd/dex). Verified PASSING live
+    # 2026-07-16 (flip skip off, run, revert — see chainsaw-test.yaml).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-dex-ksops
+spec:
+  skip: true
+  concurrent: false
+  description: Dex Deployment available, pod Ready
+  steps:
+    - name: dex-deployment-available
+      try:
+        - assert:
+            timeout: 180s
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: identity
+                name: dex
+              status:
+                availableReplicas: 1
+                readyReplicas: 1
+    - name: dex-pod-running
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: identity
+                labels:
+                  app.kubernetes.io/name: dex
+              status:
+                phase: Running

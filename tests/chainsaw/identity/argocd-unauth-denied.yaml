@@ -1,0 +1,28 @@
+# REQ-E1d-S02-02: the Argo CD API without a token answers 401/403 — OIDC
+# enablement did not open an anonymous path (users.anonymous stays off).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: identity-argocd-unauth-denied
+  annotations:
+    kaddy.io/req: REQ-E1d-S02-02
+    # skip: true — needs the live Gateway at 127.0.0.1:30443 (CI substrate
+    # runs no argocd). Verified PASSING live 2026-07-16 (flip skip off, run,
+    # revert — see chainsaw-test.yaml).
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-dex-ksops
+spec:
+  skip: true
+  concurrent: false
+  description: unauthenticated argocd API access is denied
+  steps:
+    - name: api-denied-without-token
+      try:
+        - script:
+            timeout: 30s
+            content: |
+              set -euo pipefail
+              code="$(curl -sk -o /dev/null -w '%{http_code}' https://127.0.0.1:30443/api/v1/applications)"
+              case "${code}" in
+                401|403) echo "unauthenticated API denied (${code})";;
+                *) echo "expected 401/403, got ${code}" >&2; exit 1;;
+              esac
