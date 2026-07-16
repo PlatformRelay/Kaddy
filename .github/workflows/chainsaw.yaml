@@ -220,5 +220,24 @@ jobs:
           kubectl apply -f deploy/policies/network/argocd.yaml
           # websites.yaml is NOT applied: the websites namespace belongs to the
           # Crossplane suite, which stays live-only (no Crossplane in CI).
-      - name: Run Chainsaw suites
+      - name: Run Chainsaw suites (default discovery — chainsaw-test.yaml)
         run: task test:chainsaw
+      - name: Run per-scenario Chainsaw suites (non-default file names)
+        # LATENT-GAP FIX (found by this lane): `chainsaw test <dir>` discovers
+        # ONLY files named chainsaw-test.yaml, so the per-scenario suites
+        # (gateway/security/monitoring/rollouts/tls/crossplane — one file per
+        # scenario, the tests/chainsaw/README authoring style) were NEVER
+        # executed by `task test:chainsaw`, in CI or anywhere. Run every
+        # Test-bearing file explicitly — the same invocation each suite's
+        # live-verification annotation documents. Sequential by construction
+        # (the rollouts suites mutate shared mulligan objects). skip:true
+        # suites still skip. Follow-up: fold this into the Taskfile target.
+        run: |
+          set -euo pipefail
+          grep -l '^kind: Test$' \
+            tests/chainsaw/{gateway,security,monitoring,rollouts,tls,crossplane}/*.yaml \
+            | sort | while read -r f; do
+            echo "::group::chainsaw ${f}"
+            chainsaw test --test-file "$(basename "$f")" "$(dirname "$f")"
+            echo "::endgroup::"
+          done
