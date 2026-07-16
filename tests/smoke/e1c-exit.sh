@@ -19,21 +19,20 @@ smoke_ok "kyverno admission + reports controllers Ready"
 # 2) ClusterPolicies live at the documented enforcement matrix
 #    (deploy/policies/README.md — verify-signed-images stays Audit until a
 #    real cosign key exists).
-declare -A want=(
-  [require-kaddy-labels]=Enforce
-  [restrict-data-classification]=Enforce
-  [disallow-privileged-containers]=Enforce
-  [disallow-latest-tag]=Enforce
-  [require-run-as-nonroot]=Enforce
-  [verify-signed-images]=Audit
-)
-for p in "${!want[@]}"; do
+# plain list (bash-3.2-safe, macOS /bin/bash has no associative arrays)
+matrix="require-kaddy-labels=Enforce
+restrict-data-classification=Enforce
+disallow-privileged-containers=Enforce
+disallow-latest-tag=Enforce
+require-run-as-nonroot=Enforce
+verify-signed-images=Audit"
+while IFS='=' read -r p want; do
   got="$(kubectl get clusterpolicy "${p}" -o jsonpath='{.spec.validationFailureAction}' 2>/dev/null || true)"
-  [[ "${got}" == "${want[$p]}" ]] \
-    || smoke_fail "clusterpolicy ${p}: want ${want[$p]}, got '${got}'"
+  [[ "${got}" == "${want}" ]] \
+    || smoke_fail "clusterpolicy ${p}: want ${want}, got '${got}'"
   ready="$(kubectl get clusterpolicy "${p}" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)"
   [[ "${ready}" == "True" ]] || smoke_fail "clusterpolicy ${p} not Ready"
-done
+done <<< "${matrix}"
 smoke_ok "6 ClusterPolicies live at the documented Enforce/Audit matrix"
 
 # 3) Enforce is real: an unlabeled pod in a governed namespace is DENIED.
