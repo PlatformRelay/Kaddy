@@ -82,9 +82,11 @@
       24 broken-link warnings fixed (2026-07-16); `/docs/` can be baked once the material theme
       flip lands
 - [x] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material theme + baked into showcase image)
-- [ ] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge
-- [ ] Enable Caddy `metrics`; **re-home the parked `caddy_*` marshal alerts against the Caddy origin**
-      target (closes D-026: real target, promtool fire + silent preserved)
+- [x] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge
+      (dual HTTPRoute: canary on origin + `caddy-mvp-showcase` → nginx-proxy-active; offline smoke)
+- [x] Enable Caddy `metrics`; **re-home the parked `caddy_*` marshal alerts against the Caddy origin**
+      target — L1 promtool suite `tests/promtool/caddy-mvp-showcase.test.yaml` green; GitOps sync of
+      `deploy/caddy-mvp/monitoring/` still a follow-up before claiming live serve→scrape→fire
 - [ ] (stretch, may) Second tenant proving `Website.spec.source` (BYO external git repo/path)
 - [ ] Gate (when active): `task test:promrules` + Chainsaw showcase suite + `tests/deck/showcase-image-build.sh`
 
