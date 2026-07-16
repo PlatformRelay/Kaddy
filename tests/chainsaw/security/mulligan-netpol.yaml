@@ -12,6 +12,25 @@
 # apply below is an idempotent no-op) AND against the live kaddy-dev cluster,
 # where the manual-sync policies app syncs the same file post-merge (kubectl
 # apply is idempotent and the content is identical to git — no drift).
+#
+# ENFORCEMENT steps (tech-review follow-up F1): beyond presence, prove the
+# policies actually bite (Cilium enforces them in CI-parity kind AND live):
+#   - deny branch (mirrors unauthorized-ingress-fails.yaml): a fully-labeled
+#     nonroot probe pod in the UNSANCTIONED `default` namespace cannot curl
+#     mulligan-stable :8080 directly — the only thing failing is the network
+#     path. Non-vacuity proven during development: with the policies deleted
+#     the same curl returns 200 and the step FAILS.
+#   - allow branch (mirrors gateway-to-app.yaml): the SANCTIONED path through
+#     the dedicated Cilium Gateway (Envoy carries the reserved `ingress`
+#     identity, admitted by the CNP) still serves the demo page with 200.
+#     The probe runs in `default` (unrestricted egress — unlike the gateway
+#     namespace there is no probe-egress CNP needed; the policy under test is
+#     mulligan's INGRESS side). Plain HTTP: the mulligan Gateway listener is
+#     HTTP :80 (demo edge; TLS is out of this suite's scope).
+# Both probes run AFTER the presence asserts, so the policies are applied and
+# programmed before traffic is checked. Chainsaw cleanup (cleanup: true)
+# deletes the self-applied policies afterwards — the live cluster ends with
+# ZERO netpols in mulligan, as designed (not synced yet).
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
@@ -21,7 +40,7 @@ metadata:
     kaddy.io/audit: F-01
 spec:
   concurrent: false
-  description: default-deny NetworkPolicy baseline present in mulligan
+  description: default-deny baseline present in mulligan AND enforced (direct denied, gateway allowed)
   steps:
     - name: apply-mulligan-netpol-baseline
       try:
@@ -97,3 +116,40 @@ spec:
                       - ports:
                           - port: "8080"
                             protocol: TCP
+    - name: direct-cross-ns-curl-denied
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -u
+              # `kubectl run --rm` can leak the pod when attach flakes; a
+              # leftover pod makes the run fail on AlreadyExists — which would
+              # satisfy the ($error != null) check VACUOUSLY. Pre-delete so the
+              # only failure mode left is the network path.
+              kubectl -n default delete pod f01-mulligan-unauth-probe --ignore-not-found --wait=true >/dev/null 2>&1 || true
+              kubectl -n default run f01-mulligan-unauth-probe --rm -i --restart=Never \
+                --image=curlimages/curl:8.11.0 --quiet \
+                --labels=owner=platform-team,service=e1c-smoke,part-of=kaddy,managed-by=kubectl,track=stable,data-classification=internal,business-criticality=business-operational \
+                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                -- curl -sS -m 5 http://mulligan-stable.mulligan.svc.cluster.local:8080/
+            check:
+              # The curl MUST fail (timeout/refused) — a zero exit means the
+              # default-deny ingress on the mulligan namespace is not enforced
+              # (without the policies this exact probe returns 200).
+              ($error != null): true
+    - name: curl-through-gateway-succeeds
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -eu
+              GW_IP="$(kubectl -n mulligan get svc cilium-gateway-mulligan -o jsonpath='{.spec.clusterIP}')"
+              [ -n "${GW_IP}" ]
+              kubectl -n default delete pod f01-mulligan-gw-probe --ignore-not-found --wait=true >/dev/null 2>&1 || true
+              kubectl -n default run f01-mulligan-gw-probe --rm -i --restart=Never \
+                --image=curlimages/curl:8.11.0 --quiet \
+                --labels=owner=platform-team,service=e1c-smoke,part-of=kaddy,managed-by=kubectl,track=stable,data-classification=internal,business-criticality=business-operational \
+                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                -- sh -c "code=\$(curl -s -o /dev/null -m 15 -w '%{http_code}' --resolve mulligan.kaddy.local:80:${GW_IP} http://mulligan.kaddy.local/); echo \"CODE:\${code}\"; [ \"\${code}\" = \"200\" ]"
+            check:
+              ($error == null): true
