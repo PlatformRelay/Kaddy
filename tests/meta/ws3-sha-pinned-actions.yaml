@@ -24,7 +24,7 @@ for wf in "${workflows[@]}"; do
     echo "$line" | grep -qE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)' \
       || fail "unpinned or non-SHA action ref in ${wf#"${ROOT}"/}: ${line}"
     count=$((count + 1))
-  done < <(grep -E '^[[:space:]]*-?[[:space:]]*uses:' "$wf" || true)
+  done < <(grep -E '(^|[[:space:]{-])uses:[[:space:]]' "$wf" || true)
 done
 
 [[ ${count} -gt 0 ]] || fail "no 'uses:' action refs matched — assert is vacuous"
