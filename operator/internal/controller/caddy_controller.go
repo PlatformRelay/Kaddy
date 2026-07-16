@@ -31,6 +31,10 @@ import (
 type CaddyReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	// AdminURL resolves the admin API base URL for a Caddy dataplane.
+	// Defaults to the in-cluster Service DNS name; tests inject a fake.
+	AdminURL func(*gatewayv1alpha1.Caddy) string
 }
 
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies,verbs=get;list;watch;create;update;patch;delete
