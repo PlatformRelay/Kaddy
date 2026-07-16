@@ -4,9 +4,12 @@ Build order for the gridscale platform-engineering exercise. **Phase 1 underway*
 E1e → E1 → E3 → E4 is complete and demoable (**15/15** GitOps apps Synced/Healthy, clubhouse over
 verified HTTPS through the Cilium edge); labels module (E1b), marshal monitoring (E5), gateway spike
 (E2), Crossplane Website (E6), mulligan rollouts (E7), scorecard offline + Getting Started (E8),
-security baseline cutover (E1c), identity (E1d), first security audit (E11-S01), and Slidev deck
-(E12) also landed on `main`. Remaining work: Caddy-MVP live tenant sync, phase-2 GSK. Each epic
-links an OpenSpec change under `openspec/changes/`.
+security baseline cutover (E1c), identity (E1d), the optional Caddy operator (E9), first security
+audit (E11-S01), and Slidev deck (E12) also landed on `main`. Two releases are tagged and published:
+**v0.1.0** (serve → scrape → fire) and **v0.1.1** (self-service Websites, identity, CI parity). The
+Caddy-MVP tenant is live-synced (D-036). Remaining work: phase-2 GSK (E6g/E13), the Backstage portal
+(E10, cuttable), and the E12 demo recording (E12b). Each epic links an OpenSpec change under
+`openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 
@@ -339,7 +342,7 @@ reviewer path.
 
 ---
 
-## E9 · Caddy operator (optional)
+## E9 · Caddy operator (optional) ✅ (S01–S03 on `main`, envtest green; shipped in v0.1.1)
 
 **OpenSpec:** [e9-caddy-operator](../openspec/changes/e9-caddy-operator/)  
 **ADR:** [0401](adr/0401-caddy-operator-design-first.md)
@@ -366,7 +369,7 @@ reviewer path.
 
 ---
 
-## E12 · Slidev showcase deck 🚧
+## E12 · Slidev showcase deck 🚧 (S01–S04 ✅ on `main`; 🚧 = the live video recording, E12b, is operator-manual)
 
 **OpenSpec:** [e12-slidev-deck](../openspec/changes/e12-slidev-deck/)
 
