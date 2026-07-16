@@ -262,15 +262,24 @@ tasks:
           || { echo "refusing: context '${ctx}' is not kind-kaddy-dev (run 'task cluster:up' first)" >&2; exit 1; }
         # 1) Namespace + cmd-params-cm (server.insecure) + Gateway/Certificate/Route.
         #    Apply the overlay FIRST so argocd-server reads server.insecure on first boot.
-        kubectl apply -f deploy/bootstrap/argocd.yaml
+        #    SERVER-SIDE on purpose (E1d): the overlay now carries argocd-cm keys that
+        #    must MERGE with the upstream defaults (resource.exclusions etc.). A
+        #    client-side apply on an object without last-applied captures the LIVE
+        #    object into the annotation and then DELETES every key not in our overlay
+        #    on the next run — SSA field ownership merges cleanly instead.
+        kubectl apply --server-side --force-conflicts --field-manager=kaddy-bootstrap \
+          -f deploy/bootstrap/argocd.yaml
         # 2) Pinned upstream ArgoCD core install (all images versioned to VER).
         #    Server-side apply: the applicationsets CRD exceeds kubectl's client-side
         #    last-applied annotation size limit (262144 bytes).
         kubectl apply --server-side --force-conflicts -n argocd \
           -f "https://raw.githubusercontent.com/argoproj/argo-cd/${VER}/manifests/install.yaml"
         # 3) Re-apply the overlay: the upstream install ships an argocd-cmd-params-cm
-        #    without server.insecure and would otherwise overwrite ours.
-        kubectl apply -f deploy/bootstrap/argocd.yaml
+        #    without server.insecure and would otherwise overwrite ours. The DISTINCT
+        #    field manager is load-bearing: with the default manager the overlay
+        #    apply would own (and thus delete) the upstream argocd-cm defaults.
+        kubectl apply --server-side --force-conflicts --field-manager=kaddy-bootstrap \
+          -f deploy/bootstrap/argocd.yaml
         # 4) Ensure argocd-server is actually running with --insecure. Only restart
         #    when needed (a fresh install already boots with the cm in place; an
         #    over-write by the upstream install would drop the flag). This keeps
@@ -489,7 +498,11 @@ tasks:
         echo "sops-age root secret applied (argocd ns)"
         # 2) Bootstrap overlay: dex Gateway listener + Certificate, argocd-cm
         #    (oidc.config + kustomize.buildOptions), argocd-rbac-cm.
-        kubectl apply -f deploy/bootstrap/argocd.yaml
+        #    SERVER-SIDE with a DISTINCT field manager: merges our argocd-cm
+        #    keys with the upstream defaults instead of owning/deleting them
+        #    (see bootstrap:argocd steps 1+3 for the wipe gotcha).
+        kubectl apply --server-side --force-conflicts --field-manager=kaddy-bootstrap \
+          -f deploy/bootstrap/argocd.yaml
         # 3) KSOPS on the repo-server (committed strategic-merge patch;
         #    idempotent — patching with identical content is a no-op).
         kubectl -n argocd patch deploy argocd-repo-server \

@@ -106,10 +106,13 @@ smoke_ok "identity default-deny + gateway CNP present"
 # (default ns; labeled so Kyverno admits it — netpol, not admission, must block.)
 dex_ip="$(kubectl -n identity get svc dex -o jsonpath='{.spec.clusterIP}')"
 kubectl -n default delete pod e1d-deny-probe --ignore-not-found --now >/dev/null 2>&1
+# --overrides: the probe must itself pass the Enforce admission set
+# (nonroot, no-privesc) — netpol, not admission, is what must block it.
 kubectl -n default run e1d-deny-probe --restart=Never --image=curlimages/curl:8.11.0 \
   --labels="owner=platform-team,service=identity,part-of=kaddy,managed-by=argocd,data-classification=internal,business-criticality=business-operational,track=stable,app.kubernetes.io/name=e1d-deny-probe" \
-  --command -- curl -sf -m 5 "http://${dex_ip}:5556/healthz" >/dev/null \
-  || smoke_fail "deny-probe pod was not admitted (labels drifted from Kyverno policy?)"
+  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100,"seccompProfile":{"type":"RuntimeDefault"}},"containers":[{"name":"e1d-deny-probe","image":"curlimages/curl:8.11.0","command":["curl","-sf","-m","5","http://'"${dex_ip}"':5556/healthz"],"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]}}}]}}' \
+  >/dev/null \
+  || smoke_fail "deny-probe pod was not admitted (drifted from the Kyverno Enforce set?)"
 phase=""
 for _ in $(seq 1 30); do
   phase="$(kubectl -n default get pod e1d-deny-probe -o jsonpath='{.status.phase}' 2>/dev/null || true)"

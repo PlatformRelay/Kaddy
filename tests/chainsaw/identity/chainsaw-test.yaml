@@ -10,9 +10,9 @@ metadata:
     # skip: true — needs the live kind-kaddy-dev cluster (Cilium Gateway,
     # KSOPS repo-server, synced identity app); the ephemeral CI chainsaw kind
     # cluster has none of these. Verified PASSING against live kind-kaddy-dev
-    # (2026-07-16) with:
-    #   yq -i '.spec.skip = false' tests/chainsaw/identity/*.yaml
-    #   chainsaw test tests/chainsaw/identity   # then revert the flip
+    # (2026-07-16): flip `.spec.skip = false` on a file, then run it via
+    #   chainsaw test --test-file <file>.yaml tests/chainsaw/identity
+    # (chainsaw only auto-discovers chainsaw-test.yaml), revert the flip.
     kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-dex-ksops
 spec:
   skip: true

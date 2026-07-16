@@ -159,8 +159,8 @@ static-client pattern (see `argocd` in `deploy/identity/dex/configmap.yaml`
 
 **Priority:** must  
 **Given** E1d complete  
-**When** `chainsaw test tests/chainsaw/identity`  
-**Then** all non-skipped tests pass  
+**When** `task test:smoke:e1d` (live bundle) and the chainsaw identity tests run per-file (`chainsaw test --test-file <f> tests/chainsaw/identity` with skip flipped — live-cluster-only, see suite annotations)  
+**Then** all tests pass  
 **Test:** `tests/chainsaw/identity/chainsaw-test.yaml`
 
-**Verify:** `task test:chainsaw:identity`
+**Verify:** `task test:smoke:e1d` + per-file chainsaw live runs (all 6 PASS 2026-07-16)
