@@ -79,6 +79,7 @@ tasks:
       - bash tests/smoke/e8-s04-demo.sh
       - bash tests/smoke/caddy-mvp-s02-offline.sh
       - bash tests/smoke/caddy-mvp-s02-03.sh
+      - bash tests/meta/doc10-roadmap-status.yaml
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)

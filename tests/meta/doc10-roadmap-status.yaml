@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# DOC-10 — ROADMAP status-truth guard (offline).
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+R="$ROOT/docs/ROADMAP.md"
+fail() { echo "FAIL: $*" >&2; exit 1; }
+grep -qF '14/14' "$R" || fail "ROADMAP intro must claim 14/14 GitOps apps"
+! grep -qE '9/9 GitOps' "$R" || fail "ROADMAP still claims stale 9/9"
+grep -qE 'E1c · Security baseline ✅' "$R" || fail "E1c header must be ✅"
+grep -qE 'E6 · Crossplane.*✅' "$R" || fail "E6 header must be ✅"
+grep -qE 'E8 · Evidence.*✅' "$R" || fail "E8 header must be ✅"
+grep -qE 'E8-S04.*\| ✅' "$R" || fail "E8-S04 row must be ✅"
+echo "OK: DOC-10 ROADMAP status-truth"

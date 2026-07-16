@@ -1,10 +1,12 @@
 # ROADMAP — kaddy
 
 Build order for the gridscale platform-engineering exercise. **Phase 1 underway** — the brief spine
-E1e → E1 → E3 → E4 is complete and demoable (9/9 GitOps apps Synced/Healthy, clubhouse over verified
-HTTPS through the Cilium edge); labels module (E1b), marshal monitoring rules (E5), gateway spike (E2),
-and Slidev deck (E12) also landed on `main`. Remaining epics run via `/agent-loop`. Each epic links an
-OpenSpec change under `openspec/changes/`.
+E1e → E1 → E3 → E4 is complete and demoable (**14/14** GitOps apps Synced/Healthy, clubhouse over
+verified HTTPS through the Cilium edge); labels module (E1b), marshal monitoring (E5), gateway spike
+(E2), Crossplane Website (E6), mulligan rollouts (E7), scorecard offline + Getting Started (E8),
+security baseline cutover (E1c), and Slidev deck (E12) also landed on `main`. Remaining work:
+identity (E1d), Caddy-MVP live tenant sync, phase-2 GSK. Each epic links an OpenSpec change under
+`openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 
@@ -132,18 +134,18 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E1c · Security baseline 🚧 (Kyverno Enforce + netpol + AppProjects live; Trivy/cosign/KSOPS pending)
+## E1c · Security baseline ✅ (Kyverno Enforce + netpol + AppProjects live; verifyImages stays Audit)
 
 **OpenSpec:** [e1c-security-baseline](../openspec/changes/e1c-security-baseline/)  
 **ADR:** [0106](adr/0106-security-baseline.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1c-S01 | Default-deny NetworkPolicy template per namespace | ✅ (gateway/monitoring/argocd live) |
-| E1c-S02 | Trivy scan job in CI | ⬜ |
-| E1c-S03 | cosign sign + Kyverno verifyImages | 🚧 (policy live in Audit; keyless signing in progress) |
-| E1c-S04 | External Secrets pattern for gridscale creds | ⬜ |
-| E1c-S05 | SOPS + age + KSOPS plugin for `deploy/secrets/` ([ADR-0110](adr/0110-secrets-sops-age.md)) | ⬜ |
+| E1c-S01 | Default-deny NetworkPolicy template per namespace | ✅ (gateway/monitoring/argocd/mulligan/websites + caddy-mvp) |
+| E1c-S02 | Trivy scan job in CI | ✅ (CRITICAL fails) |
+| E1c-S03 | cosign sign + Kyverno verifyImages | 🚧 (keyless policy Audit; showcase-image workflow signs) |
+| E1c-S04 | External Secrets pattern for gridscale creds | ✅ (offline pattern authored) |
+| E1c-S05 | SOPS + age + KSOPS plugin for `deploy/secrets/` ([ADR-0110](adr/0110-secrets-sops-age.md)) | ✅ (identity secrets + KSOPS patch) |
 
 ---
 
@@ -231,18 +233,18 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E6 · Crossplane self-service + nginx legacy (phase 1 — local)
+## E6 · Crossplane self-service + nginx legacy (phase 1 — local) ✅
 
 **OpenSpec:** [e6-crossplane-website](../openspec/changes/e6-crossplane-website/)  
 **ADR:** [0105](adr/0105-crossplane-self-service.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E6-S01 | Install Crossplane (no cloud provider yet) | ⬜ |
-| E6-S02 | XRD `Website` + Composition (HTTPRoute + monitors) | ⬜ |
-| E6-S03 | nginx legacy stand-in (in-cluster Deployment, Hello World) | ⬜ |
-| E6-S04 | HTTPRoute `/legacy` → nginx backend | ⬜ |
-| E6-S05 | Gateway health checks for backends | ⬜ |
+| E6-S01 | Install Crossplane (no cloud provider yet) | ✅ |
+| E6-S02 | XRD `Website` + Composition (HTTPRoute + monitors) | ✅ |
+| E6-S03 | Demo claim / composed workload (putting-green) | ✅ |
+| E6-S04 | HTTPRoute path + TLS via clubhouse Gateway | ✅ |
+| E6-S05 | Composed ServiceMonitor scraped | ✅ |
 
 ---
 
@@ -298,7 +300,7 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ---
 
-## E8 · Evidence & submission (scorecard)
+## E8 · Evidence & submission (scorecard) ✅ (offline + Getting Started; live k6 / Pages URL pending)
 
 **OpenSpec:** [e8-scorecard-evidence](../openspec/changes/e8-scorecard-evidence/)  
 **ADR:** [0202](adr/0202-evidence-as-artifact.md)
