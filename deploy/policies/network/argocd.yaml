@@ -1,0 +1,87 @@
+# E1c default-deny baseline — `argocd` namespace (SEC-6 / security review
+# P1-1). AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+#
+# The pinned upstream Argo CD install (deploy/bootstrap, ARGOCD_VERSION)
+# already ships per-component NetworkPolicies: allow-lists for redis,
+# repo-server, controller, dex, applicationset and an ALLOW-ALL ingress on
+# argocd-server (which is what keeps the Cilium Gateway -> argocd-server:80
+# path working — an empty `from` admits all identities incl. the Envoy
+# `ingress` entity, so no extra CNP is needed for the UI/API).
+#
+# What upstream does NOT provide is a namespace-wide deny floor: any pod
+# outside the upstream selectors is default-open. This file adds:
+#   1. default-deny-ingress on all pods (the upstream per-component allows
+#      then act as the explicit allow-list, additive union semantics).
+#   2. Prometheus scrape ingress from the monitoring namespace to the Argo CD
+#      metrics ports (controller :8082, server :8083, repo-server :8084,
+#      applicationset :8080, notifications :9001) — forward-looking for the
+#      Argo CD ServiceMonitors; harmless while none exist.
+# Egress stays open: repo-server pulls from GitHub + Helm registries and the
+# components watch the apiserver; enumerating that would be brittle.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-ingress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-prometheus-scrape
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 8083
+        - protocol: TCP
+          port: 8084
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 9001

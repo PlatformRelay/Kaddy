@@ -1,0 +1,149 @@
+# E1c default-deny baseline — `gateway` namespace (SEC-6 / security review
+# P1-1). AUTHORED, NOT YET APPLIED — the cluster apply happens in the
+# follow-up cluster-hardening lane (see deploy/policies/README.md).
+#
+# The gateway namespace co-locates the Cilium `clubhouse` Gateway, its
+# HTTPRoute, the clubhouse-tls Certificate and the clubhouse Deployment +
+# Service (:8080) — see deploy/gateway/ + deploy/workloads/clubhouse/.
+#
+# Allowed paths (derived from the live manifests):
+#   1. Cilium Gateway (Envoy) -> clubhouse pods :8080. Under Cilium, Gateway
+#      API traffic reaches backends with the RESERVED IDENTITY `ingress`,
+#      which a plain NetworkPolicy peer cannot select — hence the
+#      CiliumNetworkPolicy below. Enforcement therefore depends on the CNI
+#      being Cilium (it is: kind + Cilium, ADR-0104).
+#   2. Prometheus (monitoring ns) -> :8080 scrapes (clubhouse ServiceMonitor,
+#      deploy/monitoring/prometheus/clubhouse-servicemonitor.yaml).
+#   3. DNS egress to kube-system CoreDNS :53 (clubhouse initiates nothing
+#      else; kubelet probes are exempt from NetworkPolicy).
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-dns-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-prometheus-scrape
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Cilium-specific: admit Gateway API (Envoy) traffic to the clubhouse
+# backend. The Envoy proxy carries the reserved `ingress` entity identity —
+# not selectable by a K8s NetworkPolicy peer, so this must be a CNP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-clubhouse
+  namespace: gateway
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-gateway-to-clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  endpointSelector:
+    matchLabels:
+      service: clubhouse
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

@@ -1,0 +1,109 @@
+# E1c default-deny baseline — `monitoring` namespace (SEC-6 / security
+# review P1-1). AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+#
+# The monitoring namespace runs kube-prometheus-stack (Prometheus,
+# Alertmanager, Grafana, operator, kube-state-metrics, node-exporter), Loki
+# (single-binary :3100) and Alloy (DaemonSet log collector) — see
+# deploy/observability/.
+#
+# Design: default-deny INGRESS only. Egress stays open — Prometheus scrapes
+# cluster-wide (kubelets, apiserver, exporters in other namespaces) and
+# Alloy/Grafana talk to the apiserver; enumerating that would be brittle.
+#
+# Allowed ingress (derived from the live manifests):
+#   1. Intra-namespace: Grafana -> Prometheus :9090 and Loki :3100,
+#      Prometheus -> Alertmanager :9093 and exporters, Alloy -> Loki :3100.
+#      One same-namespace allow covers the whole mesh.
+#   2. kube-apiserver -> prometheus-operator admission webhook :10250. The
+#      apiserver runs host-network on the kind control-plane node, so its
+#      identity is the Cilium `kube-apiserver`/`host` entity — CNP required.
+#   3. kubelet liveness/readiness probes are host-originated; Cilium admits
+#      them without an explicit rule.
+# Grafana/Prometheus UI access is via kubectl port-forward (host path) —
+# unaffected by these policies. No Gateway/HTTPRoute fronts monitoring today.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-ingress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-intra-namespace
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-intra-namespace
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+# Cilium-specific: the kube-apiserver calls the prometheus-operator
+# admission webhook (:10250, TLS). On kind the apiserver is a host-network
+# static pod, so the source identity is the reserved `kube-apiserver` (or
+# `host`/`remote-node`) entity — not selectable by a K8s NetworkPolicy.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-apiserver-to-webhooks
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-apiserver-to-webhooks
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-02
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "10250"
+              protocol: TCP
