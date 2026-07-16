@@ -37,6 +37,12 @@ Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint s
 
 ## Operator tasks
 
+- [ ] **Sync the `policies` ArgoCD app** to apply the new mulligan default-deny netpol baseline live
+      (audit F-01 fix `d31110c` is on main; the app is manual-sync **by design**, so the live cluster
+      keeps zero netpols in `mulligan` until synced). Reviewed live-proof: gateway traffic stays 200,
+      direct cross-ns pod access denied. Command:
+      `kubectl -n argocd patch application policies --type merge -p '{"operation":{"sync":{}}}'`
+      (or ArgoCD UI → policies → Sync).
 - [ ] **Enable GitHub Pages (build_type=workflow)** — the merged `scorecard-pages` workflow fails with
       "Get Pages site failed / Not Found" because the repo has no Pages site yet. Permission layer vetoed
       the harness doing it (public surface). Exact command:
@@ -58,12 +64,18 @@ Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint s
 ## Reviews / PRs
 
 - [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/10** — E8-scorecard-offline~~ — REVIEW **APPROVE**; content on `main` as `636f4b5` (PR closed after rebase; head branch deleted).
-- [ ] Review the expanded **E8-S04 Getting Started + reviewer demo** story in worktree
-      `e8-getting-started`: safe local bring-up, concrete service URLs, Website/marshal/mulligan
-      choreography, recovery, teardown, and test contracts. Local `task verify` passes.
+- [x] ~~Review the expanded **E8-S04 Getting Started + reviewer demo** story in worktree
+      `e8-getting-started`~~ → **/tech-review 2026-07-16: REQUEST CHANGES** (content quality high, all
+      local gates green, no hallucinations; F1 P1 = work was uncommitted). All findings F1–F6 fixed the
+      same day: committed as `7f53730`, rebased onto main, Level tags added (D-022), Grafana port aligned
+      to 23000, task narrowed to the REQ, hard-breaks restored. Gates + CI `verify.yaml` green
+      (only pre-existing advisory `spec-coverage-strict` red, unrelated). → now a PR to merge (below).
 
 ## PRs to merge
 
+- [ ] **https://github.com/PlatformRelay/Kaddy/pull/11** — E8-S04 Getting Started + reviewer demo
+      contract (`7f53730`). Tech-review REQUEST CHANGES → all findings fixed; local gates + CI green
+      (advisory `spec-coverage-strict` red is pre-existing/unrelated). Awaiting operator merge.
 - [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/8** — E1c-digest-latest~~ — MERGED 2026-07-16 (content on `main` as `40c0cc0`+`d505dad`); PRs #9/#10 closed after fast-path ref-push of the same content.
 
 ## Audits
