@@ -96,10 +96,13 @@ served site and resolves it — `task demo:fire` (E5) — with a provisioned Gra
 data-source-managed alerts; Argo Rollouts shifts live HTTPRoute canary weights and auto-rolls-back
 on abort (E7); Kyverno admission (5 Enforce policies), default-deny NetworkPolicies, and restricted
 ArgoCD AppProjects are live (E1c). The gateway spike (E2), labels module (E1b), and recording-ready
-Slidev showcase deck (E12) are also on `main`. A data-flow security review is at
+Slidev showcase deck (E12) are also on `main`. Two releases are tagged and published: **v0.1.0**
+(serve → scrape → fire) and **v0.1.1**, which added Crossplane self-service (E6 `Website` XRD, claim
+→ monitored site), Dex + GitHub identity (E1d), the optional Caddy operator (E9), and CI substrate
+parity. A data-flow security review is at
 [docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md). Next:
-E6 Crossplane `Website` XRD (claim → monitored site) and E1d identity. Phase 2 (gridscale GSK) is
-deferred. Full plan: [ROADMAP](docs/ROADMAP.md).
+the Backstage self-service portal (E10, cuttable) and phase 2 (gridscale GSK) — both deferred until
+scheduled. Full plan: [ROADMAP](docs/ROADMAP.md).
 
 ## Reference material
 
