@@ -7,8 +7,16 @@
       manifests — live proof stays with the Chainsaw suite below)
 - [x] Kyverno verifyImages policy authored
       (`deploy/policies/kyverno/verify-signed-images.yaml`, REQ-E1c-S03-02;
-      placeholder key, Audit, scoped to ghcr.io/platformrelay/* — real key
-      lands with cosign/SEC-8)
+      Audit, scoped to ghcr.io/platformrelay/*). SEC-8 landed **keyless**:
+      placeholder key replaced by the keyless attestor (issuer
+      `https://token.actions.githubusercontent.com`, subject
+      `.../Kaddy/.github/workflows/showcase-image.yaml@*`) matching the
+      cosign signing in `.github/workflows/showcase-image.yaml`
+      (`kaddy-showcase` image, REQ-CADDY-S05-02). Stays Audit
+      (operator-ratified); Enforce flip criteria in
+      deploy/policies/README.md — signing itself is CI-proven only after
+      the first green `showcase-image` run on main (workflow authored,
+      first CI run pending)
 - [x] Kyverno pod-security baseline authored (disallow-privileged,
       require-run-as-nonroot, disallow-latest-tag — ADR-0106; Audit until
       the in-cluster report is clean)

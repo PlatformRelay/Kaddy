@@ -43,10 +43,20 @@
 > New spec: `specs/showcase/spec.md` (REQ-CADDY-S05-01..05). The served-website tenant serves the
 > Kaddy **Slidev deck** (E12) + **MkDocs docs** — the demo site *is* the pitch.
 
-- [ ] Add failing `tests/deck/showcase-image-build.sh` + `tests/promtool/caddy-mvp-showcase.test.yaml`
-- [ ] Multi-stage image (`deploy/showcase/Dockerfile`): `slidev build` + `mkdocs build` → static assets
-      into the Caddy origin image (no build toolchain at runtime; scannable for E11)
-- [ ] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material — flip theme to `material`)
+- [x] Add failing `tests/deck/showcase-image-build.sh` (TDD; structural offline asserts + opt-in
+      `SHOWCASE_IMAGE_BUILD=1` real build — proven green locally with podman, incl. runtime smoke:
+      /healthz 200, /slides/ 200, `caddy_*` on /metrics, uid 65532) —
+      `tests/promtool/caddy-mvp-showcase.test.yaml` still open (alert re-homing task below)
+- [x] Multi-stage image (`deploy/showcase/Dockerfile`, REQ-CADDY-S05-02): `slidev build
+      --base /slides/` → static assets into pinned `caddy:2.11.4-alpine` (non-root uid 65532,
+      no build toolchain at runtime, OCI + ADR-0301 labels; scannable for E11). Built + pushed +
+      **keyless cosign-signed by digest** via `.github/workflows/showcase-image.yaml`
+      (GitHub OIDC; signing = CI-proven only after the first main run — workflow authored,
+      first CI run pending). **DEVIATION (honest):** `mkdocs build` is NOT baked yet — the root
+      mkdocs.yml fails `mkdocs build --strict` (24 broken-link warnings), so shipping /docs/ now
+      would bake a known-broken build; it joins the image with the link fixes + material theme flip
+- [ ] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material — flip theme to `material`;
+      interim landing page in the image links /slides/ and marks /docs/ pending)
 - [ ] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge
 - [ ] Enable Caddy `metrics`; **re-home the parked `caddy_*` marshal alerts against the Caddy origin**
       target (closes D-026: real target, promtool fire + silent preserved)

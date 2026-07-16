@@ -32,7 +32,7 @@ installing the engine enforces nothing by itself.
 | `disallow-privileged-containers` | **Enforce** | Flipped from Audit after a clean PolicyReport (zero violations) + admitted canary restart |
 | `disallow-latest-tag` | **Enforce** | Flipped from Audit after a clean PolicyReport (all images pin exact tags) |
 | `require-run-as-nonroot` | **Enforce** | Flipped from Audit; two violator classes excluded narrowly (below) instead of blanket-excluding namespaces |
-| `verify-signed-images` | **Audit** (honest) | PLACEHOLDER cosign key, scoped to `ghcr.io/platformrelay/*`; no release signing exists yet (SEC-8), so Enforce would be theater. `mutateDigest: false` (Kyverno requires it for Audit verifyImages). Chainsaw case `security/unsigned-image-denied.yaml` stays skipped until cosign lands |
+| `verify-signed-images` | **Audit** (operator-ratified) | KEYLESS cosign attestor (GitHub OIDC issuer + `showcase-image.yaml` workflow identity), scoped to `ghcr.io/platformrelay/*`. `mutateDigest: false` (Kyverno requires it for Audit verifyImages). Flip criteria below; Chainsaw case `security/unsigned-image-denied.yaml` stays skipped until the first signed image is deployed |
 
 ### Documented excludes (narrow, never blanket)
 
@@ -54,6 +54,32 @@ Both Enforce **governance** policies (labels, data-classification) exclude:
 - `monitoring/alloy*` — the Alloy DaemonSet tails host logs from
   `/var/log` and functionally requires root (upstream default; P2-2);
 - `e1e-smoke` — `hashicorp/http-echo` runs as root.
+
+### verify-signed-images — keyless attestor + the Audit→Enforce flip
+
+SEC-8 landed **keyless** (no long-lived release key): kaddy's first
+self-published image (`ghcr.io/platformrelay/kaddy-showcase`,
+REQ-CADDY-S05-02) is built, pushed and **cosign-signed by digest** in
+`.github/workflows/showcase-image.yaml` using ambient GitHub OIDC. The
+policy's attestor pins that identity:
+
+- **issuer:** `https://token.actions.githubusercontent.com`
+- **subject:** `https://github.com/PlatformRelay/Kaddy/.github/workflows/showcase-image.yaml@*`
+
+The workflow's own `cosign verify` step (same issuer + identity regexp)
+is the CI proof that what the policy checks is what CI actually signs.
+
+**Flip to Enforce when BOTH hold:**
+
+1. every `ghcr.io/platformrelay/*` image deployed to the cluster is a
+   kaddy image signed by this workflow (the scope currently matches
+   nothing live, so Audit is free), **and**
+2. signing is **proven in CI** — at least one `showcase-image` run on
+   `main` green through the `cosign verify` step (until that first run,
+   the workflow is authored but unproven).
+
+Then: flip `validationFailureAction`/`failureAction` to Enforce and
+un-skip the `security/unsigned-image-denied.yaml` Chainsaw case.
 
 ### Testing offline (D-024)
 
@@ -114,9 +140,9 @@ branch, run per the annotations in each file) and the full
 ## Follow-ups owned by other lanes (NOT this directory)
 
 - Trivy CI gate (REQ-E1c-S02-*), digest pinning + `hack/verify-image-digests.sh`
-  (REQ-E1c-S03-01), cosign release signing + real key for
-  `verify-signed-images` (SEC-8) → then flip it Enforce + un-skip its
-  Chainsaw case.
+  (REQ-E1c-S03-01). Cosign signing itself landed keyless via
+  `showcase-image.yaml` (section above) — remaining: first green main run,
+  then the Enforce flip + un-skip its Chainsaw case.
 - Helm grandchildren (`kube-prometheus-stack`, `loki`, `alloy`,
   `blackbox-exporter`) still declare `project: default` in
   `deploy/observability/` + `deploy/monitoring/blackbox/` — flip them to
