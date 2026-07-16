@@ -1,0 +1,27 @@
+# REQ-CADDY-S05-02 — minimal static origin config for the showcase image.
+# TLS terminates at the platform edge (Cilium Gateway, ADR-0104): plain :8080.
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	root * /srv
+
+	# liveness/readiness — answered before the file server
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Prometheus surface for the caddy_* marshal alerts (REQ-CADDY-S05-04)
+	handle /metrics {
+		metrics
+	}
+
+	# deck is built with --base /slides/; directory requests fall through
+	# to its index.html; everything else is the landing page + assets
+	handle {
+		encode gzip
+		file_server
+	}
+}
