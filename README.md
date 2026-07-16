@@ -25,10 +25,11 @@ platform — `clubhouse` — not as a one-off VM script.
 1. **Released demo / deck** — build the Slidev deck with `task deck:build` (sources in
    [`slides/`](slides/); CI `deck` workflow). A published Pages URL for the deck is
    **unavailable** until that publish path is enabled.
-2. **Scorecard** — intended URL
-   [`https://platformrelay.github.io/Kaddy/`](https://platformrelay.github.io/Kaddy/) —
-   **unavailable** / not yet published until GitHub Pages is enabled (workflow
-   [`.github/workflows/scorecard-pages.yaml`](.github/workflows/scorecard-pages.yaml) is on `main`).
+2. **Scorecard** — live URL
+   [`https://platformrelay.github.io/Kaddy/`](https://platformrelay.github.io/Kaddy/)
+   (HTTP 200; workflow
+   [`.github/workflows/scorecard-pages.yaml`](.github/workflows/scorecard-pages.yaml)).
+
 3. **Local services + demos** — follow
    [docs/getting-started.md](docs/getting-started.md) (kind bring-up, service catalogue,
    `task demo:fire` / `task demo` / `task demo:chaos`).

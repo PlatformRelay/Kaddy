@@ -300,7 +300,7 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ---
 
-## E8 · Evidence & submission (scorecard) ✅ (offline + Getting Started; live k6 / Pages URL pending)
+## E8 · Evidence & submission (scorecard) ✅ (offline + Getting Started + Pages live; live k6 deferred)
 
 **OpenSpec:** [e8-scorecard-evidence](../openspec/changes/e8-scorecard-evidence/)  
 **ADR:** [0202](adr/0202-evidence-as-artifact.md)

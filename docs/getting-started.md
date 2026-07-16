@@ -12,7 +12,7 @@ Website claims: [website-self-service.md](runbooks/website-self-service.md).
 | Artifact | Status |
 | --- | --- |
 | Slidev deck (`task deck:build`) | Available locally / CI `deck` workflow |
-| Scorecard GitHub Pages (`https://platformrelay.github.io/Kaddy/`) | **Unavailable** / not yet published until Pages is enabled on the repo |
+| Scorecard GitHub Pages (`https://platformrelay.github.io/Kaddy/`) | **Live** — HTTP 200 (fixture scorecard HTML via `scorecard-pages` workflow) |
 | This guide + `task demo*` | Available after the bring-up below |
 
 ---
