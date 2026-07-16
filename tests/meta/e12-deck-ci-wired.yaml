@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# E12-S01 meta: the deck CI build job must exist and be wired (REQ-E12-S01-01).
+# Asserts .github/workflows/deck.yaml builds the deck via the composite exit
+# gate (tests/deck/exit-recording-ready.sh — includes the slidev build),
+# publishes slides/dist as the static-SPA artifact the clubhouse/Caddy tenant
+# can serve, triggers on the deck paths, and that the Taskfile wires
+# `task deck:build` around tests/deck/slidev-build.sh. Offline meta smoke —
+# no cluster and no node toolchain required.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/deck.yaml"
+tf="${ROOT}/Taskfile.yml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf (deck CI workflow)"
+
+grep -qE 'tests/deck/exit-recording-ready\.sh' "$wf" \
+  || fail "deck.yaml does not run tests/deck/exit-recording-ready.sh (build + notes + wordcount + iframes + beats)"
+
+grep -qE 'slides/dist' "$wf" \
+  || fail "deck.yaml does not publish slides/dist (the static SPA artifact)"
+
+grep -qE "slides/\*\*" "$wf" \
+  || fail "deck.yaml does not trigger on slides/** changes"
+
+grep -qE "tests/deck/\*\*" "$wf" \
+  || fail "deck.yaml does not trigger on tests/deck/** changes"
+
+test -f "$tf" || fail "missing $tf"
+
+grep -qE '^  deck:build:' "$tf" \
+  || fail "Taskfile.yml does not define 'deck:build' (task wrapper for the Slidev build)"
+
+grep -qE 'tests/deck/slidev-build\.sh' "$tf" \
+  || fail "Taskfile 'deck:build' does not wrap tests/deck/slidev-build.sh"
+
+echo "OK: E12 deck CI wiring — deck.yaml builds + publishes slides/dist; task deck:build wired"
