@@ -19,6 +19,10 @@ curl -sSL -o deploy/kyverno/install.yaml \
   ships the field empty/null). One replica each is right for the 8GB
   single-node lab (matches the kps/Loki capacity trims), and the explicit
   value avoids null-field diff noise under server-side apply.
+- Empty `labels: {}` / `annotations: {}` maps stripped from the eleven
+  `policies.kyverno.io` CRDs: the apiserver drops empty maps under
+  server-side apply, which otherwise leaves the Application perpetually
+  OutOfSync on a `labels: {}` no-op diff (verified live).
 
 Everything else is verbatim upstream: the controllers already ship modest
 requests (~100m/128Mi) and restricted-PSS securityContexts, so no resource
