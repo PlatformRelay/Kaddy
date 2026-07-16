@@ -48,7 +48,8 @@ task demo    # orchestrates k6 + capture (see skills/evidence-capture)
 SCORECARD_FIXTURES=0 hack/scorecard/capture.sh   # once live mode is implemented
 ```
 
-CI publishes latest report to GitHub Pages on merge to `main` (E8-S03).
+CI publishes latest report to GitHub Pages on merge to `main` (E8-S03):
+**https://platformrelay.github.io/Kaddy/**
 
 ## Reviewer note
 

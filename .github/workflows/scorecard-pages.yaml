@@ -1,0 +1,59 @@
+# REQ-E8-S03-01: publish latest scorecard HTML to GitHub Pages.
+# Builds a fixture (or live, when available) bundle via hack/scorecard/capture.sh,
+# then deploys with the official Pages actions (SHA-pinned like verify.yaml).
+name: scorecard-pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'evidence/**'
+      - '.github/workflows/scorecard-pages.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Build scorecard (fixture capture)
+        run: |
+          set -euo pipefail
+          SCORECARD_FIXTURES=1 hack/scorecard/capture.sh --fixtures
+          RUN_DIR="$(ls -1d evidence/runs/*/ | sort | tail -1)"
+          test -f "${RUN_DIR}/index.html" || {
+            echo "missing ${RUN_DIR}/index.html" >&2
+            exit 1
+          }
+          mkdir -p _site
+          # Publish the HTML report at site root; keep the dated bundle alongside.
+          cp "${RUN_DIR}index.html" _site/index.html
+          DEST="_site/$(basename "${RUN_DIR%/}")"
+          mkdir -p "${DEST}"
+          cp -R "${RUN_DIR}." "${DEST}/"
+      - name: Setup Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
