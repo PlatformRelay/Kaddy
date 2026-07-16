@@ -1,0 +1,184 @@
+# E1d default-deny baseline — `identity` namespace (REQ-E1d-S04-01/-02,
+# ADR-0106/0107). Rides in the MANUAL-sync policies app like every other
+# netpol (deploy/policies/README.md).
+#
+# The namespace runs exactly one workload: Dex (:5556 issuer, :5558
+# telemetry). Allowed paths (derived from the live manifests):
+#   1. Cilium Gateway (Envoy) -> dex :5556. Both the operator browser
+#      (127.0.0.1:30443, SNI dex.kaddy.local) and argocd-server (hostAliases
+#      -> node:30443 for OIDC discovery + token exchange) enter through the
+#      Gateway, whose traffic carries the RESERVED identity `ingress` — CNP
+#      required (same as gateway ns, see network/gateway.yaml).
+#   2. argocd namespace -> dex :5556 directly (defense-in-depth for any
+#      future in-cluster issuer path; today's traffic takes path 1).
+#   3. DNS egress to CoreDNS :53.
+#   4. Dex egress -> GitHub OAuth endpoints :443. GitHub publishes churning
+#      IP ranges, so this is a port-scoped world allow on the dex pods only;
+#      tightening to toFQDNs (Cilium DNS proxy) is an E10 follow-up.
+# Kubelet probes are exempt from NetworkPolicy.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1d-S04-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-dns-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1d-S04-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Dex -> GitHub OAuth (authorize/token/user API) — egress :443, dex pods only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dex-github-egress
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-dex-github-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S01-03
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: dex
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# argocd namespace -> dex issuer (defense-in-depth; see header path 2).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-to-dex
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-argocd-to-dex
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S04-02
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: dex
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+      ports:
+        - protocol: TCP
+          port: 5556
+---
+# Cilium-specific: admit Gateway API (Envoy) traffic to dex :5556. The Envoy
+# proxy carries the reserved `ingress` entity identity — not selectable by a
+# K8s NetworkPolicy peer, so this must be a CNP (pattern:
+# network/gateway.yaml allow-gateway-to-clubhouse).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-dex
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-gateway-to-dex
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S04-02
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dex
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "5556"
+              protocol: TCP

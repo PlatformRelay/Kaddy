@@ -103,6 +103,7 @@ keep the live paths working:
 | `gateway` | ingress + egress | Cilium Gateway (Envoy) → clubhouse `:8080` (CNP, `ingress` entity); Prometheus (monitoring) → `:8080`; DNS egress → kube-system `:53`; smoke-probe pods (`run` label) → edge + clubhouse hairpin (CNP, below) |
 | `monitoring` | ingress | intra-namespace mesh (Grafana→Prometheus/Loki, Alloy→Loki, Prometheus→Alertmanager); kube-apiserver → operator webhook `:10250` (CNP); egress open (cluster-wide scrapes) |
 | `argocd` | ingress | upstream per-component policies remain the allow-list (argocd-server's allow-all keeps the Gateway path working); Prometheus → metrics ports; egress open (Git/Helm pulls) |
+| `identity` | ingress + egress | Cilium Gateway (Envoy) → dex `:5556` (CNP, `ingress` entity — carries both browser and argocd-server OIDC traffic via the 30443 listener); argocd ns → dex `:5556` (defense-in-depth); DNS egress; dex → GitHub OAuth `:443` (world, port-scoped — toFQDNs tightening is an E10 follow-up) |
 
 **CNI dependency:** enforcement requires Cilium (present on kind, ADR-0104).
 The `CiliumNetworkPolicy` objects are Cilium-specific by necessity —
@@ -150,7 +151,10 @@ branch, run per the annotations in each file) and the full
   boundary).
 - Observability securityContext hardening (review P2-2) — would let the
   `alloy*` exclude shrink if Alloy ever drops root.
-- ExternalSecrets/KSOPS items (REQ-E1c-S04-*, S05-02) — identity epic
-  (includes SOPS ownership of `grafana-admin`).
+- KSOPS landed with E1d (repo-server plugin + `deploy/secrets/**` render
+  chain); remaining: SOPS ownership of `grafana-admin` (still the
+  imperative `bootstrap:e1c` random Secret — moving it also requires a
+  Grafana restart to re-read the env, which crosses the observability
+  lane's boundary; see openspec/changes/e1d-identity-keycloak-dex/tasks.md).
 - e1e-smoke namespace teardown (review P2-5) — would let the `e1e-smoke`
   excludes disappear.
