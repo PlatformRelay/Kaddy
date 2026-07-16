@@ -4,8 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF="$ROOT/Taskfile.yml"
 fail() { echo "FAIL: $*" >&2; exit 1; }
-grep -qE 'tests/smoke/caddy-mvp-s05-03-offline\.sh' "$TF" \
+# Strip full-line / trailing comments so commented-out wiring cannot false-pass.
+stripped="$(sed -E 's/#.*$//' "$TF")"
+echo "$stripped" | grep -qE 'tests/smoke/caddy-mvp-s05-03-offline\.sh' \
   || fail "Taskfile test:meta:ci must invoke caddy-mvp-s05-03-offline.sh"
-grep -qE 'tests/smoke/e8-s03-01\.sh' "$TF" \
+echo "$stripped" | grep -qE 'tests/smoke/e8-s03-01\.sh' \
   || fail "Taskfile test:meta:ci must invoke e8-s03-01.sh"
 echo "OK: batch2 smokes wired into Taskfile"

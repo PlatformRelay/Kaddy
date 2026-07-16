@@ -72,7 +72,7 @@
 - [x] Add failing `tests/deck/showcase-image-build.sh` (TDD; structural offline asserts + opt-in
       `SHOWCASE_IMAGE_BUILD=1` real build — proven green locally with podman, incl. runtime smoke:
       /healthz 200, /slides/ 200, `caddy_*` on /metrics, uid 65532) —
-      `tests/promtool/caddy-mvp-showcase.test.yaml` still open (alert re-homing task below)
+      `tests/promtool/caddy-mvp-showcase.test.yaml` landed (S05-04 re-home)
 - [x] Multi-stage image (`deploy/showcase/Dockerfile`, REQ-CADDY-S05-02): `slidev build
       --base /slides/` → static assets into pinned `caddy:2.11.4-alpine` (non-root uid 65532,
       no build toolchain at runtime, OCI + ADR-0301 labels; scannable for E11). Built + pushed +
