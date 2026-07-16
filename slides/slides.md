@@ -164,6 +164,13 @@ platform edge, not as a bespoke script.
 | **mulligan** | blue/green + canary with auto-rollback |
 | **scorecard** | k6 + metrics/logs → HTML evidence report |
 
+<div class="pt-3">
+<iframe src="https://clubhouse.kaddy.local:8443/" data-surface="clubhouse" data-surface-mode="live" class="w-full h-32 rounded border border-teal-800 bg-white"></iframe>
+<div class="text-xs opacity-60 pt-1">
+Live: clubhouse over TLS through the Cilium edge — <code>kubectl -n gateway port-forward svc/cilium-gateway-clubhouse 8443:443</code> + <code>clubhouse.kaddy.local → 127.0.0.1</code> in /etc/hosts (trust <code>kaddy-local-ca</code> once).
+</div>
+</div>
+
 </div>
 
 <!--
@@ -438,6 +445,11 @@ spec:
       selfHeal: true
 ```
 
+<iframe src="https://127.0.0.1:30443/applications" data-surface="argocd" data-surface-mode="live" class="w-full h-36 rounded border border-teal-800 bg-white"></iframe>
+<div class="text-xs opacity-60 pt-1">
+Live: the ArgoCD UI — kind maps the NodePort to <code>https://127.0.0.1:30443</code> (accept the local CA in the browser once before recording).
+</div>
+
 </div>
 
 </div>
@@ -576,11 +588,27 @@ layoutClass: gap-8
 
 ::right::
 
-<div class="pt-10 text-sm opacity-80">
+<div class="pt-6 text-sm">
+
+<div data-surface="backstage" data-surface-mode="fallback" class="p-3 rounded border border-amber-700">
+<strong>Backstage scaffolder — fallback</strong><br/>
+Not running yet (E10 designed). Record-time stand-in: drop a GIF/screenshot at
+<code>slides/public/surfaces/backstage-scaffolder.gif</code> — shown here instead of a live iframe, per the spec's fallback clause.
+</div>
+
+<div data-surface="crossplane-graph" data-surface-mode="fallback" class="p-3 rounded border border-amber-700 mt-3">
+<strong>Crossplane resource graph — fallback</strong><br/>
+Not running yet (E6/E10 designed). Record-time stand-in:
+<code>slides/public/surfaces/crossplane-graph.gif</code> — replaced by the live in-portal graph once E10 lands.
+</div>
+
+<div class="pt-3 opacity-80">
 
 **Honesty:** E10 is specced (ADR-0109 / ADR-0111, D-027…D-029) and gated behind
 the spine — shown here as design, not a running portal. Orchestrator-first:
 Crossplane (E6) *is* the platform API; Backstage is the experience layer on top.
+
+</div>
 
 </div>
 
@@ -730,6 +758,11 @@ flowchart TB
 
 <div class="text-center text-sm text-teal-400 pt-2">
 An alert can fire end-to-end — and its rule is unit-tested.
+</div>
+
+<iframe src="http://127.0.0.1:3000/alerting/list" data-surface="grafana" data-surface-mode="live" class="w-full h-32 rounded border border-teal-800 bg-white"></iframe>
+<div class="text-xs opacity-60 pt-1">
+Live: Grafana (marshal pane) — <code>kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80</code> → <code>http://127.0.0.1:3000</code>.
 </div>
 
 </div>
