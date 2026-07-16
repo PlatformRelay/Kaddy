@@ -27,34 +27,44 @@ TDD-ordered, vertical slices — each story is independently verifiable via its 
 
 ## E12-S01 — Slidev scaffold + reproducible build
 
-- [ ] Add failing `tests/deck/slidev-build.sh` (asserts `slidev build` exit 0 + `slides/dist/`)
+- [x] Add failing `tests/deck/slidev-build.sh` (asserts `slidev build` exit 0 + `slides/dist/` refreshed)
 - [x] `slides/package.json` (Slidev dep) — landed (deck v1); still open: wire `task deck:build`
 - [ ] CI job builds the deck; static SPA is the artifact the clubhouse/Caddy tenant serves
-- [ ] Gate: `tests/deck/slidev-build.sh`
+      *(Taskfile/.github outside the E12 file-only lane — follow-up: `task deck:build` wrapping
+      `tests/deck/slidev-build.sh` + a deck job in `verify.yaml` running `tests/deck/exit-recording-ready.sh`)*
+- [x] Gate: `tests/deck/slidev-build.sh`
 
 ## E12-S02 — Word-by-word speaker notes on every slide
 
-- [ ] Add failing `tests/deck/speaker-notes-coverage.sh` (note-block count == slide count + per-note min words)
-- [ ] Add failing `tests/deck/script-wordcount.sh` (total spoken words in 650–1500 range)
-- [ ] Write verbatim `<!-- ... -->` presenter-note script on EVERY slide (voiceover, not hints)
-- [ ] Gate: `tests/deck/speaker-notes-coverage.sh` + `tests/deck/script-wordcount.sh`
+- [x] Add failing `tests/deck/speaker-notes-coverage.sh` (note-block count == slide count + per-note min words:
+      content slides ≥ 25, CoverArt dividers ≥ 8 — a short spoken transition; note = LAST comment block per slide)
+- [x] Add failing `tests/deck/script-wordcount.sh` (total spoken words in 650–1500 range)
+- [x] Write verbatim `<!-- ... -->` presenter-note script on EVERY slide (voiceover, not hints) —
+      30/30 slides, 1358 words ≈ 9–10 min at 130–150 wpm
+- [x] Gate: `tests/deck/speaker-notes-coverage.sh` + `tests/deck/script-wordcount.sh`
 
-## E12-S03 — Live iframes embed running platform surfaces
+## E12-S03 — Live iframes embed running platform surfaces (partial by design)
 
-- [ ] Add failing `tests/deck/iframe-surfaces.sh` (greps for backstage, argocd, grafana/marshal, clubhouse/caddy, crossplane-graph embeds)
-- [ ] Add named slides embedding live iframe URLs for the five surfaces
-- [ ] Document the GIF/screenshot fallback for any surface down at record time
-- [ ] Gate: `tests/deck/iframe-surfaces.sh`
+- [x] Add failing `tests/deck/iframe-surfaces.sh` (greps for backstage, argocd, grafana/marshal, clubhouse/caddy, crossplane-graph embeds)
+- [x] Add named slides embedding the five surfaces — **live iframes:** argocd (`https://127.0.0.1:30443`),
+      grafana (`http://127.0.0.1:3000` via documented port-forward), clubhouse (`https://clubhouse.kaddy.local:8443`
+      via documented port-forward); **fallbacks (surfaces don't exist yet):** backstage + crossplane-graph (E10/E6
+      designed) as GIF/screenshot drop-ins per the spec's fallback clause — flips to live iframes when E10 lands
+- [x] Document the GIF/screenshot fallback for any surface down at record time (`slides/README.md`,
+      "Live surfaces & fallbacks")
+- [x] Gate: `tests/deck/iframe-surfaces.sh`
 
 ## E12-S04 — Narrative beats + time budget
 
-- [ ] Add failing `tests/deck/narrative-beats.sh` (greps ordered beat markers)
-- [ ] Structure the deck to the arc: pitch → architecture → security → portal hero → mulligan → marshal → scorecard
-- [ ] Add per-section time budget so the walkthrough lands in 5–10 min
-- [ ] Gate: `tests/deck/narrative-beats.sh`
+- [x] Add failing `tests/deck/narrative-beats.sh` (greps ordered beat markers + sums `sectionTime` budgets)
+- [x] Structure the deck to the arc: pitch → architecture → security → portal hero → mulligan → marshal → scorecard
+      (`beat:` frontmatter markers on the section dividers; new portal-hero section added; marshal moved after mulligan)
+- [x] Add per-section time budget so the walkthrough lands in 5–10 min (`sectionTime:` per divider, 590 s total)
+- [x] Gate: `tests/deck/narrative-beats.sh`
 
 ## E12-EXIT — Recording-ready
 
-- [ ] Add `tests/deck/exit-recording-ready.sh` (composite: build + notes + wordcount + iframes + beats)
-- [ ] Dry-run: read notes over the deck with live iframes (or fallbacks); confirm a 5–10 min recording is producible
-- [ ] Gate: `task test:spec` + `tests/deck/slidev-build.sh`
+- [x] Add `tests/deck/exit-recording-ready.sh` (composite: build + notes + wordcount + iframes + beats)
+- [ ] Dry-run (operator/manual): read notes over the deck with live iframes (or fallbacks); confirm a
+      5–10 min recording is producible — bring-up checklist in `slides/README.md`
+- [x] Gate: `task test:spec` + `tests/deck/slidev-build.sh`
