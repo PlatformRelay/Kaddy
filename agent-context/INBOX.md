@@ -73,9 +73,9 @@ Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint s
 
 ## PRs to merge
 
-- [ ] **https://github.com/PlatformRelay/Kaddy/pull/11** — E8-S04 Getting Started + reviewer demo
-      contract (`7f53730`). Tech-review REQUEST CHANGES → all findings fixed; local gates + CI green
-      (advisory `spec-coverage-strict` red is pre-existing/unrelated). Awaiting operator merge.
+- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/11** — E8-S04 Getting Started + reviewer demo
+      contract (`7f53730`)~~ — MERGED 2026-07-16T13:41Z (rebase; worktree + branch cleaned up) under
+      the operator's blanket 2026-07-16 authorization ("merge PRs yourself; prefer local merges").
 - [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/8** — E1c-digest-latest~~ — MERGED 2026-07-16 (content on `main` as `40c0cc0`+`d505dad`); PRs #9/#10 closed after fast-path ref-push of the same content.
 
 ## Audits
