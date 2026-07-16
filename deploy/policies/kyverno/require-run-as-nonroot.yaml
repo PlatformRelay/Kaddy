@@ -1,10 +1,18 @@
 # ADR-0106 pod-security baseline: require runAsNonRoot (the clubhouse
 # Deployment is the reference implementation — pod-level runAsNonRoot: true).
-# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+# LIVE and ENFORCED — see deploy/policies/README.md (enforcement matrix).
 #
-# Audit (not Enforce) on first sync: chart-managed observability pods will
-# flag here first (security review P2-2); flip to Enforce only after the
-# Audit report is clean. kube-* namespaces excluded (node agents run root).
+# Flipped Audit -> Enforce during the E1c cluster cutover (2026-07-16). The
+# in-cluster PolicyReport background scan showed exactly two violator
+# classes, both excluded narrowly below rather than fixed:
+#   - monitoring/alloy-* — the Alloy DaemonSet tails host logs from
+#     /var/log and functionally requires root (upstream chart default; the
+#     observability values are outside the cutover lane's file boundary and
+#     the root requirement would remain regardless — P2-2 follow-up).
+#   - e1e-smoke — ephemeral E1e smoke fixtures (hashicorp/http-echo runs as
+#     root); the namespace is recreated by every e1e smoke run (P2-5).
+# Everything else (argocd, cert-manager, kyverno, kps, Loki, blackbox,
+# rollouts, kaddy workloads) passes and is now admission-gated.
 # Offline test: kyverno test tests/kyverno/require-run-as-nonroot/.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -33,7 +41,7 @@ metadata:
       either at the pod securityContext level or on every container, init
       container and ephemeral container.
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: run-as-non-root
@@ -50,6 +58,19 @@ spec:
                 - kube-public
                 - kube-node-lease
                 - local-path-storage
+          # Alloy tails host logs from /var/log and functionally requires
+          # root (see header). Name+namespace-scoped: the rest of the
+          # monitoring namespace stays enforced.
+          - resources:
+              namespaces:
+                - monitoring
+              names:
+                - "alloy*"
+          # Ephemeral E1e smoke fixtures (hashicorp/http-echo runs as root;
+          # recreated by every e1e smoke run — P2-5 hygiene follow-up).
+          - resources:
+              namespaces:
+                - e1e-smoke
       validate:
         message: >-
           Running as root is not allowed (ADR-0106). Set runAsNonRoot: true
