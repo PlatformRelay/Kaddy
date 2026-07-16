@@ -3,8 +3,9 @@
 #
 # Dual-attachment design (preserves S02 canary AnalysisTemplate story):
 #   - HTTPRoute `caddy-mvp`          → caddy-origin-stable/canary (canary weights)
-#   - HTTPRoute `caddy-mvp-showcase` → nginx-proxy-active (showcase hop)
-# nginx ConfigMap proxy_pass closes the hop to the Caddy origin Service.
+#   - HTTPRoute `caddy-mvp-showcase` → nginx-proxy-active (header X-Kaddy-Showcase: nginx)
+# Header match (not a path prefix) keeps /docs/ and /slides/ intact through
+# nginx without a ConfigMap rewrite. nginx proxy_pass closes the hop to Caddy.
 #
 # No cluster required. Live Chainsaw:
 #   tests/chainsaw/caddy-mvp/showcase/proxy-topology/ (skip until live).
@@ -64,7 +65,19 @@ awk '
 }
 grep -qE '^[[:space:]]*name:[[:space:]]*nginx-proxy-active[[:space:]]*$' "${SERVICES}" \
   || fail "services.yaml missing Service nginx-proxy-active"
-ok "caddy-mvp-showcase backendRef → nginx-proxy-active"
+# Header match keeps content paths rewrite-free (PathPrefix /via-nginx would 404 at origin).
+awk '
+  /^kind:[[:space:]]*HTTPRoute/ { in_route=1; showcase=0; next }
+  in_route && /^metadata:/ { in_meta=1 }
+  in_route && in_meta && /^[[:space:]]*name:[[:space:]]*caddy-mvp-showcase[[:space:]]*$/ { showcase=1 }
+  in_route && /^spec:/ { in_meta=0 }
+  showcase && /X-Kaddy-Showcase/ { hdr=1 }
+  showcase && /value:[[:space:]]*nginx[[:space:]]*$/ { val=1 }
+  /^---/ { if (showcase && !(hdr && val)) exit 2;
+            in_route=0; showcase=0; hdr=0; val=0 }
+  END { if (!(hdr && val)) exit 2 }
+' "${ROUTE}" || fail "caddy-mvp-showcase must match header X-Kaddy-Showcase: nginx"
+ok "caddy-mvp-showcase backendRef → nginx-proxy-active (header X-Kaddy-Showcase: nginx)"
 
 # --- 3) S02 canary route still attached to origin weight pair ---------------
 grep -qE '^[[:space:]]*name:[[:space:]]*caddy-mvp[[:space:]]*$' "${ROUTE}" \
