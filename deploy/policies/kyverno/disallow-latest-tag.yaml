@@ -1,11 +1,12 @@
 # ADR-0106 / SEC-4 image hygiene: every image must carry a tag, and that tag
 # must not be the mutable `latest`. Complements REQ-E1c-S03-01 (digest
 # pinning, follow-up) — tag pinning is the floor, digests are the target.
-# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+# LIVE and ENFORCED — see deploy/policies/README.md (enforcement matrix).
 #
-# Audit (not Enforce) on first sync, flipped to Enforce at cutover step 3
-# once the Audit report is clean (all kaddy manifests already pin exact
-# tags, so this is expected to be a fast flip).
+# Flipped Audit -> Enforce during the E1c cluster cutover (2026-07-16): the
+# in-cluster PolicyReport background scan showed ZERO violations (all kaddy
+# and vendored manifests pin exact tags), and a mulligan rollout-pod restart
+# was admitted post-flip (canary).
 # Offline test: kyverno test tests/kyverno/disallow-latest-tag/.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -34,7 +35,7 @@ metadata:
       makes rollbacks and provenance impossible. Images must be pinned to an
       exact tag (digests preferred — REQ-E1c-S03-01).
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: require-image-tag
