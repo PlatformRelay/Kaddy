@@ -6,6 +6,15 @@ info: |
   ## kaddy — a caddie for your websites
   Security-first, spec-driven, Kubernetes-native Website-as-a-Service.
   Built for the gridscale Platform Engineer exercise.
+favicon: '/branding/favicon-32.png'
+seoMeta:
+  ogTitle: kaddy — a caddie for your websites
+  ogDescription: >-
+    Security-first, spec-driven, Kubernetes-native Website-as-a-Service.
+    Built for the gridscale Platform Engineer exercise.
+  ogImage: https://raw.githubusercontent.com/PlatformRelay/Kaddy/main/slides/public/branding/og-image.png
+  twitterCard: summary_large_image
+  twitterImage: https://raw.githubusercontent.com/PlatformRelay/Kaddy/main/slides/public/branding/og-image.png
 layout: none
 transition: slide-left
 mdc: true
@@ -49,6 +58,8 @@ engineering exercise.
 layout: cover
 class: text-center
 ---
+
+<img src="/branding/logo-512.png" alt="kaddy" class="mx-auto mb-6" width="128" height="128" />
 
 # kaddy
 

@@ -1,5 +1,9 @@
 # kaddy — a caddie for your websites
 
+<p align="center">
+  <img src="slides/public/branding/logo-dark.png" alt="kaddy" width="128" height="128" />
+</p>
+
 **Security-first · spec-driven · Kubernetes-native Website-as-a-Service.**
 
 kaddy is an internal developer platform for **monitored, TLS-terminated websites**. One self-service
