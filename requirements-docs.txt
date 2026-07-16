@@ -1,0 +1,2 @@
+# Pinned for showcase image docs bake (REQ-CADDY-S05-01/02) and local mkdocs --strict.
+mkdocs-material==9.6.14

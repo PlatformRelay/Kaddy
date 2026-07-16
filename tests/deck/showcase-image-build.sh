@@ -68,6 +68,17 @@ grep -q '/healthz' "${CADDYFILE}" || fail "Caddyfile has no /healthz health endp
 grep -q 'auto_https off' "${CADDYFILE}" || fail "Caddyfile must disable auto_https (TLS terminates at the platform edge)"
 ok "Caddyfile: :8080 static file server + /healthz"
 
+
+# --- docs bake (REQ-CADDY-S05-01/02) ----------------------------------------
+grep -qE '^FROM python:.* AS docs' "${DOCKERFILE}" || fail "missing python docs build stage"
+grep -q 'mkdocs build --strict' "${DOCKERFILE}" || fail "docs stage must run mkdocs build --strict"
+grep -q 'COPY --from=docs' "${DOCKERFILE}" || fail "runtime must COPY --from=docs into /srv/docs"
+grep -q 'mkdocs-material' "${ROOT}/requirements-docs.txt" || fail "requirements-docs.txt must pin mkdocs-material"
+grep -qE 'name:[[:space:]]*material' "${ROOT}/mkdocs.yml" || fail "mkdocs.yml must use theme material"
+grep -q '/docs/' "${ROOT}/deploy/showcase/index.html" || fail "landing page must link /docs/"
+! grep -qi 'pending' "${ROOT}/deploy/showcase/index.html" || fail "landing page must not mark /docs/ pending"
+ok "docs bake stage + Material theme + landing /docs/ link"
+
 # --- optional local build proof (CI is the authoritative build) --------------
 if [ "${SHOWCASE_IMAGE_BUILD:-0}" = "1" ]; then
   engine=""

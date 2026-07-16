@@ -272,6 +272,6 @@ After teardown, the Getting Started path from §1 is safe to rerun (idempotent).
 
 ## Related
 
-- Five-minute reviewer path: root [README.md](../README.md)
-- Scorecard evidence: [evidence/README.md](../evidence/README.md)
+- Five-minute reviewer path: repo-root `README.md` (not part of this MkDocs tree)
+- Scorecard evidence: repo-root `evidence/README.md`
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)

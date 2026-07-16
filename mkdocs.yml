@@ -1,8 +1,14 @@
 site_name: kaddy
 site_description: Security-first Website-as-a-Service platform
 repo_url: https://github.com/PlatformRelay/Kaddy
+theme:
+  name: material
+  palette:
+    primary: blue grey
+    accent: light blue
 nav:
   - Home: README.md
+  - Getting Started: getting-started.md
   - Architecture: ARCHITECTURE.md
   - Roadmap: ROADMAP.md
   - ADRs: adr/README.md
@@ -11,3 +17,8 @@ nav:
   - Development: development/DEVELOPMENT.md
 docs_dir: docs
 site_dir: site
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true

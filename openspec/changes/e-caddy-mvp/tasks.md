@@ -81,8 +81,7 @@
       first CI run pending). **DEVIATION (resolved):** `mkdocs build --strict` now exits 0 — all
       24 broken-link warnings fixed (2026-07-16); `/docs/` can be baked once the material theme
       flip lands
-- [ ] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material — flip theme to `material`;
-      interim landing page in the image links /slides/ and marks /docs/ pending)
+- [x] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material theme + baked into showcase image)
 - [ ] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge
 - [ ] Enable Caddy `metrics`; **re-home the parked `caddy_*` marshal alerts against the Caddy origin**
       target (closes D-026: real target, promtool fire + silent preserved)
