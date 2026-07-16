@@ -1,0 +1,30 @@
+# REQ-E1d-S01-02 — Dex Service (http issuer :5556, telemetry :5558).
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: identity
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: dex
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S01-02
+spec:
+  selector:
+    app.kubernetes.io/name: dex
+  ports:
+    - name: http
+      port: 5556
+      targetPort: http
+    - name: telemetry
+      port: 5558
+      targetPort: telemetry

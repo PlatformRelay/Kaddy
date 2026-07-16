@@ -1,0 +1,72 @@
+# REQ-E1d-S01-03 — Dex configuration (ADR-0107).
+#
+# Issuer: https://dex.kaddy.local:30443 — the SNI-routed `https-dex` listener
+# on the existing argocd Gateway (deploy/bootstrap/argocd.yaml), which is the
+# only loopback-mapped HTTPS entry of the kind lab (127.0.0.1:30443). The
+# same URL works for the operator browser (/etc/hosts: 127.0.0.1
+# dex.kaddy.local) and for argocd-server in-cluster (hostAliases -> node IP,
+# `task bootstrap:e1d`).
+#
+# Secrets are NOT here: $GITHUB_CLIENT_ID / $GITHUB_CLIENT_SECRET /
+# $ARGOCD_CLIENT_SECRET are env-expanded by Dex at startup from the Secrets
+# `dex-github-oauth` and `dex-clients`, both rendered by KSOPS from
+# deploy/secrets/ (ADR-0110, REQ-E1d-S01-06).
+#
+# GitHub connector: org-membership gate on PlatformRelay. The `teams:`
+# allowlist filter is deliberately NOT set — GitHub-org-team RBAC beyond the
+# single admin mapping is deferred to E10; Dex still emits `org:team` group
+# claims for every team the user belongs to, so argocd-rbac-cm can already
+# map PlatformRelay:platform-admins when the operator creates the team.
+#
+# storage.type=memory: single replica, no CRDs/Postgres — a Dex restart only
+# invalidates in-flight login flows (lab trade-off, documented in the
+# runbook; sessions live in the consuming apps, not in Dex).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: identity
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: dex
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S01-03
+data:
+  config.yaml: |
+    issuer: https://dex.kaddy.local:30443
+    storage:
+      type: memory
+    web:
+      http: 0.0.0.0:5556
+    telemetry:
+      http: 0.0.0.0:5558
+    oauth2:
+      skipApprovalScreen: true
+    connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: $GITHUB_CLIENT_ID
+          clientSecret: $GITHUB_CLIENT_SECRET
+          redirectURI: https://dex.kaddy.local:30443/callback
+          orgs:
+            - name: PlatformRelay
+    staticClients:
+      - id: argocd
+        name: Argo CD
+        secretEnv: ARGOCD_CLIENT_SECRET
+        redirectURIs:
+          - https://127.0.0.1:30443/auth/callback
+          - https://localhost:30443/auth/callback
+          # argocd CLI SSO (`argocd login --sso`) callback:
+          - http://localhost:8085/auth/callback

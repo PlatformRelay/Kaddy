@@ -1,14 +1,18 @@
-# REQ-E3-S01-01 (partial): identity child Application — PLACEHOLDER, sync DISABLED.
+# REQ-E3-S01-01 + REQ-E1d-* : identity child Application — LIVE (E1d).
 #
-# DEFERRED: identity (Dex + the GitHub OIDC connector) depends on decrypting
-# `deploy/secrets/identity/*.enc.yaml` at render time, which needs the KSOPS
-# repo-server plugin (REQ-E3-S01-03, ADR-0110). KSOPS is NOT on the demoable path
-# tonight and is explicitly deferred, so this Application is registered for a
-# complete app-of-apps set but points at an empty directory and has NO automated
-# syncPolicy — it will never try to apply un-decryptable secrets.
+# The KSOPS deferral is resolved: the repo-server renders deploy/identity
+# with `kustomize --enable-alpha-plugins --enable-exec` (argocd-cm
+# kustomize.buildOptions) and the ksops generator decrypts
+# deploy/secrets/{identity,argocd}/*.enc.yaml at build time (ADR-0110,
+# REQ-E3-S01-03). Prerequisite on a fresh cluster: `task bootstrap:e1d`
+# (age-key root secret + repo-server plugin) — without it this app degrades
+# to a render error, never to plaintext-in-git.
 #
-# Follow-up (see openspec/changes/e3-gitops-core/tasks.md): once KSOPS lands,
-# repoint `path` at deploy/secrets/identity (or a Dex overlay) and enable sync.
+# prune+selfHeal ON like the other platform children; the namespace is a
+# tracked manifest (deploy/identity/namespace.yaml), not CreateNamespace.
+# The argocd-oidc-client Secret intentionally lands in the argocd namespace
+# (allowed destination of the platform project) — argocd-cm oidc.config
+# references it as $argocd-oidc-client:clientSecret.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -26,8 +30,8 @@ metadata:
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
   annotations:
-    kaddy.io/status: deferred-needs-ksops
-    kaddy.io/req: REQ-E3-S01-03
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S01-01
 spec:
   project: platform
   source:
@@ -37,7 +41,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: identity
-  # NO syncPolicy.automated — manual only, and the directory is empty until KSOPS.
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=false

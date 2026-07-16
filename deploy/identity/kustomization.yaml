@@ -1,0 +1,22 @@
+# E1d identity app root (ADR-0107 Dex + ADR-0110 KSOPS).
+#
+# The `generators` entry is the whole point of this app: secret-generator.yaml
+# is a KSOPS exec-KRM function that decrypts the SOPS-encrypted Secrets under
+# deploy/secrets/ at render time on the Argo CD repo-server (age key mounted
+# from the imperative `sops-age` root secret — see `task bootstrap:e1d`).
+# Rendering therefore REQUIRES:
+#   kustomize build --enable-alpha-plugins --enable-exec deploy/identity
+# which Argo CD gets via `kustomize.buildOptions` in argocd-cm
+# (deploy/bootstrap/argocd.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - dex/configmap.yaml
+  - dex/deployment.yaml
+  - dex/service.yaml
+  - dex/httproute.yaml
+
+generators:
+  - secret-generator.yaml

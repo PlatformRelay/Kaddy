@@ -1,0 +1,115 @@
+# REQ-E1d-S01-01/-06 — Dex Deployment (ADR-0107, pinned image).
+#
+# OAuth credentials enter ONLY as env from the KSOPS-rendered Secrets
+# (dex-github-oauth, dex-clients) — no plaintext, no imperative
+# `kubectl create secret` (ADR-0110). Dex expands $VARS in config.yaml.
+#
+# Kyverno-compliant by construction (identity ns has NO policy excludes):
+# bare-key kaddy labels, pinned tag, runAsNonRoot (upstream image USER 1001),
+# non-privileged, restricted seccomp, read-only rootfs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dex
+  namespace: identity
+  labels:
+    owner: platform-team
+    service: identity
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: confidential
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: dex
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E1d-S01-01
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dex
+  template:
+    metadata:
+      labels:
+        owner: platform-team
+        service: identity
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: confidential
+        business-criticality: business-critical
+        track: stable
+        app.kubernetes.io/name: dex
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: dex
+          # Pinned (renovate keeps it current; no floating tags — ADR-0106).
+          image: ghcr.io/dexidp/dex:v2.44.0
+          command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+          ports:
+            - name: http
+              containerPort: 5556
+            - name: telemetry
+              containerPort: 5558
+          env:
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: dex-github-oauth
+                  key: client-id
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dex-github-oauth
+                  key: client-secret
+            - name: ARGOCD_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dex-clients
+                  key: argocd-client-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: telemetry
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: telemetry
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 300m
+              memory: 192Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dex/cfg
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: dex
+            items:
+              - key: config.yaml
+                path: config.yaml

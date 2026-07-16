@@ -1,0 +1,23 @@
+# REQ-E1d-S01-01 — identity namespace (Dex OIDC issuer, ADR-0107).
+#
+# Created by the identity Application (kustomize resource, not
+# CreateNamespace) so the namespace carries the mandatory ADR-0301 labels
+# explicitly. data-classification is `confidential`: the namespace holds the
+# GitHub OAuth client secret and the Argo CD OIDC client secret (both
+# rendered from SOPS-encrypted git manifests via KSOPS, ADR-0110).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: identity
+  labels:
+    owner: platform-team
+    service: identity
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: confidential
+    business-criticality: business-critical
+    track: stable
+    # Additive app.kubernetes.io/* mirror (ADR-0301 documented mirror).
+    app.kubernetes.io/name: identity
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
