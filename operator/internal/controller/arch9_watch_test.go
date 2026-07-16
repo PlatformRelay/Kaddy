@@ -40,6 +40,11 @@ import (
 	"github.com/PlatformRelay/Kaddy/operator/internal/caddyadmin/admintest"
 )
 
+const (
+	siteMatch = "site-match"
+	siteHeal  = "site-heal"
+)
+
 func TestCaddySitesForCaddy_EnqueuesOnlyReferencingSites(t *testing.T) {
 	c := startPlainEnv(t)
 	tctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -55,11 +60,11 @@ func TestCaddySitesForCaddy_EnqueuesOnlyReferencingSites(t *testing.T) {
 
 	// One site references web-a; another references a different Caddy.
 	match := &gatewayv1alpha1.CaddySite{
-		ObjectMeta: metav1.ObjectMeta{Name: "site-match", Namespace: testNS},
+		ObjectMeta: metav1.ObjectMeta{Name: siteMatch, Namespace: testNS},
 		Spec: gatewayv1alpha1.CaddySiteSpec{
 			CaddyRef: "web-a",
 			Hosts:    []string{testHost},
-			Routes:   []gatewayv1alpha1.CaddySiteRoute{{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "site-match", Port: 8080}}},
+			Routes:   []gatewayv1alpha1.CaddySiteRoute{{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: siteMatch, Port: 8080}}},
 		},
 	}
 	other := &gatewayv1alpha1.CaddySite{
@@ -82,8 +87,8 @@ func TestCaddySitesForCaddy_EnqueuesOnlyReferencingSites(t *testing.T) {
 	if len(reqs) != 1 {
 		t.Fatalf("want exactly 1 enqueued request, got %d: %v", len(reqs), reqs)
 	}
-	if reqs[0].Name != "site-match" || reqs[0].Namespace != testNS {
-		t.Errorf("enqueued the wrong site: got %s/%s, want %s/site-match", reqs[0].Namespace, reqs[0].Name, testNS)
+	if reqs[0].Name != siteMatch || reqs[0].Namespace != testNS {
+		t.Errorf("enqueued the wrong site: got %s/%s, want %s/%s", reqs[0].Namespace, reqs[0].Name, testNS, siteMatch)
 	}
 }
 
@@ -106,11 +111,11 @@ func TestReconcile_RecreatesDeletedServiceMonitor(t *testing.T) {
 		t.Fatalf("create Caddy: %v", err)
 	}
 	site := &gatewayv1alpha1.CaddySite{
-		ObjectMeta: metav1.ObjectMeta{Name: "site-heal", Namespace: testNS},
+		ObjectMeta: metav1.ObjectMeta{Name: siteHeal, Namespace: testNS},
 		Spec: gatewayv1alpha1.CaddySiteSpec{
 			CaddyRef:      "web-heal",
 			Hosts:         []string{testHost},
-			Routes:        []gatewayv1alpha1.CaddySiteRoute{{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "site-heal", Port: 8080}}},
+			Routes:        []gatewayv1alpha1.CaddySiteRoute{{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: siteHeal, Port: 8080}}},
 			Observability: gatewayv1alpha1.CaddySiteObservability{ServiceMonitor: true},
 		},
 	}
@@ -119,7 +124,7 @@ func TestReconcile_RecreatesDeletedServiceMonitor(t *testing.T) {
 	}
 
 	r := &CaddySiteReconciler{Client: c, Scheme: c.Scheme(), AdminURL: func(*gatewayv1alpha1.Caddy) string { return admin.URL() }}
-	key := types.NamespacedName{Namespace: testNS, Name: "site-heal"}
+	key := types.NamespacedName{Namespace: testNS, Name: siteHeal}
 
 	// First reconciles create the ServiceMonitor (finalizer add + upsert + ensure).
 	for i := range 2 {
