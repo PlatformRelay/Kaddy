@@ -159,7 +159,7 @@ provides Cilium Gateway + default StorageClass
 | --- | --- | --- |
 | E1d-S01 | Dex deployment + GitHub connector (**PlatformRelay** org) + SOPS OAuth secret | ✅ |
 | E1d-S02 | Argo CD OIDC via Dex + RBAC (GitHub teams → groups) | ✅ (teams allowlist → E10) |
-| E1d-S03 | Grafana OAuth via Dex | ✅ (deferred → E10) |
+| E1d-S03 | Grafana OAuth via Dex | ⬜ (deferred → E10) |
 | E1d-S04 | NetworkPolicy for `identity` namespace | ✅ |
 
 ### E1d-S02 — Argo CD OIDC
