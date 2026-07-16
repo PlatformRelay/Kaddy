@@ -29,7 +29,7 @@ metadata:
     # Kind exists only after the crossplane app establishes the XRD (first boot).
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
+  image: ghcr.io/platformrelay/kaddy-showcase:0.1.0
   port: 8080
   path: /putting-green
   replicas: 1
