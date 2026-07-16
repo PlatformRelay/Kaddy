@@ -1,0 +1,43 @@
+# E12 deck gate — the interview deck must stay recording-ready: reproducible
+# Slidev build + word-by-word speaker notes + wordcount + iframe surfaces +
+# narrative beats (tests/deck/exit-recording-ready.sh). Publishes slides/dist
+# as the artifact the clubhouse/Caddy tenant can serve later.
+name: deck
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'slides/**'
+      - 'tests/deck/**'
+      - '.github/workflows/deck.yaml'
+  pull_request:
+    paths:
+      - 'slides/**'
+      - 'tests/deck/**'
+      - '.github/workflows/deck.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  deck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: slides/pnpm-lock.yaml
+      - name: deck exit gate (build + notes + wordcount + iframes + beats)
+        run: bash tests/deck/exit-recording-ready.sh
+      - name: Upload deck artifact (slides/dist)
+        uses: actions/upload-artifact@v4
+        with:
+          name: deck-dist
+          path: slides/dist/
+          retention-days: 14
