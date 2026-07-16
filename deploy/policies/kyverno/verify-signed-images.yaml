@@ -1,22 +1,25 @@
 # REQ-E1c-S03-02: Kyverno verifyImages policy — cosign signature verification
-# for kaddy-published images. AUTHORED, NOT ACTIVE — per the spec this stays
-# skipped "until cosign wired": no kaddy release image is signed yet and no
-# release signing key exists.
+# for kaddy-published images.
 #
-# PLACEHOLDER KEY: the public key below is a throwaway ECDSA P-256 key
-# generated solely so this manifest is schema-valid; the matching private key
-# was never persisted. It MUST be replaced with the real kaddy cosign release
-# public key when the release-signing pipeline lands (SEC-8 follow-up).
-# Until then: Audit mode + an imageReferences scope that only matches
-# kaddy-published images (none are deployed today), so syncing this policy
-# can never block third-party/platform images.
+# KEYLESS (SEC-8 landed as keyless, not a release key): kaddy's first
+# self-published image (ghcr.io/platformrelay/kaddy-showcase) is signed in CI
+# by .github/workflows/showcase-image.yaml via ambient GitHub OIDC — no
+# long-lived signing key exists, so this attestor pins the WORKFLOW IDENTITY:
+# Fulcio certificate issuer = GitHub Actions OIDC, subject = this repo's
+# showcase-image workflow (any ref). Replaces the earlier placeholder public
+# key that had no matching signer.
+#
+# STAYS Audit (operator-ratified): flip to Enforce only when (a) kaddy images
+# are the only ghcr.io/platformrelay/* images deployed and (b) signing is
+# proven by the workflow's own `cosign verify` step on main. See
+# deploy/policies/README.md.
 #
 # NO OFFLINE TEST: `kyverno test` for verifyImages rules requires registry
 # access to fetch signatures, so this policy is the one deliberate gap in
 # tests/kyverno/ (documented in deploy/policies/README.md). In-cluster
 # behaviour is REQ-E1c-S03-02's Chainsaw test
-# `tests/chainsaw/security/unsigned-image-denied.yaml` (skip until cosign
-# wired).
+# `tests/chainsaw/security/unsigned-image-denied.yaml` (skip until the first
+# signed image is deployed).
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
@@ -35,15 +38,16 @@ metadata:
   annotations:
     kaddy.io/adr: "0106"
     kaddy.io/req: REQ-E1c-S03-02
-    kaddy.io/status: placeholder-key-awaiting-cosign
+    kaddy.io/status: keyless-attestor-audit-awaiting-first-ci-signed-deploy
     policies.kyverno.io/title: Verify kaddy image signatures
     policies.kyverno.io/category: Software Supply Chain Security
     policies.kyverno.io/severity: high
     policies.kyverno.io/subject: Pod
     policies.kyverno.io/description: >-
-      kaddy-published images must carry a valid cosign signature from the
-      kaddy release key before they are admitted. Third-party images are out
-      of scope (they are pinned and Trivy-scanned instead — ADR-0106).
+      kaddy-published images must carry a valid keyless cosign signature from
+      this repo's showcase-image GitHub Actions workflow (Fulcio cert:
+      GitHub OIDC issuer + workflow identity subject). Third-party images are
+      out of scope (they are pinned and Trivy-scanned instead — ADR-0106).
 spec:
   validationFailureAction: Audit
   background: false
@@ -67,9 +71,11 @@ spec:
           mutateDigest: false
           attestors:
             - entries:
-                - keys:
-                    publicKeys: |-
-                      -----BEGIN PUBLIC KEY-----
-                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEqrv1BbCna5C1SUmE8Bk0RAWD/dN6
-                      bmwLi3MEko+JFXqwIUG9eULd80OZWcy2cg0Ek+qHDWbmxo9iAGBtCgGIig==
-                      -----END PUBLIC KEY-----
+                - keyless:
+                    # GitHub Actions ambient OIDC (keyless cosign in CI)
+                    issuer: "https://token.actions.githubusercontent.com"
+                    # Fulcio cert subject = the signing workflow's identity
+                    # (any ref: refs/heads/main and refs/tags/v*)
+                    subject: "https://github.com/PlatformRelay/Kaddy/.github/workflows/showcase-image.yaml@*"
+                    rekor:
+                      url: https://rekor.sigstore.dev
