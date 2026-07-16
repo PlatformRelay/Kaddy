@@ -1,10 +1,11 @@
 # Tasks — E-Caddy-MVP (stub / design-first story map)
 
 > **Activation status (2026-07-16):** Phase-1 preconditions **E1 / E3 / E4 / E7 are green on
-> `main`** (see `docs/ROADMAP.md`). **Variant B (Kubernetes)** may proceed — author full specs
-> (S00 second bullet) then implement S02. **Variant A (VM)** remains blocked on phase-2
-> **E6g / E1g** (still ⬜). Story map below is not yet fully TDD-decomposed — REQ IDs +
-> Test:/Verify: land when Variant B (or A) activates. S01/S02 implementation is **not** done.
+> `main`** (see `docs/ROADMAP.md`). **Variant B (Kubernetes)** may proceed — S00 specs are
+> **authored** (see `specs/`); implement S02 next. **Variant A (VM)** remains blocked on phase-2
+> **E6g / E1g** (still ⬜) — its REQs are specced but explicitly gated. Every story S01–S03 (+S05)
+> now carries REQ IDs with Level tags and Test:/Verify: contracts. S01/S02 implementation is
+> **not** done.
 
 ## S00 — Epic activation gate (do first when activating)
 
@@ -12,12 +13,17 @@
       (observability / in-cluster Prometheus), **E4** (sample site), **E7** (Argo Rollouts —
       Variant B). **Still open for Variant A:** **E6g / E1g** (gridscale VM provisioning —
       phase 2, deferred).
-- [ ] Author full specs (`specs/**/spec.md`) with REQ IDs, Level tags, Test: + Verify: per REQ
-      (Variant B path unblocked; Variant A specs wait on E6g/E1g).
+- [x] Author full specs (`specs/**/spec.md`) with REQ IDs, Level tags, Test: + Verify: per REQ
+      (done 2026-07-16 — umbrella + S01 gated in `specs/caddy-mvp/`, S02 contract in
+      `specs/k8s-tenant/` [REQ-CADDY-S02-01..05], S03 in `specs/scaffold/`
+      [REQ-CADDY-S03-01..02], new REQ-CADDY-S01-04 + REQ-CADDY-EXIT. Variant A is specced
+      **but explicitly gated** on E6g/E1g rather than left unwritten — its REQs carry a
+      Blocked marker; implementation may not start).
 
 ## S01 — Variant A · VM-based (MINIMAL) — the brief spine (serve → scrape → fire)
 
 > **Blocked** on E6g/E1g (phase 2). Do not start VM/cluster provisioning here.
+> Spec: `specs/caddy-mvp/spec.md` (REQ-CADDY-S01-01..04, gated).
 
 - [ ] Caddy on a VM (nginx parallel — same structure, legacy stand-in).
 - [ ] VM provisioning via sibling Crossplane **provider-gridscale** (`gridscale_server`) — E6g/E1g.
@@ -29,7 +35,9 @@
 
 ## S02 — Variant B · Kubernetes-based (RICH) — preferred/primary path
 
-> **Unblocked** (E1/E3/E4/E7 green). Implementation not started — specs first (S00).
+> **Unblocked** (E1/E3/E4/E7 green). Implementation not started — specs authored (S00):
+> `specs/k8s-tenant/spec.md` (REQ-CADDY-S02-01..05 — TLS, analysis-gated Rollouts, scrape,
+> GitOps wiring under `deploy/workloads/caddy-mvp/`, default-deny netpol).
 
 - [ ] Caddy tenant Deployment/Service in-cluster (nginx parallel), reached **through** the
       Cilium Gateway API edge (HTTPRoute), never as the edge itself.
@@ -41,6 +49,9 @@
       HTTP-200 through the Gateway.
 
 ## S03 — Backstage self-service scaffold (both variants, both engines)
+
+> Spec: `specs/scaffold/spec.md` (REQ-CADDY-S03-01..02 — auto-generated form per D-028;
+> VM variant option gated on E6g/E1g; portal-free GitOps parity).
 
 - [ ] Backstage form picks variant (VM / Kubernetes) and engine (Caddy / nginx). Surface is
       E10 (portal, cuttable) — this epic works via GitOps even if E10 is cut.
