@@ -1,0 +1,15 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-edge-route
+  annotations:
+    kaddy.io/req: REQ-CADDY-S01-01
+spec:
+  description: e-caddy-mvp — Caddy tenant served THROUGH the Cilium/Envoy edge, not as gateway (skip until the caddy-mvp tenant is scaffolded)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp edge-route placeholder — enable when the Caddy tenant (e-caddy-mvp k8s variant) is deployed behind the platform Gateway"
+              exit 0
