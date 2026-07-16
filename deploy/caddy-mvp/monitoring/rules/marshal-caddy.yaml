@@ -1,6 +1,9 @@
-# CaddyTargetDown — REQ-E5-S03-01 / REQ-E5-S06-01
+# CaddyTargetDown + revived caddy_http_* alerts — REQ-CADDY-S05-04 / S01-03
 # PrometheusRule CR. metadata.labels carry the ADR-0301 mandatory core set.
 # Alert labels carry severity/service/owner for self-routing (ADR-0301 Enforcement).
+#
+# Re-homed against the Kubernetes Caddy origin in ns caddy-mvp (PodMonitor pins
+# job="caddy"). Closes D-026: real tenant target, not a synthetic edge.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -17,7 +20,7 @@ metadata:
     app.kubernetes.io/name: caddy
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
-    app.kubernetes.io/component: gateway
+    app.kubernetes.io/component: tenant
     prometheus: kaddy
     role: alert-rules
 spec:
@@ -25,11 +28,11 @@ spec:
     - name: marshal.caddy
       rules:
         - alert: CaddyTargetDown
-          # REQ-E5-S03-01: fire when Caddy targets are absent for 2m.
-          # Two failure modes must fire this alert:
+          # REQ-E5-S03-01 → REQ-CADDY-S01-03 / S05-04: fire when Caddy targets are
+          # absent for 2m. Two failure modes must fire this alert:
           #   1. present-but-failing — the target is scraped but reports up == 0.
-          #   2. absent — the pods vanished, so no up{job="caddy"} series exists at
-          #      all and up == 0 can never match. absent() covers this case.
+          #   2. absent — the origin pods vanished, so no up{job="caddy"} series
+          #      exists at all and up == 0 can never match. absent() covers this.
           # The combined expr detects both without dropping the present-but-failing
           # coverage. absent() synthesizes only {job="caddy"} (no instance label).
           expr: absent(up{job="caddy"}) or up{job="caddy"} == 0
@@ -45,3 +48,55 @@ spec:
             description: >-
               Caddy scrape target (job caddy) has been down or absent for more
               than 2 minutes. Requests may be failing at the gateway.
+
+        # Revived parked E5 caddy_http_* alerts (REQ-CADDY-S05-04).
+
+        - alert: HighHTTPErrorRate
+          # Use duration_seconds_count — Caddy's status-code-labelled series.
+          # caddy_http_requests_total carries no code label.
+          expr: >-
+            sum(rate(caddy_http_request_duration_seconds_count{job="caddy",code=~"5.."}[5m]))
+            /
+            sum(rate(caddy_http_request_duration_seconds_count{job="caddy"}[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy HTTP 5xx error rate above 5%'
+            description: >-
+              Caddy origin is returning 5xx responses for more than 5% of requests
+              over the last 5 minutes (sustained 5m).
+
+        - alert: HighHTTPLatency
+          expr: >-
+            histogram_quantile(
+              0.99,
+              sum by (le) (rate(caddy_http_request_duration_seconds_bucket{job="caddy"}[5m]))
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy p99 HTTP latency above 500ms'
+            description: >-
+              Caddy origin p99 request latency has exceeded 500ms over the last 5
+              minutes (sustained 5m).
+
+        - alert: HighRequestRate
+          expr: >-
+            sum(rate(caddy_http_requests_total{job="caddy"}[5m])) > 100
+          for: 2m
+          labels:
+            severity: warning
+            service: caddy
+            owner: platform-team
+          annotations:
+            summary: 'Caddy request rate above 100 rps'
+            description: >-
+              Caddy origin is serving more than 100 requests per second (5m rate),
+              sustained for 2 minutes. Verify capacity / possible traffic spike.

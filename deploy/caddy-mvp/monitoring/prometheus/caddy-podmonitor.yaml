@@ -1,5 +1,6 @@
-# REQ-CADDY-S02-03 — scrape Caddy origin in ns caddy-mvp (re-pointed from parked
-# gateway selector; D-026 real target path).
+# REQ-CADDY-S02-03 / REQ-CADDY-S05-04 — scrape the Kubernetes Caddy origin in
+# ns caddy-mvp (real tenant target for the re-homed caddy_* marshal alerts;
+# closes D-026 on the K8s path).
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
