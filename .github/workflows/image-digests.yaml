@@ -1,0 +1,31 @@
+# REQ-E1c-S03-01 (board-narrowed) — first-party deploy image gate.
+# Fails the job on :latest in first-party deploy/ image refs.
+# Tag-only (non-digest) refs are inventoried as ADVISORY by the script (exit 0).
+# Standalone so it does not collide with verify.yaml / other lane workflows.
+name: image-digests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'hack/verify-image-digests.sh'
+      - 'tests/smoke/e1c-s03-01.sh'
+      - '.github/workflows/image-digests.yaml'
+  pull_request:
+    paths:
+      - 'deploy/**'
+      - 'hack/verify-image-digests.sh'
+      - 'tests/smoke/e1c-s03-01.sh'
+      - '.github/workflows/image-digests.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  digest-latest-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: REQ-E1c-S03-01 image digest/latest gate
+        run: bash tests/smoke/e1c-s03-01.sh
