@@ -186,6 +186,9 @@ jobs:
           set -euo pipefail
           # E4 edge: gateway ns + Gateway + HTTPRoutes + clubhouse app + the
           # kaddy-local-ca-issued Certificate (gateway + tls + security suites).
+          # Namespace FIRST: `kubectl apply -f <dir>` walks files alphabetically,
+          # so namespace.yaml would otherwise land after the resources it holds.
+          kubectl apply -f deploy/gateway/namespace.yaml
           kubectl apply -f deploy/gateway/
           kubectl apply -f deploy/workloads/clubhouse/
           kubectl apply -f deploy/cert-manager/clubhouse-certificate.yaml
@@ -194,6 +197,7 @@ jobs:
           kubectl -n gateway wait --for=condition=Programmed gateway/clubhouse --timeout=180s
           # E7 mulligan progressive-delivery demo (needs the Rollouts CRDs above).
           if ls tests/chainsaw/rollouts/*.yaml >/dev/null 2>&1; then
+            kubectl apply -f deploy/workloads/mulligan/namespace.yaml
             kubectl apply -f deploy/workloads/mulligan/
             kubectl -n mulligan wait --for=condition=Programmed gateway/mulligan --timeout=180s
             # Both Rollouts must be Healthy before the suites patch/abort them.
