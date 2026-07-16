@@ -1,0 +1,16 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Rollout",
+  "metadata": {
+    "name": "mulligan-bg",
+    "namespace": "mulligan"
+  },
+  "status": {
+    "phase": "Healthy",
+    "currentStepIndex": 0,
+    "replicas": 2,
+    "readyReplicas": 2,
+    "updatedReplicas": 2
+  },
+  "fixture": true
+}

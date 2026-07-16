@@ -1,0 +1,42 @@
+{
+  "up": {
+    "query": "up{job=~\"cilium-envoy|clubhouse.*\"}",
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": { "job": "cilium-envoy", "instance": "fixture" },
+        "value": [1710000000, "1"]
+      }
+    ]
+  },
+  "error_rate": {
+    "query": "sum(rate(envoy_http_downstream_rq_xx{envoy_response_code_class=\"5\"}[5m])) / sum(rate(envoy_http_downstream_rq_total[5m]))",
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {},
+        "value": [1710000000, "0.02"]
+      }
+    ]
+  },
+  "latency": {
+    "query": "histogram_quantile(0.99, sum(rate(envoy_http_downstream_rq_time_bucket[5m])) by (le))",
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {},
+        "value": [1710000000, "48"]
+      }
+    ]
+  },
+  "request_rate": {
+    "query": "sum(rate(envoy_http_downstream_rq_total{job=\"cilium-envoy\"}[5m]))",
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {},
+        "value": [1710000000, "150"]
+      }
+    ]
+  }
+}

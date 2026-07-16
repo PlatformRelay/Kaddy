@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>kaddy scorecard — {{RUN_DATE}}</title>
+  <style>
+    :root {
+      --ink: #1a1f1c;
+      --muted: #5a655e;
+      --paper: #f3f0e8;
+      --accent: #2f6f4e;
+      --warn: #a15c12;
+      --line: #d5d0c4;
+    }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 10% 0%, #e4efe7 0%, transparent 45%),
+        linear-gradient(180deg, #ebe6da 0%, var(--paper) 40%, #e7e2d6 100%);
+      line-height: 1.5;
+    }
+    main { max-width: 52rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    h1 { font-size: 1.75rem; margin: 0 0 0.25rem; letter-spacing: -0.02em; }
+    .meta { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+    section {
+      margin: 1.75rem 0;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+    h2 { font-size: 1.15rem; margin: 0 0 0.75rem; color: var(--accent); }
+    pre, .blob {
+      background: #fffdf8;
+      border: 1px solid var(--line);
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>kaddy scorecard</h1>
+    <p class="meta">Run <strong>{{RUN_DATE}}</strong> · mode <strong>{{CAPTURE_MODE}}</strong></p>
+
+    <section id="alerts">
+      <h2>Alerts</h2>
+      <p>Alertmanager state during the load window. Scorecard alert name
+        <span class="badge">HighRequestRate</span>
+        (live marshal rule: EdgeRequestRateHigh, threshold 100 rps).</p>
+      <pre class="blob">{{ALERTS_JSON}}</pre>
+    </section>
+
+    <section id="metrics">
+      <h2>Metrics</h2>
+      <p>Prometheus snapshots: up, error rate, latency, request rate.</p>
+      <pre class="blob">{{METRICS_JSON}}</pre>
+    </section>
+
+    <section id="k6">
+      <h2>k6 load</h2>
+      <p>Marshal threshold profile (<code>RATE=150</code> above 100 rps).</p>
+      <pre class="blob">{{K6_JSON}}</pre>
+    </section>
+
+    <section id="rollout">
+      <h2>Rollout status</h2>
+      <p>Argo Rollouts snapshot at capture time.</p>
+      <pre class="blob">{{ROLLOUT_JSON}}</pre>
+    </section>
+  </main>
+</body>
+</html>
