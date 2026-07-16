@@ -58,6 +58,8 @@ Brief note tying label coverage to public NIS2/KRITIS asset-management expectati
 | Date | Summary | Report |
 | --- | --- | --- |
 | 2026-07-15 | Baseline health & direction audit (NEEDS-WORK; direction AT-RISK) | `agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md` |
+| 2026-07-16 | Replay audit — 22 baseline findings fixed; status-truth recurrence flagged (DOC-10) | `agent-context/archive/audits/HEALTH-AUDIT-2026-07-16-final.md` |
+| 2026-07-16 | Data-flow security review (pre-v0.1.0) | [security-review-2026-07-16.md](../security/security-review-2026-07-16.md) |
 
 ## Tooling language
 
