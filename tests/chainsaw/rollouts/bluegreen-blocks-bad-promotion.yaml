@@ -71,6 +71,10 @@ spec:
                 (phase == 'Paused' || phase == 'Progressing'): true
         - assert:
             # Preview service has a pod-template-hash selector (green is up on preview).
+            # Explicit timeout (like the sibling assert): the controller only pins
+            # preview to green once the green pods are Available — on a loaded CI
+            # node that exceeds chainsaw's 30s default (observed in the first CI run).
+            timeout: 120s
             resource:
               apiVersion: v1
               kind: Service
