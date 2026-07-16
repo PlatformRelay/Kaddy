@@ -355,3 +355,14 @@ ROADMAP + exercise-traceability updated.
 (E6g) — justified because the deliverable is a reusable Marketplace *product*, not a one-off VM.
 **Traceability:** epic `e13-gridscale-marketplace` · depends E1g (object storage + creds), E-Caddy-MVP
 (image content), E5/marshal (alerts) · exercise-traceability optional-task row · ADR-0105 (self-service).
+
+## D-033 — agent-loop-auto batch while 0.1.1 release wraps (2026-07-16)
+
+**Context:** Operator authorized `/agent-loop-auto` on Kaddy while another session wraps **v0.1.1** (tag exists; `showcase-image` running on tag; changelog commit `77fc96c` on main). E8-S04 in-flight in `e8-getting-started` owns ROADMAP + e8 OpenSpec.
+
+**Decision:** Skip release packaging + E8-S04 entirely. Parallelize three file-disjoint offline lanes:
+1. **E8-scorecard-offline** (S01+S02 structural) — auto-merge eligible
+2. **E1c-trivy-ci** — PR only; security → INBOX before merge
+3. **E1c-digest-latest** — narrow `:latest` gate only (full digest pin would red-main); PR only; security → INBOX
+
+**Counterpoints considered:** (a) Combining Trivy+digest into one security PR reduces review load but couples unrelated gates — rejected for smaller blast radius. (b) Full digest mandate now — rejected; would fail verify on Helm charts. (c) Starting E10/portal — cuttable, skipped. (d) provider-grafana — high blast / Crossplane, deferred DECISION later.

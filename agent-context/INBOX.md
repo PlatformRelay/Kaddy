@@ -52,11 +52,14 @@ Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint s
 
 ## Reviews / PRs
 
-_(none open — PR #3, PR #4 merged 2026-07-15 via /agent-loop-auto)_
+- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/10** — E8-scorecard-offline~~ — REVIEW **APPROVE**; content on `main` as `636f4b5` (PR closed after rebase; head branch deleted).
+- [ ] Review the expanded **E8-S04 Getting Started + reviewer demo** story in worktree
+      `e8-getting-started`: safe local bring-up, concrete service URLs, Website/marshal/mulligan
+      choreography, recovery, teardown, and test contracts. Local `task verify` passes.
 
 ## PRs to merge
 
-_(none)_
+- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/8** — E1c-digest-latest~~ — MERGED 2026-07-16 (content on `main` as `40c0cc0`+`d505dad`); PRs #9/#10 closed after fast-path ref-push of the same content.
 
 ## Audits
 
