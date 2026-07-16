@@ -48,7 +48,10 @@ func startPlainEnv(t *testing.T) client.Client {
 	t.Helper()
 
 	env := &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "config", "crd", "bases"),
+			filepath.Join("..", "..", "config", "crd", "testdata", "monitoring"),
+		},
 		ErrorIfCRDPathMissing: true,
 	}
 	if dir := getFirstFoundEnvTestBinaryDir(); dir != "" {

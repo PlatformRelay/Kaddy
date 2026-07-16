@@ -49,9 +49,9 @@ arrays, PUT inserts, PATCH replaces)
 **Given** `CaddySite` `observability.serviceMonitor: true`  
 **When** reconcile succeeds  
 **Then** ServiceMonitor exists with labels matching ADR-0301 mandatory core  
-**Test:** `tests/chainsaw/operator/caddysite-servicemonitor.yaml`
+**Test:** `operator/internal/controller/e9-s03-01_test.go`
 
-**Verify:** Chainsaw `tests/chainsaw/operator/caddysite-servicemonitor.yaml` OR envtest
+**Verify:** envtest `TestCaddySite_ServiceMonitorCreated` (Chainsaw optional when cluster available)
 
 ---
 
@@ -61,9 +61,9 @@ arrays, PUT inserts, PATCH replaces)
 **Given** `observability.prometheusRules: true`  
 **When** reconcile succeeds  
 **Then** PrometheusRule includes alert `HighHTTPErrorRate` with `service` label from site  
-**Test:** `tests/smoke/e9-s03-02.sh`
+**Test:** `operator/internal/controller/e9-s03-02_test.go`
 
-**Verify:** `kubectl get prometheusrule -l app.kubernetes.io/part-of=kaddy`
+**Verify:** envtest `TestCaddySite_PrometheusRuleHighHTTPErrorRate`
 
 ---
 

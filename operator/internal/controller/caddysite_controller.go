@@ -63,11 +63,13 @@ type CaddySiteReconciler struct {
 }
 
 // Least-privilege: reads CaddySites (update only for the drain finalizer,
-// never create/delete), writes status, resolves caddyRef read-only.
+// never create/delete), writes status, resolves caddyRef read-only, and
+// owns the per-site observability CRs when toggled.
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites/finalizers,verbs=update
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=servicemonitors;prometheusrules,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile renders the site's route (tagged with a stable `@id`) and
 // upserts it idempotently through the Caddy admin API (REQ-E9-S02-02):
@@ -128,13 +130,17 @@ func (r *CaddySiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err := admin.UpsertRoute(ctx, r.routesPath(), renderRoute(site)); err != nil {
 		if errors.Is(err, caddyadmin.ErrUnavailable) {
 			log.Info("caddy admin API unavailable", "caddysite", req.NamespacedName, "error", err.Error())
-			if serr := r.setReady(ctx, site, metav1.ConditionFalse, "AdminAPIUnavailable",
+			if serr := r.setReady(ctx, site, metav1.ConditionFalse, reasonAdminAPIUnavailable,
 				"Caddy admin API is unavailable"); serr != nil {
 				return ctrl.Result{}, serr
 			}
 			return ctrl.Result{RequeueAfter: transientRequeue}, nil
 		}
 		return ctrl.Result{}, fmt.Errorf("upsert route for CaddySite %s: %w", req.NamespacedName, err)
+	}
+
+	if err := r.ensureObservability(ctx, site); err != nil {
+		return ctrl.Result{}, fmt.Errorf("ensure observability for CaddySite %s: %w", req.NamespacedName, err)
 	}
 
 	if err := r.setReady(ctx, site, metav1.ConditionTrue, "Configured",

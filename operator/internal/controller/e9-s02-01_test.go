@@ -98,8 +98,8 @@ func TestCaddy_Reconcile_Ready(t *testing.T) {
 		t.Fatalf("get Caddy: %v", err)
 	}
 	cond := meta.FindStatusCondition(fetched.Status.Conditions, "Ready")
-	if cond == nil || cond.Status != metav1.ConditionFalse || cond.Reason != "AdminAPIUnavailable" {
-		t.Fatalf("want Ready=False reason AdminAPIUnavailable, got %+v", cond)
+	if cond == nil || cond.Status != metav1.ConditionFalse || cond.Reason != reasonAdminAPIUnavailable {
+		t.Fatalf("want Ready=False reason %s, got %+v", reasonAdminAPIUnavailable, cond)
 	}
 
 	// And back: recovery is observed without manual intervention.

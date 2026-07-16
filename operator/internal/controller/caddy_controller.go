@@ -80,7 +80,7 @@ func (r *CaddyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		// instead of erroring the workqueue.
 		log.Info("caddy admin API unavailable", "caddy", req.NamespacedName, "error", err.Error())
 		cond.Status = metav1.ConditionFalse
-		cond.Reason = "AdminAPIUnavailable"
+		cond.Reason = reasonAdminAPIUnavailable
 		cond.Message = "Caddy admin API is unavailable"
 		result.RequeueAfter = transientRequeue
 	}

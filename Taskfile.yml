@@ -255,6 +255,12 @@ tasks:
         fi
         hack/scorecard/validate.sh
 
+  test:operator:
+    desc: E9 — operator envtest suite (REQ-E9-EXIT)
+    dir: operator
+    cmds:
+      - make test
+
   test:
     desc: Run all available test levels (L0→L2; L3/L4 when implemented)
     cmds:
@@ -265,6 +271,12 @@ tasks:
           task test:promrules
         else
           echo "skip promrules (no promtool)"
+        fi
+      - |
+        if [ -d operator ] && command -v go >/dev/null 2>&1; then
+          task test:operator
+        else
+          echo "skip operator envtest (no operator/ or go)"
         fi
       - |
         if command -v chainsaw >/dev/null 2>&1 && command -v kubectl >/dev/null 2>&1; then
