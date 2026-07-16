@@ -132,16 +132,16 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E1c · Security baseline
+## E1c · Security baseline 🚧 (Kyverno Enforce + netpol + AppProjects live; Trivy/cosign/KSOPS pending)
 
 **OpenSpec:** [e1c-security-baseline](../openspec/changes/e1c-security-baseline/)  
 **ADR:** [0106](adr/0106-security-baseline.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1c-S01 | Default-deny NetworkPolicy template per namespace | ⬜ |
+| E1c-S01 | Default-deny NetworkPolicy template per namespace | ✅ (gateway/monitoring/argocd live) |
 | E1c-S02 | Trivy scan job in CI | ⬜ |
-| E1c-S03 | cosign sign + Kyverno verifyImages | ⬜ |
+| E1c-S03 | cosign sign + Kyverno verifyImages | 🚧 (policy live in Audit; keyless signing in progress) |
 | E1c-S04 | External Secrets pattern for gridscale creds | ⬜ |
 | E1c-S05 | SOPS + age + KSOPS plugin for `deploy/secrets/` ([ADR-0110](adr/0110-secrets-sops-age.md)) | ⬜ |
 
@@ -215,7 +215,7 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E5 · Monitoring & alerting (marshal) 🚧 (rules + monitors landed; receiver/Grafana/Loki pending)
+## E5 · Monitoring & alerting (marshal) ✅ (fire-leg live: probe→alert→Alertmanager; receiver + Loki-ruler deferred)
 
 **OpenSpec:** [e5-monitoring-marshal](../openspec/changes/e5-monitoring-marshal/)
 
@@ -224,10 +224,10 @@ provides Cilium Gateway + default StorageClass
 | E5-S01 | Scrape platform gateway + clubhouse app metrics (PodMonitor/ServiceMonitor) | ✅ |
 | E5-S02 | blackbox_exporter probes (uptime, status codes) | ✅ |
 | E5-S03 | PrometheusRules: down, error rate, latency, request rate | ✅ |
-| E5-S04 | Alertmanager receiver (ntfy/webhook) | ⬜ |
-| E5-S05 | Grafana dashboards-as-code (+ Loki logs panel) | ⬜ |
+| E5-S04 | Alertmanager receiver (ntfy/webhook) | 🚧 (routing proven to null receiver; external webhook deferred) |
+| E5-S05 | Grafana dashboards-as-code (+ Loki logs panel) | ✅ (kaddy-marshal, 12 panels, sidecar-provisioned) |
 | E5-S06 | **promtool unit tests** for every alert rule (L1, CI) | ✅ |
-| E5-S07 | **Loki log-based checks** — gateway/access logs, labels, 5xx alert ([ADR-0108](adr/0108-logging-loki.md)) | ⬜ |
+| E5-S07 | **Loki log-based checks** — gateway/access logs, labels, 5xx alert ([ADR-0108](adr/0108-logging-loki.md)) | 🚧 (logs+labels live; ruler alert deferred) |
 
 ---
 
@@ -284,17 +284,17 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ---
 
-## E7 · Progressive delivery (mulligan)
+## E7 · Progressive delivery (mulligan) ✅ (live weight shift + abort rollback; analysis scaffolded)
 
 **OpenSpec:** [e7-mulligan-rollouts](../openspec/changes/e7-mulligan-rollouts/)  
 **ADR:** [0201](adr/0201-rollouts-blue-green-canary.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E7-S01 | Blue/green Rollout + pre-promotion AnalysisTemplate | ⬜ |
-| E7-S02 | Canary Rollout + HTTPRoute weights | ⬜ |
-| E7-S03 | `task demo` choreography + asciinema recording | ⬜ |
-| E7-S04 | Chaos: kill pod + VM → alert + reconcile | ⬜ |
+| E7-S01 | Blue/green Rollout + pre-promotion AnalysisTemplate | ✅ (analysis scaffolded, not gating) |
+| E7-S02 | Canary Rollout + HTTPRoute weights | ✅ (live 100/0→20→50→100 + abort→0) |
+| E7-S03 | `task demo` choreography + asciinema recording | ✅ (recording hook documented) |
+| E7-S04 | Chaos: kill pod + VM → alert + reconcile | 🚧 (abort auto-rollback done; VM chaos → gridscale epics) |
 
 ---
 

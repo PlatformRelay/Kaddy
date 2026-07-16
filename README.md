@@ -70,14 +70,18 @@ task test           # L0 tofu test · L1 conftest + promtool · L2 Chainsaw
 
 ## Status
 
-**Brief spine complete and demoable.** The E1e → E1 → E3 → E4 sequence is verified live: 9/9 GitOps
-apps Synced/Healthy, clubhouse served over verified HTTPS through the Cilium Gateway, observability
-spine (Prometheus/Alertmanager/Grafana + Loki/Alloy) running via GitOps. The gateway spike (E2),
-labels module (E1b), marshal monitoring rules (E5), and Slidev showcase deck (E12) are also on `main`.
-A data-flow security review is at
+**Brief answered end-to-end — serve → scrape → fire, plus progressive delivery and an enforcing
+security baseline, all GitOps.** Verified live: 14/14 GitOps apps Synced/Healthy; clubhouse served
+over verified HTTPS through the Cilium Gateway (E4); observability spine
+(Prometheus/Alertmanager/Grafana + Loki/Alloy, E3); the marshal fires a real alert against the
+served site and resolves it — `task demo:fire` (E5) — with a provisioned Grafana dashboard and
+data-source-managed alerts; Argo Rollouts shifts live HTTPRoute canary weights and auto-rolls-back
+on abort (E7); Kyverno admission (5 Enforce policies), default-deny NetworkPolicies, and restricted
+ArgoCD AppProjects are live (E1c). The gateway spike (E2), labels module (E1b), and recording-ready
+Slidev showcase deck (E12) are also on `main`. A data-flow security review is at
 [docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md). Next:
-close the alert "fire" leg (E5 completion) and progressive delivery (E7). Phase 2 (gridscale GSK)
-is deferred. Full plan: [ROADMAP](docs/ROADMAP.md).
+E6 Crossplane `Website` XRD (claim → monitored site) and E1d identity. Phase 2 (gridscale GSK) is
+deferred. Full plan: [ROADMAP](docs/ROADMAP.md).
 
 ## Reference material
 
