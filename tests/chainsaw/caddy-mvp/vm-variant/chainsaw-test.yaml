@@ -1,0 +1,30 @@
+# REQ-CADDY-S01-02 — VM variant: Caddy on a gridscale VM (minimal), nginx parallel.
+#
+# BLOCKED on phase-2 E6g (Upjet provider-gridscale `gridscale_server`) + E1g
+# (gridscale day-0 / credentials). No VM is provisioned in phase 1, so this suite
+# is a `skip: true` stub (house convention — see the sibling edge-route stub and
+# the S01 "BLOCKED — do not implement" banner in
+# openspec/changes/e-caddy-mvp/specs/caddy-mvp/spec.md). The stub exists so
+# STRICT_TEST_FILES=1 spec coverage resolves the REQ's `Test:` path; the S01 lane
+# flips `skip` off and asserts the live VM once E6g/E1g land.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-vm-variant
+  annotations:
+    kaddy.io/req: REQ-CADDY-S01-02
+    kaddy.io/status: skip-until-e6g-e1g
+spec:
+  description: >-
+    e-caddy-mvp — VM variant serves the tenant page and exposes an external
+    /metrics endpoint scraped by in-cluster Prometheus (skip until phase-2
+    E6g/E1g provision the gridscale VM)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp vm-variant — enable when a gridscale_server (E6g) boots the"
+              echo "engine and serves + exposes /metrics; then assert:"
+              echo "  curl -sf http://\${CADDY_VM_HOST}/metrics | grep -q 'caddy_'"
+              exit 0

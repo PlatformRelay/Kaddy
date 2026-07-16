@@ -1,0 +1,29 @@
+# REQ-CADDY-S05-01 — the showcase site serves the built Slidev deck at /slides/
+# and the built MkDocs Material docs at /docs/ (self-referential demo content),
+# through the platform edge (live).
+#
+# skip: true until the workloads app syncs on a live cluster and the built
+# content image is served through the edge (house convention — see the sibling
+# showcase/proxy-topology stub). The showcase image build itself is gated
+# offline by tests/deck/showcase-image-build.sh (REQ-CADDY-S05-02).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-showcase-content-served
+  annotations:
+    kaddy.io/req: REQ-CADDY-S05-01
+    kaddy.io/status: skip-until-live-tenant-sync
+spec:
+  description: >-
+    e-caddy-mvp S05-01 — deck at /slides/ and docs at /docs/ served through the
+    edge (skip until live sync serves the built showcase content)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp showcase content-served — enable when the built content serves live;"
+              echo "then assert deck + docs (not placeholder) through the edge:"
+              echo "  curl -sf http://127.0.0.1:30080/docs/   | grep -qi 'kaddy'"
+              echo "  curl -sf http://127.0.0.1:30080/slides/ | grep -qi 'kaddy'"
+              exit 0
