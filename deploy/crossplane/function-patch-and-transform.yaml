@@ -76,6 +76,10 @@ spec:
         spec:
           securityContext:
             runAsNonRoot: true
+            # The function image's USER is the non-numeric `nonroot` (distroless)
+            # — kubelet cannot verify runAsNonRoot without a numeric uid.
+            runAsUser: 65532
+            runAsGroup: 65532
             seccompProfile:
               type: RuntimeDefault
           containers:
