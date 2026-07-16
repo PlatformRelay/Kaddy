@@ -24,15 +24,24 @@
       manual-sync-only, project: default with TODO(cutover) → platform)
 - [x] Enforcement/cutover runbook: `deploy/policies/README.md`
 
-## Cluster-hardening follow-ups (NOT this lane)
+## Cluster-hardening cutover (DONE 2026-07-16 — this lane)
 
-- [ ] Install Kyverno v1.18.2 (pinned) + first human sync of the `policies`
-      app; flip Audit → Enforce per README order
-- [ ] Apply netpol baseline; Chainsaw: default-deny + unauthorized ingress
-      (REQ-E1c-S01-*) + gateway-to-app allow proof
-- [ ] AppProject cutover: apply `deploy/apps/projects/`, move Applications
-      off `project: default`; un-skip Chainsaw labeling suite (TEST-4)
-- [ ] Gate: `task test:chainsaw -- tests/chainsaw/security`
+- [x] Install Kyverno v1.18.2 (pinned, vendored `deploy/kyverno/` +
+      GitOps child app) + first human sync of the `policies` app; pod-security
+      trio flipped Audit → Enforce one-by-one with canary restarts
+      (verify-signed-images stays Audit honestly — placeholder cosign key)
+- [x] Apply netpol baseline; Chainsaw: default-deny + unauthorized ingress
+      (REQ-E1c-S01-*) + gateway-to-app allow proof — all three live-verified
+      (skip:true in CI: vanilla kind has no Cilium; run commands in each
+      file's annotations). Post-apply regression: e1/e4/e5/e7 smokes green
+- [x] AppProject cutover: `deploy/apps/projects/` live, every deploy/apps
+      Application off `project: default` (SEC-11); un-skipped Chainsaw
+      labeling suite (TEST-4) — passes live AND in CI on vanilla kind
+- [x] Grafana admin → Kubernetes Secret `monitoring/grafana-admin`
+      (SEC-12; random password via `task bootstrap:e1c`, never committed;
+      SOPS/KSOPS ownership follows with E1d)
+- [x] Gate: `tests/smoke/e1c-exit.sh` (`task test:smoke:e1c`) — engine
+      Ready, enforce matrix, deny-proof, netpols, projects, Grafana secret
 
 ## Other E1c stories (unstarted)
 

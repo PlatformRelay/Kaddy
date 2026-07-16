@@ -5,38 +5,55 @@ security review P1s: inert Kyverno labels policy (P2-1), missing
 default-deny NetworkPolicies (P1-1) and the unrestricted ArgoCD
 `project: default` blast radius (P1-2, see `deploy/apps/projects/`).
 
-## Honest status: what is enforced vs authored
+## Honest status: LIVE since the 2026-07-16 cluster cutover
 
 | Control | Where | Status |
 | --- | --- | --- |
 | ADR-0301 labels on TF plans | `policy/labels.rego` (conftest, CI L1) | **Enforced** in CI (`task test:policy`) |
-| Kyverno ClusterPolicies | `kyverno/` | **Authored, NOT applied** — Kyverno is not installed; no sync has run |
-| Default-deny NetworkPolicies | `network/` | **Authored, NOT applied** — cluster apply belongs to the cluster-hardening lane |
-| Restricted AppProjects | `deploy/apps/projects/` | **Authored, NOT wired** — root syncs `deploy/apps/` with recurse OFF |
-| Offline policy tests | `tests/kyverno/` | **Enforced locally/CI** via `kyverno test tests/kyverno/` |
+| Kyverno engine v1.18.2 | `deploy/kyverno/` + `deploy/apps/kyverno.yaml` | **Installed, GitOps-managed** (vendored + pinned) |
+| Kyverno ClusterPolicies | `kyverno/` | **LIVE** — see the enforcement matrix below |
+| Default-deny NetworkPolicies | `network/` | **LIVE** in gateway/monitoring/argocd; all E1/E4/E5/E7 smokes green post-apply |
+| Restricted AppProjects | `deploy/apps/projects/` | **LIVE** — every `deploy/apps` child is off `project: default` (SEC-11) |
+| Offline policy tests | `tests/kyverno/` | **Enforced** locally/CI via `kyverno test tests/kyverno/` (28 cases) |
+| Live admission/netpol tests | `tests/chainsaw/{labeling,security}/` | labeling un-skipped (CI + live); security suites live-verified, CI-skipped (no Cilium) |
 
-Nothing in this directory mutates the cluster by being merged: the
-`policies` Application (`deploy/apps/policies.yaml`) is registered by the
-root app but has a **manual-only syncPolicy** — a human runs the first sync.
+The `policies` Application (`deploy/apps/policies.yaml`) **stays
+manual-sync by design**: admission + network controls are high blast
+radius, so a human syncs every policy change deliberately
+(`argocd app sync policies --core`). The Kyverno ENGINE app is automated —
+installing the engine enforces nothing by itself.
 
-## Kyverno policies (`kyverno/`)
+## Enforcement matrix (`kyverno/`) — live, verified 2026-07-16
 
-| Policy | Action | Purpose |
+| Policy | Action | Why |
 | --- | --- | --- |
-| `require-kaddy-labels` | Enforce | Mandatory ADR-0301 bare-key label set on Pods (REQ-E1b-S05-01) |
-| `restrict-data-classification` | Enforce | `data-classification` value must be in the ADR-0301 closed vocabulary (REQ-E1b-S05-02) |
-| `disallow-privileged-containers` | Audit | Pod-security baseline (ADR-0106) |
-| `require-run-as-nonroot` | Audit | Pod-security baseline; clubhouse is the reference (ADR-0106) |
-| `disallow-latest-tag` | Audit | No floating/missing image tags (ADR-0106 / SEC-4) |
-| `verify-signed-images` | Audit | REQ-E1c-S03-02 — **placeholder cosign key**, scoped to `ghcr.io/platformrelay/*` only; replace the key when release signing lands |
+| `require-kaddy-labels` | **Enforce** | Mandatory ADR-0301 bare-key label set on Pods (REQ-E1b-S05-01); proven by the labeling Chainsaw suite + `tests/smoke/e1c-exit.sh` |
+| `restrict-data-classification` | **Enforce** | ADR-0301 closed vocabulary (REQ-E1b-S05-02) |
+| `disallow-privileged-containers` | **Enforce** | Flipped from Audit after a clean PolicyReport (zero violations) + admitted canary restart |
+| `disallow-latest-tag` | **Enforce** | Flipped from Audit after a clean PolicyReport (all images pin exact tags) |
+| `require-run-as-nonroot` | **Enforce** | Flipped from Audit; two violator classes excluded narrowly (below) instead of blanket-excluding namespaces |
+| `verify-signed-images` | **Audit** (honest) | PLACEHOLDER cosign key, scoped to `ghcr.io/platformrelay/*`; no release signing exists yet (SEC-8), so Enforce would be theater. `mutateDigest: false` (Kyverno requires it for Audit verifyImages). Chainsaw case `security/unsigned-image-denied.yaml` stays skipped until cosign lands |
 
-Both Enforce policies exclude infra namespaces (`kube-*`,
-`local-path-storage`, `kyverno`, `cert-manager`, `argocd`, `monitoring`):
-chart-/upstream-managed pods do not carry the bare kaddy keys, and without
-the exclusion an in-cluster Enforce would deny every system pod restart.
-The Audit policies exclude only `kube-*` + `local-path-storage`, so the
-observability stack's chart defaults (security review P2-2) show up in the
-Audit report before any Enforce flip.
+### Documented excludes (narrow, never blanket)
+
+Both Enforce **governance** policies (labels, data-classification) exclude:
+
+- infra namespaces `kube-*`, `local-path-storage`, `kyverno`,
+  `cert-manager`, `argocd`, `monitoring` — chart-/upstream-managed pods do
+  not carry the bare kaddy keys (as authored offline);
+- `argo-rollouts` — the vendored upstream controller
+  (`deploy/rollouts/install.yaml`), same class as `argocd`;
+- `e1e-smoke` — ephemeral E1e smoke fixtures, recreated by every
+  `task test:smoke:e1e` run (hygiene follow-up: review P2-5);
+- Pods `clubhouse-redir-*` / `clubhouse-smoke-*` in `gateway` only — the
+  transient E4 smoke curl pods (name+namespace-scoped; a rogue unlabeled
+  pod in `gateway` is still denied — fixture-proven).
+
+`require-run-as-nonroot` additionally excludes (name+namespace-scoped):
+
+- `monitoring/alloy*` — the Alloy DaemonSet tails host logs from
+  `/var/log` and functionally requires root (upstream default; P2-2);
+- `e1e-smoke` — `hashicorp/http-echo` runs as root.
 
 ### Testing offline (D-024)
 
@@ -44,56 +61,70 @@ Audit report before any Enforce flip.
 kyverno test tests/kyverno/
 ```
 
-CLI pinned to **v1.18.2** (matches the CI install): `brew install kyverno`
-or `go install github.com/kyverno/kyverno/cmd/cli/kubectl-kyverno@v1.18.2`.
-Every policy has pass + fail fixtures except `verify-signed-images`:
-`kyverno test` cannot evaluate verifyImages rules offline (signature
-lookup needs registry access). Its in-cluster test is the Chainsaw case
-`tests/chainsaw/security/unsigned-image-denied.yaml` (skip until cosign).
+CLI pinned to **v1.18.2** (matches the engine + CI): 28 cases including
+skip-proofs for every exclude above plus rogue-pod fail cases proving the
+excludes are name-scoped, not namespace-wide. `kyverno test` cannot
+evaluate verifyImages rules offline (registry access) — that policy's
+in-cluster test is the (skipped) Chainsaw case.
 
-## NetworkPolicies (`network/`)
+## NetworkPolicies (`network/`) — LIVE
 
-Default-deny baseline (SEC-6 / REQ-E1c-S01-*) for the three namespaces that
-exist today, plus the explicit allows that keep the live paths working:
+Default-deny baseline (SEC-6 / REQ-E1c-S01-*) plus the explicit allows that
+keep the live paths working:
 
 | Namespace | Deny | Allows |
 | --- | --- | --- |
-| `gateway` | ingress + egress | Cilium Gateway (Envoy) → clubhouse `:8080` (CNP, `ingress` entity); Prometheus (monitoring) → `:8080`; DNS egress → kube-system `:53` |
+| `gateway` | ingress + egress | Cilium Gateway (Envoy) → clubhouse `:8080` (CNP, `ingress` entity); Prometheus (monitoring) → `:8080`; DNS egress → kube-system `:53`; smoke-probe pods (`run` label) → edge + clubhouse hairpin (CNP, below) |
 | `monitoring` | ingress | intra-namespace mesh (Grafana→Prometheus/Loki, Alloy→Loki, Prometheus→Alertmanager); kube-apiserver → operator webhook `:10250` (CNP); egress open (cluster-wide scrapes) |
 | `argocd` | ingress | upstream per-component policies remain the allow-list (argocd-server's allow-all keeps the Gateway path working); Prometheus → metrics ports; egress open (Git/Helm pulls) |
 
 **CNI dependency:** enforcement requires Cilium (present on kind, ADR-0104).
-The two `CiliumNetworkPolicy` objects are Cilium-specific by necessity —
+The `CiliumNetworkPolicy` objects are Cilium-specific by necessity —
 Gateway/webhook traffic carries reserved identities (`ingress`,
 `kube-apiserver`) that plain NetworkPolicy peers cannot select.
 
-**The cluster apply happens in the follow-up cluster-hardening lane**, with
-the Chainsaw suite `tests/chainsaw/security/` (REQ-E1c-S01-01..03) proving
-deny + allow behaviour live.
+**Gateway hairpin gotcha (found live, keep in mind for new clients):**
+Cilium preserves the ORIGINAL client identity through the Gateway proxy and
+re-evaluates the client's egress policy against the BACKEND pod identity
+inside Envoy. A client whose egress is restricted therefore needs BOTH
+`toEntities: [ingress]` (reach the listener) and an allow to the backend
+pods (the proxied hop), or Envoy answers `403 Access denied`. Clients with
+unrestricted egress (blackbox prober, external/host traffic) are
+unaffected. See `network/gateway.yaml` (`allow-probe-egress-to-edge`).
 
-## Cutover plan (cluster-hardening lane, in order)
+Live proof: Chainsaw `tests/chainsaw/security/` (deny branch + allow
+branch, run per the annotations in each file) and the full
+`task test:smoke:e5` / `e4` / `e1` / `e7` bundles green post-apply.
 
-1. **Install Kyverno v1.18.2** (pinned — same version as the CLI/CI) so the
-   ClusterPolicy CRD exists.
-2. **Human-sync the `policies` Application** (it is manual-only). Enforce
-   applies to kaddy workload namespaces; the pod-security trio starts in
-   Audit.
-3. **Review the Audit report** (PolicyReports), fix violators (P2-2
-   observability securityContexts), then **flip the Audit policies to
-   Enforce** one by one.
-4. **Apply the NetworkPolicy baseline** (same sync), then run the Chainsaw
-   security suite to prove Gateway/scrape/DNS paths and the deny branch.
-5. **AppProject cutover:** apply `deploy/apps/projects/`, move each
-   Application off `project: default` (`policies` → `platform`, etc.), then
-   un-skip the Chainsaw labeling suite (TEST-4).
+## Cutover log (performed 2026-07-16, this order)
+
+1. Kyverno v1.18.2 installed GitOps-managed (`deploy/apps/kyverno.yaml`).
+2. First human sync of the `policies` app (ClusterPolicies + netpols).
+   Found live: verifyImages Audit requires `mutateDigest: false` (the
+   policy webhook rejects it otherwise — invisible to offline tests).
+3. Immediate regression: e4/e5/e1/e7 smoke bundles → two fixes:
+   smoke-probe admission excludes + the hairpin CNP leg (above).
+4. PolicyReports reviewed → Audit trio flipped to Enforce one by one with
+   canary pod restarts between flips (see matrix).
+5. AppProject cutover (`deploy/apps/projects/` + every child re-projected,
+   root recurses `deploy/apps/`).
+6. Grafana admin → `monitoring/grafana-admin` Secret (SEC-12,
+   `task bootstrap:e1c`; SOPS/KSOPS ownership lands with E1d).
 
 ## Follow-ups owned by other lanes (NOT this directory)
 
-- Kyverno install + sync + Enforce flips + netpol apply (cluster lane, list
-  above).
-- Chainsaw suites: `tests/chainsaw/security/` (REQ-E1c-S01-*, S03-02) and
-  un-skipping `tests/chainsaw/labeling/` (TEST-4).
 - Trivy CI gate (REQ-E1c-S02-*), digest pinning + `hack/verify-image-digests.sh`
   (REQ-E1c-S03-01), cosign release signing + real key for
-  `verify-signed-images` (SEC-8).
-- ExternalSecrets/KSOPS items (REQ-E1c-S04-*, S05-02) — identity epic.
+  `verify-signed-images` (SEC-8) → then flip it Enforce + un-skip its
+  Chainsaw case.
+- Helm grandchildren (`kube-prometheus-stack`, `loki`, `alloy`,
+  `blackbox-exporter`) still declare `project: default` in
+  `deploy/observability/` + `deploy/monitoring/blackbox/` — flip them to
+  the `observability` project (they were outside the cutover lane's file
+  boundary).
+- Observability securityContext hardening (review P2-2) — would let the
+  `alloy*` exclude shrink if Alloy ever drops root.
+- ExternalSecrets/KSOPS items (REQ-E1c-S04-*, S05-02) — identity epic
+  (includes SOPS ownership of `grafana-admin`).
+- e1e-smoke namespace teardown (review P2-5) — would let the `e1e-smoke`
+  excludes disappear.
