@@ -76,3 +76,18 @@ jobs:
       # without a live cluster. Meta smoke: tests/meta/e8-scorecard-ci-wired.yaml
       - name: task test:scorecard (E8 L4 offline scorecard)
         run: task test:scorecard
+
+  # TEST-1 (ADVISORY, NOT blocking — operator: "having a gate is difficult at
+  # this point"): STRICT_TEST_FILES=1 additionally requires every spec `Test:`
+  # artifact path to exist on disk. continue-on-error keeps this job
+  # informational — it reports red in the checks list but never blocks a merge.
+  # Do NOT make this a required check until the Test: artifacts stabilize;
+  # epic EXITs still run it blocking locally (task test:spec).
+  # Meta guard: tests/meta/ws3-test1-strict-advisory.yaml
+  spec-coverage-strict:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: STRICT_TEST_FILES=1 spec coverage (advisory, non-blocking)
+        run: STRICT_TEST_FILES=1 bash hack/verify-spec-coverage.sh

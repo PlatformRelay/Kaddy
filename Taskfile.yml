@@ -65,7 +65,14 @@ tasks:
       - task: test:fmt
       - task: test:unit
       - task: test:image-digests
+      - task: test:meta:ci
       - task: docs:tf:check
+
+  test:meta:ci:
+    desc: WS3 — offline CI-wiring guards (TEST-1 advisory job wired non-blocking, SEC-5 SHA-pinned actions)
+    cmds:
+      - bash tests/meta/ws3-test1-strict-advisory.yaml
+      - bash tests/meta/ws3-sha-pinned-actions.yaml
 
   test:image-digests:
     desc: E1c — fail on :latest in first-party deploy/ image refs (REQ-E1c-S03-01)
