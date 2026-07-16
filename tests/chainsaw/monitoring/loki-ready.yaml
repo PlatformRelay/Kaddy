@@ -20,9 +20,10 @@ spec:
                 labels:
                   app.kubernetes.io/name: loki
               status:
-                conditions:
-                  - type: Ready
-                    status: "True"
+                # jmespath filter (not a bare conditions array): chainsaw
+                # asserts arrays length-strictly, and this object carries more
+                # conditions than the one asserted. Same idiom as root-path-200.
+                (conditions[?type=='Ready'].status | [0]): "True"
       catch:
         - describe:
             apiVersion: v1
