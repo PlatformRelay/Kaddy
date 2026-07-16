@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -119,6 +120,21 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 	if fetched.Status.ObservedGeneration != fetched.Generation {
 		t.Fatalf("observedGeneration: want %d, got %d",
 			fetched.Generation, fetched.Status.ObservedGeneration)
+	}
+
+	// Graceful drain: deleting the site removes the route from the
+	// dataplane and releases the finalizer.
+	if err := c.Delete(tctx, fetched); err != nil {
+		t.Fatalf("delete CaddySite: %v", err)
+	}
+	if _, err := r.Reconcile(tctx, req); err != nil {
+		t.Fatalf("reconcile deletion: %v", err)
+	}
+	if got := admin.RouteCount(); got != 0 {
+		t.Fatalf("route must be drained on deletion, %d left", got)
+	}
+	if err := c.Get(tctx, key, fetched); !apierrors.IsNotFound(err) {
+		t.Fatalf("CaddySite should be gone after finalizer release, got %v", err)
 	}
 }
 

@@ -22,8 +22,15 @@ limitations under the License.
 package caddyadmin
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 // ErrUnavailable marks transient admin API failures (connection refused,
@@ -31,11 +38,12 @@ import (
 // reason AdminAPIUnavailable in status.
 var ErrUnavailable = errors.New("caddy admin API unavailable")
 
-// ErrNotImplemented is the TDD stub error; it disappears with the implementation.
-var ErrNotImplemented = errors.New("caddyadmin: not implemented")
+// defaultTimeout bounds every admin API call even when the caller's
+// context carries no deadline.
+const defaultTimeout = 10 * time.Second
 
 // Route is a Caddy HTTP route addressed by its `@id` tag.
-// Body is the full route object; the client injects the `@id`.
+// Body is the route object (match/handle); the client injects the `@id`.
 type Route struct {
 	// ID is the stable `@id` under which the route is upserted.
 	ID string
@@ -46,26 +54,114 @@ type Route struct {
 // Client drives one Caddy admin API endpoint.
 type Client struct {
 	base string
+	http *http.Client
 }
 
 // New returns a client for the admin API at base, e.g. "http://10.0.0.1:2019".
 func New(base string) *Client {
-	return &Client{base: base}
+	return &Client{
+		base: strings.TrimRight(base, "/"),
+		http: &http.Client{Timeout: defaultTimeout},
+	}
 }
 
 // Ping verifies the admin API is reachable (GET /config/).
 func (c *Client) Ping(ctx context.Context) error {
-	return ErrNotImplemented
+	status, err := c.do(ctx, http.MethodGet, "/config/", nil)
+	if err != nil {
+		return fmt.Errorf("ping admin API: %w", err)
+	}
+	if status != http.StatusOK {
+		return fmt.Errorf("ping admin API: unexpected status %d", status)
+	}
+	return nil
 }
 
 // UpsertRoute idempotently installs the route: PUT /id/<id> when the id
 // already exists, otherwise a single POST to routesPath (e.g.
 // "/config/apps/http/servers/srv0/routes").
 func (c *Client) UpsertRoute(ctx context.Context, routesPath string, route Route) error {
-	return ErrNotImplemented
+	if route.ID == "" {
+		return errors.New("upsert route: empty @id")
+	}
+
+	body := make(map[string]any, len(route.Body)+1)
+	for k, v := range route.Body {
+		body[k] = v
+	}
+	body["@id"] = route.ID
+
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("upsert route %q: encode: %w", route.ID, err)
+	}
+
+	status, err := c.do(ctx, http.MethodPut, "/id/"+route.ID, payload)
+	if err != nil {
+		return fmt.Errorf("upsert route %q: %w", route.ID, err)
+	}
+	switch {
+	case status >= 200 && status < 300:
+		return nil // replaced in place
+	case status == http.StatusNotFound:
+		// Route does not exist yet — create it exactly once.
+	default:
+		return fmt.Errorf("upsert route %q: PUT /id/%s: unexpected status %d", route.ID, route.ID, status)
+	}
+
+	status, err = c.do(ctx, http.MethodPost, routesPath, payload)
+	if err != nil {
+		return fmt.Errorf("create route %q: %w", route.ID, err)
+	}
+	if status < 200 || status >= 300 {
+		return fmt.Errorf("create route %q: POST %s: unexpected status %d", route.ID, routesPath, status)
+	}
+	return nil
 }
 
 // DeleteRoute removes the route with the given id; an unknown id is a no-op.
 func (c *Client) DeleteRoute(ctx context.Context, id string) error {
-	return ErrNotImplemented
+	if id == "" {
+		return errors.New("delete route: empty @id")
+	}
+	status, err := c.do(ctx, http.MethodDelete, "/id/"+id, nil)
+	if err != nil {
+		return fmt.Errorf("delete route %q: %w", id, err)
+	}
+	if status == http.StatusNotFound || (status >= 200 && status < 300) {
+		return nil // already gone counts as deleted
+	}
+	return fmt.Errorf("delete route %q: unexpected status %d", id, status)
+}
+
+// do performs one admin API call and returns the HTTP status. Transport
+// errors and 5xx answers are reported as ErrUnavailable (transient).
+func (c *Client) do(ctx context.Context, method, path string, payload []byte) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	var body io.Reader
+	if payload != nil {
+		body = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, c.base+path, body)
+	if err != nil {
+		return 0, fmt.Errorf("build %s %s: %w", method, path, err)
+	}
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("%s %s: %w: %w", method, path, ErrUnavailable, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	// Drain so the connection can be reused; the admin API bodies are tiny.
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+
+	if resp.StatusCode >= 500 {
+		return resp.StatusCode, fmt.Errorf("%s %s: status %d: %w", method, path, resp.StatusCode, ErrUnavailable)
+	}
+	return resp.StatusCode, nil
 }

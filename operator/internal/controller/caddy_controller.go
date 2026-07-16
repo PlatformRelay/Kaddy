@@ -18,14 +18,27 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	gatewayv1alpha1 "github.com/PlatformRelay/Kaddy/operator/api/v1alpha1"
+	"github.com/PlatformRelay/Kaddy/operator/internal/caddyadmin"
 )
+
+// conditionReady is the top-level readiness condition on Caddy and CaddySite.
+const conditionReady = "Ready"
+
+// transientRequeue is the backoff for AdminAPIUnavailable — level-based
+// retry without erroring (and hot-looping) the workqueue.
+const transientRequeue = 15 * time.Second
 
 // CaddyReconciler reconciles a Caddy object
 type CaddyReconciler struct {
@@ -41,21 +54,53 @@ type CaddyReconciler struct {
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Caddy object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.24.1/pkg/reconcile
+// Reconcile checks that the dataplane's admin API is reachable and mirrors
+// the outcome into the Ready condition (REQ-E9-S02-01). Deploying the
+// dataplane itself (Deployment/Service) is E9-S03 scope.
 func (r *CaddyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := logf.FromContext(ctx)
 
-	// TODO(user): your logic here
+	caddy := &gatewayv1alpha1.Caddy{}
+	if err := r.Get(ctx, req.NamespacedName, caddy); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
-	return ctrl.Result{}, nil
+	admin := caddyadmin.New(r.adminURL(caddy))
+
+	result := ctrl.Result{}
+	cond := metav1.Condition{
+		Type:               conditionReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             "AdminAPIReachable",
+		Message:            "Caddy admin API is reachable",
+		ObservedGeneration: caddy.Generation,
+	}
+	if err := admin.Ping(ctx); err != nil {
+		// Transient by taxonomy: degrade status and requeue with backoff
+		// instead of erroring the workqueue.
+		log.Info("caddy admin API unavailable", "caddy", req.NamespacedName, "error", err.Error())
+		cond.Status = metav1.ConditionFalse
+		cond.Reason = "AdminAPIUnavailable"
+		cond.Message = "Caddy admin API is unavailable"
+		result.RequeueAfter = transientRequeue
+	}
+
+	meta.SetStatusCondition(&caddy.Status.Conditions, cond)
+	caddy.Status.ObservedGeneration = caddy.Generation
+	if err := r.Status().Update(ctx, caddy); err != nil {
+		if apierrors.IsConflict(err) {
+			return ctrl.Result{RequeueAfter: time.Second}, nil // optimistic concurrency: retry
+		}
+		return ctrl.Result{}, fmt.Errorf("update Caddy %s status: %w", req.NamespacedName, err)
+	}
+	return result, nil
+}
+
+func (r *CaddyReconciler) adminURL(caddy *gatewayv1alpha1.Caddy) string {
+	if r.AdminURL != nil {
+		return r.AdminURL(caddy)
+	}
+	return DefaultAdminURL(caddy)
 }
 
 // SetupWithManager sets up the controller with the Manager.
