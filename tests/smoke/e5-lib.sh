@@ -33,12 +33,14 @@ e5_prom_up() { e5_port_forward kps-prometheus "${E5_PROM_PORT:-29090}" 9090; }
 e5_am_up()   { e5_port_forward kps-alertmanager "${E5_AM_PORT:-29093}" 9093; }
 e5_grafana_up() { e5_port_forward kube-prometheus-stack-grafana "${E5_GRAFANA_PORT:-23000}" 80; }
 
-# e5_grafana_creds — exports E5_GRAFANA_USER / E5_GRAFANA_PASS from the chart's
-# admin Secret (never hardcoded; rotating the Secret keeps the smoke green).
+# e5_grafana_creds — exports E5_GRAFANA_USER / E5_GRAFANA_PASS from the
+# grafana-admin Secret (SEC-12: random password created by `task
+# bootstrap:e1c`, referenced via grafana.admin.existingSecret — never
+# hardcoded; rotating the Secret keeps the smoke green).
 e5_grafana_creds() {
-  E5_GRAFANA_USER="$(kubectl -n "${E5_NS}" get secret kube-prometheus-stack-grafana \
+  E5_GRAFANA_USER="$(kubectl -n "${E5_NS}" get secret grafana-admin \
     -o jsonpath='{.data.admin-user}' | base64 -d)"
-  E5_GRAFANA_PASS="$(kubectl -n "${E5_NS}" get secret kube-prometheus-stack-grafana \
+  E5_GRAFANA_PASS="$(kubectl -n "${E5_NS}" get secret grafana-admin \
     -o jsonpath='{.data.admin-password}' | base64 -d)"
   export E5_GRAFANA_USER E5_GRAFANA_PASS
 }

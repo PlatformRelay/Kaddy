@@ -75,8 +75,15 @@ spec:
           enabled: true
           replicas: 1
           defaultDashboardsEnabled: true
-          # admin creds: chart default (admin/prom-operator) — lab only, no
-          # ingress exposure; a real env would source this from a Secret/KSOPS.
+          # admin creds (SEC-12 / review P1-3): sourced from the Kubernetes
+          # Secret monitoring/grafana-admin — created out-of-band with a
+          # random password by `task bootstrap:e1c`, never committed. SOPS/
+          # KSOPS ownership of this Secret lands with E1d (identity epic);
+          # the smoke helpers read it via the API (tests/smoke/e5-lib.sh).
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           resources:
             requests:
               cpu: 50m

@@ -400,6 +400,43 @@ tasks:
     cmds:
       - bash tests/smoke/e7-exit.sh
 
+  bootstrap:e1c:
+    desc: E1c — security-baseline cluster prerequisites (grafana-admin Secret; idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        # SAFETY: never mutate a non-kind context (mirrors bootstrap:e3).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        # SEC-12: Grafana admin credentials live in a Kubernetes Secret with a
+        # random password — never committed, never a chart default. The kps
+        # values reference it via grafana.admin.existingSecret. SOPS/KSOPS
+        # ownership of this Secret lands with E1d (identity epic).
+        if ! kubectl -n monitoring get secret grafana-admin >/dev/null 2>&1; then
+          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n monitoring create secret generic grafana-admin \
+            --from-literal=admin-user=admin \
+            --from-literal=admin-password="$(openssl rand -base64 24)"
+          echo "created monitoring/grafana-admin (random password)"
+        else
+          echo "monitoring/grafana-admin already present — left untouched"
+        fi
+        # The Kyverno ENGINE installs via GitOps (deploy/apps/kyverno.yaml,
+        # automated). The `policies` Application stays MANUAL by design —
+        # sync it deliberately per deploy/policies/README.md, e.g.:
+        #   argocd app sync policies --core
+        echo "E1c prerequisites done. Policies app is manual-sync by design (see deploy/policies/README.md)."
+
+  test:smoke:e1c:
+    desc: E1c — live smoke bundle (Kyverno enforce matrix, netpol baseline, AppProjects, Grafana secret)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash tests/smoke/e1c-exit.sh
+
   demo:
     desc: Choreographed mulligan demo (E7 — blue/green promote + canary live weight shift)
     env:
