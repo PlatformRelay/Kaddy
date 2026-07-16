@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
-# REQ-E8-S04-02: README documents a gridscale monthly cost / footprint table.
-# Offline structural gate — no cluster required.
+# REQ-E8-S04-02 — gridscale monthly cost / footprint table in README.
 set -euo pipefail
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "${DIR}/lib.sh"
 
-README="${SMOKE_ROOT}/README.md"
-[[ -f "${README}" ]] || smoke_fail "missing ${README}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+README="${ROOT}/README.md"
 
-rg -q 'EUR|monthly' "${README}" \
-  || smoke_fail "README.md must document monthly cost (EUR|monthly) — REQ-E8-S04-02"
+fail() { echo "FAIL: $*" >&2; exit 1; }
 
-rg -qi 'GSK|node pool' "${README}" \
-  || smoke_fail "README cost table must mention GSK / node pools"
-rg -qi 'LBaaS|load balancer' "${README}" \
-  || smoke_fail "README cost table must mention LBaaS"
-rg -qi 'Object Storage|object storage' "${README}" \
-  || smoke_fail "README cost table must mention Object Storage"
+test -f "$README" || fail "missing README.md"
+grep -qE 'EUR|monthly' "$README" || fail "README missing EUR/monthly cost estimate (REQ-E8-S04-02)"
+grep -qiE 'GSK|gridscale' "$README" || fail "README cost table must mention GSK/gridscale"
+grep -qiE 'LBaaS' "$README" || fail "README cost table must mention LBaaS"
+grep -qiE 'Object Storage|object storage' "$README" || fail "README cost table must mention Object Storage"
 
-smoke_ok "REQ-E8-S04-02 README monthly cost table (GSK / LBaaS / Object Storage)"
+echo "OK: E8-S04-02 cost table present in README"

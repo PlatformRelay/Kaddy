@@ -69,11 +69,14 @@ tasks:
       - task: docs:tf:check
 
   test:meta:ci:
-    desc: WS3/E12 — offline CI-wiring guards (TEST-1 advisory job wired non-blocking, SEC-5 SHA-pinned actions, E12 deck job wired)
+    desc: WS3/E12/E8 — offline CI-wiring + Getting Started docs guards
     cmds:
       - bash tests/meta/ws3-test1-strict-advisory.yaml
       - bash tests/meta/ws3-sha-pinned-actions.yaml
       - bash tests/meta/e12-deck-ci-wired.yaml
+      - bash tests/meta/e8-s04-getting-started.sh
+      - bash tests/smoke/e8-s04-02.sh
+      - bash tests/smoke/e8-s04-demo.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)

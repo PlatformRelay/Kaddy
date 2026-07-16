@@ -20,8 +20,21 @@ platform — `clubhouse` — not as a one-off VM script.
 
 ## Reviewer paths
 
-**5 minutes** — [docs/requirements/exercise-traceability.md](docs/requirements/exercise-traceability.md)
-maps every brief requirement to an epic, then skim [docs/ROADMAP.md](docs/ROADMAP.md).
+**5 minutes** (honest order — skip anything labeled unavailable):
+
+1. **Released demo / deck** — build the Slidev deck with `task deck:build` (sources in
+   [`slides/`](slides/); CI `deck` workflow). A published Pages URL for the deck is
+   **unavailable** until that publish path is enabled.
+2. **Scorecard** — intended URL
+   [`https://platformrelay.github.io/Kaddy/`](https://platformrelay.github.io/Kaddy/) —
+   **unavailable** / not yet published until GitHub Pages is enabled (workflow
+   [`.github/workflows/scorecard-pages.yaml`](.github/workflows/scorecard-pages.yaml) is on `main`).
+3. **Local services + demos** — follow
+   [docs/getting-started.md](docs/getting-started.md) (kind bring-up, service catalogue,
+   `task demo:fire` / `task demo` / `task demo:chaos`).
+4. **Architecture** — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and the
+   [exercise traceability](docs/requirements/exercise-traceability.md) matrix; skim
+   [docs/ROADMAP.md](docs/ROADMAP.md).
 
 **Deep dive** — [docs/adr/README.md](docs/adr/README.md) (architecture decisions) →
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) → [openspec/changes/](openspec/changes/) (specs with
@@ -100,3 +113,18 @@ The brief provisions a **gridscale** lab. **Phase 1** develops on a local **kind
 ($0, [E1e](openspec/changes/e1e-kind-local-cluster/)). **Phase 2** promotes to gridscale-native PaaS —
 GSK, LBaaS, Object Storage, Upjet Crossplane — for the employer-facing demo (E8b). Reasoning in
 [decisions D-013 / D-015 / D-016 / D-025](agent-context/decisions.md).
+
+### Phase 2 monthly cost estimate (EUR)
+
+Lab-sized footprint for the employer demo — **estimates** from public gridscale list pricing
+(control plane free; billed per minute). Re-check [gridscale pricing](https://gridscale.io/en/pricing/)
+before quoting. Phase 1 on kind is **€0 / month**.
+
+| Resource | Size (typical lab) | Est. EUR / month |
+| --- | --- | --- |
+| GSK node pool | 2× 2C-4G workers (~€46/node) | ~92 |
+| LBaaS | 1 load balancer | ~22.50 |
+| Object Storage | evidence / marketplace `.gz` (per GB) | ~0.06 / GB |
+| **Total (indicative, excl. storage GB)** | | **~115 EUR / month** |
+
+Exact SKUs live in the gridscale console when phase 2 starts.
