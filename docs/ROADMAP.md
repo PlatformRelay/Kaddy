@@ -308,7 +308,21 @@ the page + feeds the `caddy_*` marshal alerts.
 | E8-S01 | k6 load profile tripping threshold alert | ⬜ |
 | E8-S02 | Capture script → HTML report | ⬜ |
 | E8-S03 | GitHub Pages publish workflow | ⬜ |
-| E8-S04 | README 5-minute + deep paths; cost table | ⬜ |
+| E8-S04 | Getting Started: safe bring-up, service access, reviewer demo, recovery + cost | ⬜ |
+
+### E8-S04 — Getting Started and reviewer demo
+
+**Given** a reviewer has the documented local prerequisites but no running kaddy cluster
+**When** they follow `docs/getting-started.md`
+**Then** they can safely bring up `kind-kaddy-dev`, discover and open the documented platform
+surfaces, demonstrate Website self-service, alert fire/resolve, progressive delivery and rollback,
+and tear the environment down without relying on hidden operator knowledge
+
+**Edge cases:** occupied port-forward ports, interrupted demos, unavailable optional surfaces, and
+an ambient non-kind kubeconfig are handled explicitly; unpublished URLs are never presented as live.
+
+**Exit criteria:** REQ-E8-S04-01..06 green; the root README links the guide from its five-minute
+reviewer path.
 
 ---
 
