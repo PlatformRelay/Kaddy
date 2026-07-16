@@ -58,10 +58,12 @@ unquote() {
   printf '%s' "${v}"
 }
 
-# Tag is :latest (with optional digest suffix :latest@sha256:...).
+# Tag is :latest (case-insensitive; optional digest suffix :latest@sha256:...).
 has_latest_tag() {
-  local v="$1"
-  [[ "${v}" == *:latest || "${v}" == *:latest@* ]]
+  local v="$1" lower
+  # bash 3.2-safe lowercase (macOS /bin/bash)
+  lower="$(printf '%s' "${v}" | tr '[:upper:]' '[:lower:]')"
+  [[ "${lower}" == *:latest || "${lower}" == *:latest@* ]]
 }
 
 # Has an immutable digest pin.
@@ -111,8 +113,6 @@ if [[ ${#tag_only[@]} -gt 0 ]]; then
   echo "ADVISORY: tag-only (non-digest) first-party image refs — not failing yet:"
   printf '  %s\n' "${tag_only[@]}" | LC_ALL=C sort -u
   echo "(Hard @sha256: mandate deferred — board-narrowed E1c-S03-01.)"
-else
-  echo "OK: all first-party image refs include @sha256: digests"
 fi
 
 exit 0

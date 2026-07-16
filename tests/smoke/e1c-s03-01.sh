@@ -50,4 +50,13 @@ DEPLOY_ROOT="${tmp}" "${SCRIPT}" >/dev/null \
   || smoke_fail "vendored install.yaml :latest incorrectly failed the gate"
 smoke_ok "vendored install.yaml excluded from :latest fail"
 
+# 4) Case-insensitive :Latest must also fail (tag bypass).
+cat >"${tmp}/workloads/case.yaml" <<'EOF'
+          image: ghcr.io/platformrelay/kaddy-showcase:Latest
+EOF
+if DEPLOY_ROOT="${tmp}" "${SCRIPT}" >/dev/null 2>&1; then
+  smoke_fail "verify-image-digests.sh accepted capitalized :Latest tag"
+fi
+smoke_ok "gate fails on capitalized :Latest"
+
 smoke_ok "REQ-E1c-S03-01 digest/latest gate (narrowed)"
