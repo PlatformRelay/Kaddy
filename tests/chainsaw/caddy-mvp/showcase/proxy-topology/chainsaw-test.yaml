@@ -1,0 +1,29 @@
+# REQ-CADDY-S05-03 — Gateway → nginx-proxy → caddy-origin topology (live).
+#
+# Offline structural gate: tests/smoke/caddy-mvp-s05-03-offline.sh
+# skip: true until the workloads app syncs on a live cluster and /via-nginx
+# returns 200 through nginx-proxy-active.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-showcase-proxy-topology
+  annotations:
+    kaddy.io/req: REQ-CADDY-S05-03
+    kaddy.io/status: skip-until-live-tenant-sync
+spec:
+  description: >-
+    e-caddy-mvp S05-03 — Cilium Gateway (TLS) → nginx-proxy → caddy-origin
+    (skip until live sync proves /via-nginx through the showcase HTTPRoute)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              set -euo pipefail
+              kubectl -n caddy-mvp get httproute caddy-mvp-showcase
+              kubectl -n caddy-mvp get svc nginx-proxy-active
+              kubectl get rollouts.argoproj.io -n caddy-mvp nginx-proxy caddy-origin \
+                -o jsonpath='{.items[*].status.availableReplicas}' \
+                | grep -qE '1 1|[1-9] [1-9]'
+              echo "caddy-mvp showcase proxy-topology — enable when /via-nginx serves 200 live"
+              exit 0

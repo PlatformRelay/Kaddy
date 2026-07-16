@@ -4,10 +4,11 @@
 # caddy-origin canary (100/0 → 20 → 50 → 100). Committed values are the STABLE
 # steady state. `workloads` Application ignoreDifferences covers this route.
 #
-# Showcase nginx→Caddy hop: nginx-proxy blue/green Rollout + ConfigMap
-# proxy_pass (S05-03) run in parallel (mulligan-bg twin). Edge traffic for the
-# canary demo attaches origin Services here — same split as mulligan canary vs
-# mulligan-bg.
+# REQ-CADDY-S05-03 — dual attachment (mulligan vs mulligan-bg pattern):
+#   caddy-mvp          → origin-stable/canary (canary AnalysisTemplate story)
+#   caddy-mvp-showcase → nginx-proxy-active → ConfigMap proxy_pass → caddy-origin
+# PathPrefix /via-nginx keeps the showcase hop off the canary weight pair so the
+# Gateway API plugin never mutates the nginx backend.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -47,3 +48,40 @@ spec:
         - name: caddy-origin-canary
           port: 8080
           weight: 0
+---
+# REQ-CADDY-S05-03 — showcase topology hop: Gateway → nginx → Caddy origin.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: caddy-mvp-showcase
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp-showcase
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-CADDY-S05-03
+spec:
+  parentRefs:
+    - name: caddy-mvp
+      namespace: caddy-mvp
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https
+  hostnames:
+    - caddy-mvp.kaddy.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /via-nginx
+      backendRefs:
+        - name: nginx-proxy-active
+          port: 8080
