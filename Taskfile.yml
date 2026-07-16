@@ -190,6 +190,19 @@ tasks:
           echo "promtool not installed — see docs/development/testing.md (part of prometheus release)"
           exit 1
         fi
+        # TEST-10 hermeticity: marshal.test.yaml loads its rule_file from a /tmp
+        # projection of the PrometheusRule CR, produced by extract-rules.sh.
+        # Regenerate it every run so the gate can neither false-FAIL on a fresh
+        # machine (no projection) nor false-PASS on a STALE /tmp (outdated rules
+        # while the committed CR is broken). CI runs the same extract as its own
+        # step; doing it here makes `task test:promrules` self-contained.
+        # (The caddy-mvp suites are standalone — they load committed projections.)
+        if [ -x hack/monitoring/extract-rules.sh ]; then
+          hack/monitoring/extract-rules.sh
+        else
+          echo "hack/monitoring/extract-rules.sh missing or not executable — cannot project rules for promtool" >&2
+          exit 1
+        fi
         shopt -s nullglob
         found=0
         for t in tests/promtool/*.test.yaml; do
