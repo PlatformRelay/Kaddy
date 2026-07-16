@@ -97,3 +97,8 @@ See [ADR-0301](adr/0301-resource-labeling-convention.md).
 
 **Platform ingress is Cilium Gateway API** — not Caddy. Caddy satisfies the hiring brief as a **tenant**
 product scaffolded via Backstage (ADR-0104, D-019).
+
+**E8 scorecard evidence (honest status).** The landed gate is the **offline fixture path**:
+`task test:scorecard` (capture from `evidence/fixtures/` + schema validate). Live k6 / cluster
+capture is deferred. A GitHub Pages workflow exists (`.github/workflows/scorecard-pages.yaml`) and
+publishes fixture-built HTML. Details: [testing.md](development/testing.md) · [ADR-0202](adr/0202-evidence-as-artifact.md).
