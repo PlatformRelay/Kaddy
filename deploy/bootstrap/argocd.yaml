@@ -13,6 +13,18 @@
 # Reachability (macOS-safe): the Gateway surfaces as the selectorless LoadBalancer
 # service `cilium-gateway-argocd`; the bootstrap task pins its nodePort to 30443,
 # which kind maps to host 127.0.0.1:30443. Curl https://127.0.0.1:30443/ -k -> 200.
+#
+# E1d additions (REQ-E1d-S02-*, ADR-0107/0110):
+#   - a second SNI listener `https-dex` (dex.kaddy.local) on the SAME 443
+#     listener port shares the one loopback-mapped HTTPS entry with the
+#     argocd UI — Dex issuer and Argo CD ride 127.0.0.1:30443 together,
+#   - argocd-cm: OIDC against the standalone Dex + kustomize buildOptions
+#     that enable the KSOPS exec plugin on the repo-server,
+#   - argocd-rbac-cm: operator -> role:admin, default readonly.
+# The repo-server KSOPS plugin itself + the imperative age-key root secret
+# + the argocd-server hostAliases (dex.kaddy.local -> node) are applied by
+# `task bootstrap:e1d` (see Taskfile.yml and
+# deploy/bootstrap/argocd-repo-server-ksops-patch.yaml).
 ---
 apiVersion: v1
 kind: Namespace
@@ -51,7 +63,29 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
 ---
+# E1d: serving certificate for the Dex SNI listener (same local CA). A
+# Gateway may only reference certificateRefs in its own namespace, so this
+# Certificate lives here (argocd), not in identity.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dex-server-tls
+  namespace: argocd
+spec:
+  secretName: dex-server-tls
+  dnsNames:
+    - dex.kaddy.local
+  issuerRef:
+    name: kaddy-local-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
 # Cilium Gateway on the HTTPS listener, terminating the local-CA cert.
+#
+# Two SNI-distinguished listeners share port 443 (the single loopback-mapped
+# HTTPS port 30443): the hostname-less catch-all for the argocd UI/API and
+# `https-dex` for the Dex issuer (dex.kaddy.local). Gateway API requires
+# distinct hostnames per port — nil vs dex.kaddy.local qualifies.
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -71,8 +105,27 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    # E1d (REQ-E1d-S01-02): Dex issuer listener. Only the identity namespace
+    # may attach routes here (name-pinned selector, mirrors the E4 pattern).
+    - name: https-dex
+      protocol: HTTPS
+      port: 443
+      hostname: dex.kaddy.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: dex-server-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: identity
 ---
 # Route all paths on the HTTPS listener to argocd-server (:80, insecure/HTTP).
+# sectionName pins this route to the catch-all listener so it can never
+# shadow dex.kaddy.local traffic on the https-dex listener (E1d).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -81,6 +134,7 @@ metadata:
 spec:
   parentRefs:
     - name: argocd
+      sectionName: https
   rules:
     - matches:
         - path:
@@ -89,3 +143,63 @@ spec:
       backendRefs:
         - name: argocd-server
           port: 80
+---
+# E1d (REQ-E1d-S02-01, ADR-0107): Argo CD OIDC against the standalone Dex +
+# the kustomize flags that enable the KSOPS exec plugin (ADR-0110).
+#
+# kubectl-apply MERGES this data into the upstream argocd-cm (which ships
+# resource.exclusions etc. via server-side apply) — only the keys below are
+# owned here.
+#
+# oidc.tls.insecure.skip.verify: the Dex listener terminates a kaddy-local-ca
+# cert that argocd-server does not trust; the trust anchor for the lab is the
+# in-cluster path itself (argocd-server -> node:30443 -> Envoy -> dex). A
+# real deployment (phase 2, dex.platformrelay.dev + Let's Encrypt) drops this
+# key. Local admin stays enabled as documented break-glass (runbook
+# docs/runbooks/github-oauth-dex.md).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  url: https://127.0.0.1:30443
+  admin.enabled: "true"
+  kustomize.buildOptions: --enable-alpha-plugins --enable-exec
+  oidc.tls.insecure.skip.verify: "true"
+  oidc.config: |
+    name: GitHub (Dex)
+    issuer: https://dex.kaddy.local:30443
+    clientID: argocd
+    # KSOPS-rendered Secret argocd/argocd-oidc-client (deploy/secrets/argocd/),
+    # referenced via the argocd $<secret>:<key> indirection — never plaintext.
+    clientSecret: $argocd-oidc-client:clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups
+---
+# E1d (REQ-E1d-S02-03): RBAC — operator GitHub identity -> admin, everyone
+# else (any authenticated PlatformRelay org member) -> readonly. The
+# PlatformRelay:platform-admins group mapping activates as soon as the
+# operator creates that GitHub team (Dex emits org:team group claims);
+# broader team-based RBAC is deferred to E10.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  policy.default: role:readonly
+  scopes: '[preferred_username, email, groups]'
+  policy.csv: |
+    g, konih, role:admin
+    g, konrad.heimel@gmail.com, role:admin
+    g, PlatformRelay:platform-admins, role:admin

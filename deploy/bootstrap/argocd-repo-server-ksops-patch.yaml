@@ -1,0 +1,65 @@
+# REQ-E3-S01-03 (deferred debt) / ADR-0110 — KSOPS on the Argo CD repo-server.
+#
+# Strategic-merge patch applied by `task bootstrap:e1d` on top of the pinned
+# upstream install (kubectl -n argocd patch deploy argocd-repo-server
+# --patch-file <this file>). The init container copies the PINNED ksops +
+# kustomize binaries into an emptyDir that shadows the bundled kustomize;
+# SOPS_AGE_KEY_FILE points at the mounted `sops-age` Secret — the ONE root
+# secret of the chain, created imperatively by bootstrap:e1d from the
+# operator's ~/.config/sops/age/keys.txt (standard KSOPS pattern: the age
+# private key never enters git; every other secret is SOPS-encrypted under
+# deploy/secrets/ and rendered at build time).
+#
+# Server-side re-applies of the upstream install manifest do not remove
+# these fields (different field manager), but a from-scratch rebuild must
+# re-run bootstrap:e1d after bootstrap:argocd.
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: install-ksops
+          # Pinned; multi-arch (arm64 kind node). Ships ksops + a matching
+          # kustomize. v4.3.3 deliberately (NOT v4.5.x): v4.4+ images are
+          # distroless without a shell, so the documented copy-into-emptyDir
+          # ArgoCD pattern needs the last debian-based tag. Bumping past it
+          # requires a different install mechanism (checked 2026-07-16).
+          image: viaductoss/ksops:v4.3.3
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "installing ksops + kustomize into /custom-tools";
+              cp /usr/local/bin/ksops /custom-tools/ &&
+              cp /usr/local/bin/kustomize /custom-tools/ &&
+              echo done
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: custom-tools
+              mountPath: /custom-tools
+      containers:
+        - name: argocd-repo-server
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /sops-age/keys.txt
+          volumeMounts:
+            - name: custom-tools
+              mountPath: /usr/local/bin/kustomize
+              subPath: kustomize
+            - name: custom-tools
+              mountPath: /usr/local/bin/ksops
+              subPath: ksops
+            - name: sops-age
+              mountPath: /sops-age
+              readOnly: true
+      volumes:
+        - name: custom-tools
+          emptyDir: {}
+        - name: sops-age
+          secret:
+            secretName: sops-age

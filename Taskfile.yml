@@ -465,6 +465,56 @@ tasks:
     cmds:
       - bash tests/smoke/e5-exit.sh
 
+  bootstrap:e1d:
+    desc: E1d — KSOPS root secret + repo-server plugin + Dex OIDC wiring (idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        # SAFETY: never mutate a non-kind context (mirrors bootstrap:e3).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        # 1) The ONE root secret of the SOPS chain (ADR-0110, standard KSOPS
+        #    pattern): the operator age PRIVATE key, imperative by design —
+        #    it can never live in git and everything downstream of it does
+        #    (deploy/secrets/**.enc.yaml). Never printed; piped straight in.
+        AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-${HOME}/.config/sops/age/keys.txt}"
+        [ -f "${AGE_KEY_FILE}" ] \
+          || { echo "refusing: age key not found at ${AGE_KEY_FILE} (set SOPS_AGE_KEY_FILE)" >&2; exit 1; }
+        kubectl -n argocd create secret generic sops-age \
+          --from-file=keys.txt="${AGE_KEY_FILE}" \
+          --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+        echo "sops-age root secret applied (argocd ns)"
+        # 2) Bootstrap overlay: dex Gateway listener + Certificate, argocd-cm
+        #    (oidc.config + kustomize.buildOptions), argocd-rbac-cm.
+        kubectl apply -f deploy/bootstrap/argocd.yaml
+        # 3) KSOPS on the repo-server (committed strategic-merge patch;
+        #    idempotent — patching with identical content is a no-op).
+        kubectl -n argocd patch deploy argocd-repo-server \
+          --patch-file deploy/bootstrap/argocd-repo-server-ksops-patch.yaml
+        # 4) argocd-server must reach the Dex issuer at its PUBLIC URL
+        #    (https://dex.kaddy.local:30443) for OIDC discovery + token
+        #    exchange. In-cluster that URL only exists via the node-published
+        #    Gateway nodePort, so pin dex.kaddy.local to the node InternalIP
+        #    (dynamic per cluster — this is why it is a bootstrap patch, not
+        #    a committed manifest).
+        NODE_IP="$(kubectl get node -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')"
+        kubectl -n argocd patch deploy argocd-server --type strategic -p \
+          "{\"spec\":{\"template\":{\"spec\":{\"hostAliases\":[{\"ip\":\"${NODE_IP}\",\"hostnames\":[\"dex.kaddy.local\"]}]}}}}"
+        kubectl -n argocd rollout status deploy/argocd-repo-server --timeout=300s
+        kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+        echo "E1d bootstrap done. identity app syncs via GitOps; policies app stays manual:"
+        echo "  argocd app sync policies --core   # identity netpols (deploy/policies/README.md)"
+
+  test:smoke:e1d:
+    desc: E1d — live smoke bundle (KSOPS render chain, Dex issuer, ArgoCD OIDC redirect, netpol)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash tests/smoke/e1d-exit.sh
+
   bootstrap:e6:
     desc: E6 — register the Crossplane platform (AppProjects + crossplane child app; Argo CD converges the rest; idempotent)
     env:
