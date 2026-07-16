@@ -35,18 +35,26 @@
 
 ## S02 — Variant B · Kubernetes-based (RICH) — preferred/primary path
 
-> **Unblocked** (E1/E3/E4/E7 green). Implementation not started — specs authored (S00):
-> `specs/k8s-tenant/spec.md` (REQ-CADDY-S02-01..05 — TLS, analysis-gated Rollouts, scrape,
-> GitOps wiring under `deploy/workloads/caddy-mvp/`, default-deny netpol).
+> **Unblocked** (E1/E3/E4/E7 green). Specs authored (S00). **Offline slice landed**
+> (`lane/ecaddy-s02-offline`): GitOps manifests + netpol + PodMonitor re-point +
+> structural offline smoke. Live Chainsaw suites exist as `skip: true` until a
+> cluster gate flips them.
 
-- [ ] Caddy tenant Deployment/Service in-cluster (nginx parallel), reached **through** the
-      Cilium Gateway API edge (HTTPRoute), never as the edge itself.
-- [ ] Certificates via **cert-manager** (self-signed local CA / issuer).
-- [ ] Native in-cluster scrape (ServiceMonitor/PodMonitor emitting `caddy_*` from the tenant pod).
-- [ ] **Blue/green + canary via Argo Rollouts (mulligan, E7)** — demoed **only** on this variant.
-      Prometheus AnalysisTemplate gates promotion.
-- [ ] Gate (when active): Chainsaw suite (tenant Deployment + HTTPRoute + Rollout) + smoke
-      HTTP-200 through the Gateway.
+- [x] Caddy tenant Rollouts/Services in-cluster (nginx-proxy blue/green + caddy-origin
+      canary), reached **through** the Cilium Gateway API edge (tenant Gateway +
+      HTTPRoute), never as the edge itself — offline manifests under
+      `deploy/workloads/caddy-mvp/`.
+- [x] Certificates via **cert-manager** (`kaddy-local-ca` ClusterIssuer →
+      `caddy-mvp-tls` in ns `caddy-mvp`).
+- [x] Native in-cluster scrape wiring — PodMonitor re-pointed at ns `caddy-mvp`
+      (`deploy/caddy-mvp/monitoring/prometheus/caddy-podmonitor.yaml`); live
+      PromQL still needs a synced cluster (`tests/smoke/caddy-mvp-s02-03.sh`).
+- [x] **Blue/green + canary via Argo Rollouts (mulligan, E7)** — manifests +
+      AnalysisTemplate scaffolded; live promotion/abort demo pending cluster gate.
+- [ ] Gate (when active): Chainsaw suite (tenant + HTTPRoute + Rollout) + smoke
+      HTTP-200 through the Gateway — suites authored under
+      `tests/chainsaw/caddy-mvp/k8s-*/` as `skip: true`; offline structural gate
+      `tests/smoke/caddy-mvp-s02-offline.sh`.
 
 ## S03 — Backstage self-service scaffold (both variants, both engines)
 

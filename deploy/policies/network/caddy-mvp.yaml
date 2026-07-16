@@ -1,0 +1,258 @@
+# REQ-CADDY-S02-05 — default-deny baseline for ns caddy-mvp.
+#
+# Allowed paths:
+#   1. Cilium Gateway (ingress entity) → nginx-proxy :8080
+#   2. nginx-proxy → caddy-origin :8080
+#   3. Prometheus (monitoring) → caddy-origin metrics (:8080 /metrics)
+#   4. DNS egress to CoreDNS :53
+#   5. Probe-pod hairpin legs (run= label) mirroring websites baseline
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-dns-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-prometheus-scrape
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-03
+spec:
+  podSelector:
+    matchLabels:
+      app: caddy-origin
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-proxy-to-origin
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-proxy-to-origin
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  podSelector:
+    matchLabels:
+      app: caddy-origin
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nginx-proxy
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-proxy-egress-to-origin
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-proxy-egress-to-origin
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx-proxy
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: caddy-origin
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Cilium-specific: admit Gateway API (Envoy) to nginx-proxy (showcase hop)
+# AND caddy-origin (tenant HTTPRoute canary backends). Envoy carries the
+# reserved `ingress` identity.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-nginx-proxy
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-gateway-to-nginx-proxy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - nginx-proxy
+          - caddy-origin
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-probe-egress-to-edge
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-probe-egress-to-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: run
+        operator: Exists
+  egress:
+    - toEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "443"
+              protocol: TCP
+    - toEndpoints:
+        - matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - nginx-proxy
+                - caddy-origin
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

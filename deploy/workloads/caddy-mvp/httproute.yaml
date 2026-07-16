@@ -1,0 +1,49 @@
+# REQ-CADDY-S02-01 / REQ-CADDY-S02-02 — canary-weighted HTTPRoute.
+#
+# Argo Rollouts Gateway API plugin mutates backendRef weights during a
+# caddy-origin canary (100/0 → 20 → 50 → 100). Committed values are the STABLE
+# steady state. `workloads` Application ignoreDifferences covers this route.
+#
+# Showcase nginx→Caddy hop: nginx-proxy blue/green Rollout + ConfigMap
+# proxy_pass (S05-03) run in parallel (mulligan-bg twin). Edge traffic for the
+# canary demo attaches origin Services here — same split as mulligan canary vs
+# mulligan-bg.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: caddy-mvp
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-CADDY-S02-01
+spec:
+  parentRefs:
+    - name: caddy-mvp
+      namespace: caddy-mvp
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https
+  hostnames:
+    - caddy-mvp.kaddy.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: caddy-origin-stable
+          port: 8080
+          weight: 100
+        - name: caddy-origin-canary
+          port: 8080
+          weight: 0

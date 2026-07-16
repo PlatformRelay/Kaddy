@@ -55,6 +55,9 @@ spec:
       namespace: monitoring
     - server: https://kubernetes.default.svc
       namespace: websites
+    # E-Caddy-MVP S02: deploy/policies/network/caddy-mvp.yaml
+    - server: https://kubernetes.default.svc
+      namespace: caddy-mvp
     # The rollouts app (vendored Argo Rollouts controller install):
     - server: https://kubernetes.default.svc
       namespace: argo-rollouts

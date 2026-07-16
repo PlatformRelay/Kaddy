@@ -1,0 +1,33 @@
+# REQ-CADDY-S02-01 — dedicated tenant Gateway (HTTPS) for caddy-mvp.kaddy.local.
+# Separate from clubhouse/mulligan so those routes are never rewritten.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: caddy-mvp
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp-gateway
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: caddy-mvp.kaddy.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: caddy-mvp-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

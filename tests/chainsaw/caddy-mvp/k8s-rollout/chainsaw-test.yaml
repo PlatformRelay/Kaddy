@@ -1,0 +1,18 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-k8s-rollout
+  annotations:
+    kaddy.io/req: REQ-CADDY-S02-02
+spec:
+  description: >-
+    caddy-origin + nginx-proxy Rollouts Healthy (live; skip in CI).
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              set -euo pipefail
+              kubectl argo rollouts status caddy-origin -n caddy-mvp --timeout 120s | grep -q 'Healthy'
+              kubectl argo rollouts status nginx-proxy -n caddy-mvp --timeout 120s | grep -q 'Healthy'
+              exit 0

@@ -48,6 +48,10 @@ spec:
     # in the websites namespace (v2 namespaced XRs, D-027):
     - server: https://kubernetes.default.svc
       namespace: websites
+    # E-Caddy-MVP S02: Variant B tenant (deploy/workloads/caddy-mvp/) —
+    # nginx-proxy + caddy-origin Rollouts, tenant Gateway, Certificate:
+    - server: https://kubernetes.default.svc
+      namespace: caddy-mvp
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

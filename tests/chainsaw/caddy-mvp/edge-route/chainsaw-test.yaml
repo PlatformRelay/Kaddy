@@ -1,15 +1,24 @@
+# REQ-CADDY-S01-01 — Caddy served THROUGH the Cilium/Envoy edge (not as gateway).
+#
+# Tenant manifests landed under deploy/workloads/caddy-mvp/ (S02 offline slice).
+# skip: true until the workloads app syncs on a live cluster and HTTP-200 through
+# the tenant Gateway is asserted. Offline structural:
+# tests/smoke/caddy-mvp-s02-offline.sh
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
   name: caddy-mvp-edge-route
   annotations:
     kaddy.io/req: REQ-CADDY-S01-01
+    kaddy.io/status: skip-until-live-tenant-sync
 spec:
-  description: e-caddy-mvp — Caddy tenant served THROUGH the Cilium/Envoy edge, not as gateway (skip until the caddy-mvp tenant is scaffolded)
+  description: >-
+    e-caddy-mvp — Caddy tenant served THROUGH the Cilium/Envoy edge, not as
+    gateway (skip until live sync of deploy/workloads/caddy-mvp/)
   skip: true
   steps:
     - try:
         - script:
             content: |
-              echo "caddy-mvp edge-route placeholder — enable when the Caddy tenant (e-caddy-mvp k8s variant) is deployed behind the platform Gateway"
+              echo "caddy-mvp edge-route — enable when tenant Gateway/HTTPRoute serves 200 live"
               exit 0

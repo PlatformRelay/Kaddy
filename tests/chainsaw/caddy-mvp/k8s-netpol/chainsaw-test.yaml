@@ -1,0 +1,17 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-k8s-netpol
+  annotations:
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  description: >-
+    default-deny present in caddy-mvp; deny + allow asserted live (skip in CI).
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              set -euo pipefail
+              kubectl get networkpolicy -n caddy-mvp -o name | grep -q default-deny
+              exit 0

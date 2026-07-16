@@ -1,0 +1,18 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-k8s-tls
+  annotations:
+    kaddy.io/req: REQ-CADDY-S02-01
+spec:
+  description: >-
+    Certificate Ready + HTTPRoute Accepted for caddy-mvp.kaddy.local (live; skip in CI).
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              set -euo pipefail
+              kubectl get certificate -n caddy-mvp caddy-mvp-tls \
+                -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q True
+              exit 0

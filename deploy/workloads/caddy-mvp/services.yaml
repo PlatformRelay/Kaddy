@@ -1,0 +1,131 @@
+# REQ-CADDY-S02-02 — Services for caddy-origin canary + nginx-proxy blue/green.
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-origin-stable
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-origin
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: caddy-origin
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-origin-canary
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-origin
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: canary
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: caddy-origin
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+# Combined selector Service for nginx-proxy upstream (steady-state).
+apiVersion: v1
+kind: Service
+metadata:
+  name: caddy-origin
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-origin
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: caddy-origin
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy-active
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: nginx-proxy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: nginx-proxy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy-preview
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: nginx-proxy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: preview
+    app.kubernetes.io/name: nginx-proxy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  type: ClusterIP
+  selector:
+    app: nginx-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

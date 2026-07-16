@@ -1,0 +1,86 @@
+# REQ-CADDY-S02-02 / S05-03 — nginx reverse proxy (blue/green Rollout).
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: nginx-proxy
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: nginx-proxy
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: nginx-proxy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: nginx-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy
+        owner: platform-team
+        service: nginx-proxy
+        part-of: kaddy
+        managed-by: argocd
+        data-classification: public
+        business-criticality: business-operational
+        track: stable
+        app.kubernetes.io/name: nginx-proxy
+        app.kubernetes.io/part-of: kaddy
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.29.0-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-proxy-config
+        - name: tmp
+          emptyDir: {}
+  strategy:
+    blueGreen:
+      activeService: nginx-proxy-active
+      previewService: nginx-proxy-preview
+      autoPromotionEnabled: false

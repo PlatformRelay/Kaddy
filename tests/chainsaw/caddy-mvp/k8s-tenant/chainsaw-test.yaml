@@ -1,0 +1,23 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-k8s-tenant
+  annotations:
+    kaddy.io/req: REQ-CADDY-S02-04
+spec:
+  description: >-
+    e-caddy-mvp S02 — GitOps tenant resources exist under deploy/workloads/caddy-mvp
+    (live Synced/Healthy assert when cluster + workloads app green; skipped in CI
+    vanilla kind without full GitOps sync of this slice).
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              set -euo pipefail
+              test -d deploy/workloads/caddy-mvp
+              kubectl -n argocd get application workloads \
+                -o jsonpath='{.status.sync.status}/{.status.health.status}' \
+                | grep -q 'Synced/Healthy'
+              kubectl -n caddy-mvp get rollout caddy-origin nginx-proxy
+              exit 0

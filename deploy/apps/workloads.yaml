@@ -45,6 +45,13 @@ spec:
       namespace: mulligan
       jqPathExpressions:
         - .spec.rules[].backendRefs[].weight
+    # REQ-CADDY-S02-02 — caddy-origin canary mutates tenant HTTPRoute weights.
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: caddy-mvp
+      namespace: caddy-mvp
+      jqPathExpressions:
+        - .spec.rules[].backendRefs[].weight
   syncPolicy:
     automated:
       prune: true

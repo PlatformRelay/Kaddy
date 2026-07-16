@@ -1,0 +1,27 @@
+# REQ-CADDY-S02-01 — TLS for caddy-mvp.kaddy.local via kaddy-local-ca.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: caddy-mvp-tls
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: caddy-mvp
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: caddy-mvp-tls
+  duration: 2160h
+  renewBefore: 720h
+  dnsNames:
+    - caddy-mvp.kaddy.local
+  issuerRef:
+    name: kaddy-local-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

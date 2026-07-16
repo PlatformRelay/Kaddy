@@ -1,0 +1,32 @@
+# REQ-CADDY-S02-02 — analysis gate on Caddy canary 5xx share (scaffold).
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: caddy-origin-success-rate
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-origin
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  metrics:
+    - name: caddy-canary-5xx-share
+      interval: 30s
+      count: 2
+      # Pass when no 5xx series yet or share is low; tighten once scrape is live.
+      successCondition: result[0] < 0.05 || result[0] == 0
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring:9090
+          query: |
+            sum(rate(caddy_http_request_duration_seconds_count{code=~"5..",track="canary"}[2m]))
+            /
+            clamp_min(sum(rate(caddy_http_request_duration_seconds_count{track="canary"}[2m])), 1)

@@ -21,7 +21,7 @@ when the VM tenant lands.
 | --- | --- |
 | `rules/marshal-caddy.yaml` | `PrometheusRule` CR — `CaddyTargetDown` (GitOps-applied when the VM tenant lands) |
 | `rules/marshal-caddy.rules.yaml` | Plain `groups:` projection of the CR `.spec`, committed so the epic promtool suite loads it directly (no `/tmp` extract) |
-| `prometheus/caddy-podmonitor.yaml` | `PodMonitor` scraping the Caddy metrics endpoint (pins `job="caddy"`) |
+| `prometheus/caddy-podmonitor.yaml` | `PodMonitor` scraping the Caddy metrics endpoint (pins `job="caddy"`; `namespaceSelector` → `caddy-mvp` for Variant B — REQ-CADDY-S02-03) |
 
 ## Tests
 

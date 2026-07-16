@@ -1,0 +1,16 @@
+# REQ-CADDY-S02 — caddy-mvp tenant namespace (Variant B · Kubernetes RICH path).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
