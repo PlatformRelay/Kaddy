@@ -346,9 +346,9 @@ reviewer path.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E9-S01 | kubebuilder scaffold + CRD types | ⬜ |
-| E9-S02 | Caddy reconciler (Admin API) | ⬜ |
-| E9-S03 | CaddySite + observability bundle | ⬜ |
+| E9-S01 | kubebuilder scaffold + CRD types | ✅ |
+| E9-S02 | Caddy reconciler (Admin API) | ✅ |
+| E9-S03 | CaddySite + observability bundle | ✅ |
 
 **Gate:** start only if E1–E8 ✅
 
