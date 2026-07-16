@@ -150,11 +150,20 @@ spec:
 ---
 # Cilium-specific: allow transient smoke-probe pods (kubectl run — they all
 # carry the kubectl `run` label) to egress to the in-cluster edge. The E4
-# redirect smoke (tests/smoke/e4-s03-03.sh) curls the clubhouse Gateway
-# service from inside the gateway namespace; that hairpin terminates at the
-# Cilium Envoy proxy, whose identity is the reserved `ingress` entity — so
-# this must be a CNP, and the default-deny egress above would otherwise
-# drop it. clubhouse itself has no `run` label and initiates nothing.
+# smokes (tests/smoke/e4-s03-03.sh redirect probe, hack/smoke/
+# https-clubhouse.sh HTTPS gate) curl the clubhouse Gateway service from
+# inside the gateway namespace. That hairpin needs TWO egress allows
+# (verified live with hubble, 2026-07-16):
+#   1. probe -> Envoy listener: the proxy carries the reserved `ingress`
+#      entity identity (CNP required; the default-deny egress above would
+#      otherwise drop the connection).
+#   2. probe -> clubhouse pod :8080: Cilium PRESERVES the original client
+#      identity through the Gateway proxy and re-evaluates the client's
+#      egress policy against the BACKEND pod identity inside Envoy — without
+#      this rule Envoy answers "403 Access denied" even though the L4 path
+#      to the listener is open (clients with unrestricted egress, e.g. the
+#      blackbox probe in monitoring, are unaffected).
+# clubhouse itself has no `run` label and initiates nothing.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -187,4 +196,13 @@ spec:
             - port: "80"
               protocol: TCP
             - port: "443"
+              protocol: TCP
+    # Hairpin leg 2 (see header): the client's egress policy is re-checked
+    # against the backend pod identity inside the Gateway proxy.
+    - toEndpoints:
+        - matchLabels:
+            service: clubhouse
+      toPorts:
+        - ports:
+            - port: "8080"
               protocol: TCP
