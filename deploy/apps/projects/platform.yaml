@@ -58,6 +58,9 @@ spec:
     # E-Caddy-MVP S02: deploy/policies/network/caddy-mvp.yaml
     - server: https://kubernetes.default.svc
       namespace: caddy-mvp
+    # The policies app places NetworkPolicies into this namespace:
+    - server: https://kubernetes.default.svc
+      namespace: mulligan
     # The rollouts app (vendored Argo Rollouts controller install):
     - server: https://kubernetes.default.svc
       namespace: argo-rollouts
