@@ -38,7 +38,11 @@ spec:
       - http01:
           gatewayHTTPRoute:
             parentRefs:
-              - name: kaddy
-                namespace: default
+              # Must match the real platform edge Gateway (deploy/gateway/gateway.yaml):
+              # clubhouse/gateway, not the placeholder kaddy/default — otherwise the
+              # ACME HTTP-01 solver HTTPRoute attaches to nothing and the challenge
+              # can never be served (latent until the staging issuer is exercised).
+              - name: clubhouse
+                namespace: gateway
                 kind: Gateway
                 group: gateway.networking.k8s.io
