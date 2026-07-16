@@ -83,7 +83,11 @@ spec:
                 name: mulligan-bg-preview
               spec:
                 selector:
-                  (rollouts-pod-template-hash != null): true
+                  # QUOTED identifier: unquoted, JMESPath parses the dashes as
+                  # arithmetic (rollouts - pod - template - hash == null), so the
+                  # expression could NEVER be true — proven by the first real CI
+                  # execution of this suite (discovery gap fixed in this lane).
+                  ("rollouts-pod-template-hash" != null): true
       catch:
         - get:
             apiVersion: argoproj.io/v1alpha1
