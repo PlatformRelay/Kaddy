@@ -366,3 +366,15 @@ ROADMAP + exercise-traceability updated.
 3. **E1c-digest-latest** — narrow `:latest` gate only (full digest pin would red-main); PR only; security → INBOX
 
 **Counterpoints considered:** (a) Combining Trivy+digest into one security PR reduces review load but couples unrelated gates — rejected for smaller blast radius. (b) Full digest mandate now — rejected; would fail verify on Helm charts. (c) Starting E10/portal — cuttable, skipped. (d) provider-grafana — high blast / Crossplane, deferred DECISION later.
+
+## D-035 — Workstation runtime is Podman-only (no Docker Desktop / colima)
+
+**Date:** 2026-07-16 · **Status:** Accepted (operator).
+**Context:** Operator inbox task said "Start Docker before E1e"; operator clarified this machine has
+**Podman only**, not Docker Desktop/colima. E1e already detects podman and sets
+`KIND_EXPERIMENTAL_PROVIDER=podman`; Cilium needs **rootful** podman (`podman machine set --rootful`).
+**Decision:** Treat **rootful Podman** as the canonical local container runtime for this workstation.
+Drop the "Start Docker" operator task. Live E1e gate prerequisite = podman machine running (rootful)
+before `task cluster:up`.
+**Counterpoints (kept):** Docker Desktop remains a supported alternate in docs for other machines;
+this entry records *this* operator environment so agents stop asking for Docker here.

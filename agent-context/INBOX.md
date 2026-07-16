@@ -4,91 +4,68 @@ Items waiting on the operator. Answered decisions move to `decisions.md`.
 
 ## Decisions
 
+### D-034 — Land leftover E9 operator S01/S02 onto main? (CRD / public API)
+
+**Context:** Rate-limited `/agent-loop-auto` left a complete branch
+`lane/e9-operator-s01` @ `7fa7e2c` in `.worktrees/e9-operator` (kubebuilder scaffold + CRD types +
+`caddyadmin` client + reconcilers; S01+S02 ticked in that branch's `tasks.md`). Gates were green in
+the worker session; **not** on `origin/main`. Auto-merge rules forbid silent land of **public API /
+CRD** changes even when APPROVE.
+
+**Options:**
+- **(A) Land now** — rebase onto current main, re-run operator envtest + repo `task verify`,
+  tech-review, ff-push to `main`. Accepts new CRDs (`Caddy`/`CaddySite`) as v0.x surface.
+- **(B) Hold until E9-S03** — keep branch; land only with observability bundle + Taskfile wiring.
+- **(C) Park / delete branch** — E9 remains optional post E1–E8; discard until explicitly activated.
+
+**Recommendation: (B).** Rationale: S01/S02 without S03 + root Taskfile wiring leaves a half-wired
+operator module on main; holding until the exit gate (`envtest` + `task test`) is honest. (A) is fine
+if the interview wants the CRD story visible ASAP.
+
+**Answer / instructions:** _(operator fills — ask via AskQuestion)_
+
+---
+
 ### D-026 — ANSWERED 2026-07-15 → decisions.md — Marshal `caddy_*` alerts direction
 
-**Decision needed:** what to do with the broken E5 `caddy_*` marshal alerts (audit ARCH-2/ARCH-3) — they
-scrape a Caddy edge target the Cilium/Envoy edge never emits, so they can't fire against the platform as
-designed.
-
-- **(A) Park with the Caddy epic** — move the `caddy_*` alerts + their promtool tests into the deferred
-  `e-caddy-mvp` VM-variant alerting slice and disable them from active platform monitoring; they light up
-  (serve→scrape→fire) when the Caddy tenant lands. Promtool fire/silent rigor preserved, scoped to the epic.
-- **(B) Re-point to Cilium/Envoy Gateway metrics** — keep them live in platform monitoring against the edge.
-
-**Recommendation: A (park).** Rationale: B requires enabling Envoy/Cilium metrics in the E1e substrate =
-scope creep on the local dev substrate; A puts the alert where its real target (the Caddy tenant) will exist.
-
-**Status:** ANSWERED 2026-07-15 — operator chose **(A) park** (confirmed via the coordinator's direct
-question). Recorded ANSWERED in decisions.md (D-026). WS1 ARCH-2/ARCH-3 alert migration + ADR-0104 retcon
-are **unblocked** and assigned to the monitoring/Caddy lane.
+**Status:** ANSWERED 2026-07-15 — operator chose **(A) park**. Recorded in decisions.md (D-026).
 
 ### D-025 — ANSWERED 2026-07-15 → decisions.md
 
-Pivot phase-1 substrate to **local kind + Cilium** (new **P0** change `e1e-kind-local-cluster`); amends D-017.
-driving-range Talos deferred to optional maturity-contrast spike. Cilium on kind keeps D-019/D-022 (Gateway
-API, no MetalLB) so E1–E8 Cilium assertions pass unmodified. **Operator prerequisite:** Docker running before
-the E1e live-cluster gate (`task cluster:up`).
+Pivot phase-1 substrate to **local kind + Cilium** (P0 `e1e-kind-local-cluster`); amends D-017.
+**Operator runtime (updated 2026-07-16):** this workstation has **Podman only** (no Docker Desktop /
+colima). E1e already supports podman (`KIND_EXPERIMENTAL_PROVIDER=podman`); **rootful** podman is
+required for Cilium. See D-035.
 
 ### D-024 — ANSWERED 2026-07-15 → decisions.md
 
-Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint session lands), (3) e1c security-baseline offline subset — **operator-reviewed PR, not auto-merged**, (4) e12-slidev deck — operator-reviewed. Plus add **`kyverno test` CLI** cases for the `require-kaddy-labels` ClusterPolicy (+ e1c policies as authored). See decisions.md.
+Do **not** hold. See decisions.md.
 
 ---
 
 ## Operator tasks
 
-- [ ] **Sync the `policies` ArgoCD app** to apply the new mulligan default-deny netpol baseline live
-      (audit F-01 fix `d31110c` is on main; the app is manual-sync **by design**, so the live cluster
-      keeps zero netpols in `mulligan` until synced). Reviewed live-proof: gateway traffic stays 200,
-      direct cross-ns pod access denied. Command:
-      `kubectl -n argocd patch application policies --type merge -p '{"operation":{"sync":{}}}'`
-      (or ArgoCD UI → policies → Sync).
-- [ ] **Enable GitHub Pages (build_type=workflow)** — the merged `scorecard-pages` workflow fails with
-      "Get Pages site failed / Not Found" because the repo has no Pages site yet. Permission layer vetoed
-      the harness doing it (public surface). Exact command:
-      `gh api repos/PlatformRelay/Kaddy/pages -X POST -f build_type=workflow`
-      (or repo Settings → Pages → Source: GitHub Actions). Then re-run the workflow and curl the page.
-- [ ] Review design-phase commit(s) on `main` before starting `/agent-loop`
-- [ ] Review review-authored artifacts: TF-09/10/11 specs, `verify.yaml`, `agent-context/GUIDELINES.md` (need an independent pass)
-- [x] ~~Build [driving-range](../../driving-range/) cluster (phase 0) before kaddy E1~~ — superseded by D-025 (kind + Cilium substrate, E1e)
-- [ ] **Start Docker** (Docker Desktop / colima) before the E1e live-cluster gate — `task cluster:up` needs a running container runtime
-- [ ] Run `direnv allow` in repo root once per machine
-- [x] Decide D-021 (spec validator) → **A** hack-canonical (2026-07-15, decisions.md)
-- [x] Decide D-022 (Level-tag) → **C** hybrid · D-023 (markdown-lint) → **A** advisory-then-required (2026-07-15, decisions.md)
-- [x] Decide D-014 (IDP portal stack) → **A** Crossplane + Backstage, phased OSS (2026-07-15, decisions.md)
-- [x] gridscale lab access — credentials in `.envrc` (see LAB-ACCESS.md)
-- [x] Decide D-013 (OVH vs gridscale) — pivoted to gridscale-native (see decisions.md D-013)
-- [x] Decide local-first sequencing — driving-range phase 1, gridscale phase 2 (D-017)
-- [x] Create GitHub OAuth app for Dex (E1d) — `docs/runbooks/github-oauth-dex.md`; creds in `.envrc`
+- [x] **Sync the `policies` ArgoCD app** — DONE 2026-07-16 (operator).
+- [x] **Enable GitHub Pages (`build_type=workflow`)** — DONE 2026-07-16 (operator). Residual: re-run
+      `scorecard-pages` + curl the published URL if not already verified.
+- [x] **Container runtime** — workstation is **Podman-only** (no Docker). Recorded as D-035; start
+      rootful podman machine before `task cluster:up` when a live E1e gate is needed.
+- [x] **`direnv allow`** — DONE 2026-07-16 (operator).
+- [x] **Merge open PRs/MRs** — none open as of 2026-07-16 evening (`gh pr list` empty).
+- [ ] **D-034** — answer via AskQuestion (land A / hold B / park C) before any E9 land.
+- [ ] Review design-phase commit(s) on `main` before starting `/agent-loop` (optional; largely
+      superseded by later lands — confirm or waive).
+- [ ] Review review-authored artifacts: TF-09/10/11 specs, `verify.yaml`, `agent-context/GUIDELINES.md`
+      (optional independent pass — confirm or waive).
+- [x] ~~Build driving-range cluster (phase 0) before kaddy E1~~ — superseded by D-025
+- [x] Decide D-021 / D-022 / D-023 / D-014 / D-013 / local-first / Dex OAuth / lab access — see decisions.md
 
 ## Reviews / PRs
 
-- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/10** — E8-scorecard-offline~~ — REVIEW **APPROVE**; content on `main` as `636f4b5` (PR closed after rebase; head branch deleted).
-- [x] ~~Review the expanded **E8-S04 Getting Started + reviewer demo** story in worktree
-      `e8-getting-started`~~ → **/tech-review 2026-07-16: REQUEST CHANGES** (content quality high, all
-      local gates green, no hallucinations; F1 P1 = work was uncommitted). All findings F1–F6 fixed the
-      same day: committed as `7f53730`, rebased onto main, Level tags added (D-022), Grafana port aligned
-      to 23000, task narrowed to the REQ, hard-breaks restored. Gates + CI `verify.yaml` green
-      (only pre-existing advisory `spec-coverage-strict` red, unrelated). → now a PR to merge (below).
-
-## PRs to merge
-
-- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/11** — E8-S04 Getting Started + reviewer demo
-      contract (`7f53730`)~~ — MERGED 2026-07-16T13:41Z (rebase; worktree + branch cleaned up) under
-      the operator's blanket 2026-07-16 authorization ("merge PRs yourself; prefer local merges").
-- [x] ~~**https://github.com/PlatformRelay/Kaddy/pull/8** — E1c-digest-latest~~ — MERGED 2026-07-16 (content on `main` as `40c0cc0`+`d505dad`); PRs #9/#10 closed after fast-path ref-push of the same content.
+_(none open — PRs #8/#10/#11 merged 2026-07-16)_
 
 ## Audits
 
-- **AUDIT 2026-07-15** — Health & direction baseline (deep): **NEEDS-WORK** overall, **direction AT-RISK**.
-  39 findings (P0×2, P1×11). Top 3: (1) propagate D-025 kind substrate pivot to docs — currently in zero top
-  docs; (2) make the brief spine demonstrable + fix marshal scraping `caddy_*` the Cilium/Envoy edge never
-  emits; (3) wire the good gates (STRICT_TEST_FILES, E1e meta, gitleaks) into CI.
-  → `agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md` · register: `TECH-DEBT-REGISTER.md`
-  → **Remediation plan:** `openspec/changes/audit-remediation-2026-07/` (WS1–WS5 + WONTFIX + ROADMAPPED). Minted platform MVP epic `e-caddy-mvp`; marshal decision D-026 **ANSWERED (A — park)**; WS1 unblocked.
-- **AUDIT 2026-07-16** — Mid-session checkpoint (replayable): **NEEDS-WORK — trajectory strongly
-  positive**. 22 fixed / 0 regressed / 24 open (P0×0 P1×5 P2×14 P3×5). Brief spine E1e→E1→E3→E4
-  verified live (9/9 apps Synced/Healthy; clubhouse over verified HTTPS through Cilium Gateway). Top
-  remediation: close the alert "fire" leg — sync `deploy/monitoring/` via app-of-apps + re-point
-  marshal alerts at the actually-served site (ARCH-8 + ARCH-2 + DIR-2).
-  → `agent-context/archive/audits/HEALTH-AUDIT-2026-07-16.md`
+- **AUDIT 2026-07-15** — baseline NEEDS-WORK / AT-RISK → remediation + D-026 park. See archive.
+- **AUDIT 2026-07-16** mid-session + **final** (`HEALTH-AUDIT-2026-07-16-final.md`) — RELEASE-READY for
+  v0.1.0 trajectory; residual operator items above + D-034.
