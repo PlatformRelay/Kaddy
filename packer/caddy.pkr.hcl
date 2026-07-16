@@ -44,14 +44,17 @@ variable "base_template" {
 }
 
 source "gridscale" "caddy" {
-  api_key          = var.gridscale_token
-  user_uuid        = var.gridscale_uuid
-  template         = var.base_template
-  storage_capacity = 10
-  server_cores     = 1
-  server_memory    = 1
-  hostname         = "kaddy-caddy-golden"
-  ssh_username     = "root"
+  # gridscale plugin: api_key is the User-UUID, api_token is the API token
+  # (matches env GRIDSCALE_UUID / GRIDSCALE_TOKEN). base_template_uuid selects
+  # the public base image to build from.
+  api_key            = var.gridscale_uuid
+  api_token          = var.gridscale_token
+  base_template_uuid = var.base_template
+  storage_capacity   = 10
+  server_cores       = 1
+  server_memory      = 1
+  hostname           = "kaddy-caddy-golden"
+  ssh_username       = "root"
 }
 
 build {

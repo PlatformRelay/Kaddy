@@ -65,29 +65,30 @@ else
   done
 fi
 
-# --- 4) packer fmt (always) + validate (best-effort) ------------------------
+# --- 4) packer fmt (always) + validate (STRICT when the plugin is available) --
 if command -v packer >/dev/null 2>&1; then
   packer fmt -check "${ROOT}/packer" >/dev/null 2>&1 || fail "packer fmt drift under packer/"
   ok "packer fmt clean"
-  # validate needs the gridscale plugin; init may need registry egress. Probe
-  # once — SKIP (not fail) if the plugin can't be fetched offline.
-  #
-  # NOTE: the .pkr.hcl builder arg names + plugin source were authored from the
-  # gridscale Packer tutorial, NOT a cached plugin schema (none is vendored). So
-  # `packer validate` is best-effort: a failure here is WARNED, not fatal — the
-  # authoritative check of the builder args is the live `packer build` cycle (see
-  # the runbook). `packer fmt` above stays strict (it needs no plugin schema).
-  if ( cd "${ROOT}/packer" && packer init . >/dev/null 2>&1 ); then
-    for f in caddy nginx; do
-      if ( cd "${ROOT}/packer" && packer validate "${f}.pkr.hcl" >/dev/null 2>&1 ); then
-        ok "packer validate ${f}"
-      else
-        echo "WARN: packer validate ${f}.pkr.hcl failed (unverified builder args — checked at live build; see the runbook)"
-      fi
-    done
-  else
-    echo "SKIP: gridscale packer plugin unavailable offline — packer validate skipped (fmt still enforced)"
-  fi
+  # `packer validate` verifies builder ARG NAMES/TYPES against the real plugin
+  # schema (it does NOT contact the gridscale API), so it catches hallucinated
+  # args like the earlier `user_uuid`/`template` bug. Init+validate PER FILE:
+  #   - per-file init avoids the "duplicate variable" error of `packer init .`
+  #     (caddy + nginx declare the same vars in one dir);
+  #   - dummy non-empty creds get past the empty-required-arg check so STRUCTURAL
+  #     validation runs without needing real gridscale credentials in CI.
+  # SKIP (not fail) only if the plugin genuinely can't be fetched (no egress);
+  # once fetched, a validate failure is FATAL (a real arg bug, not deferred).
+  for f in caddy nginx; do
+    if ( cd "${ROOT}/packer" && packer init "${f}.pkr.hcl" >/dev/null 2>&1 ); then
+      ( cd "${ROOT}/packer" && packer validate \
+          -var gridscale_uuid=validate-only -var gridscale_token=validate-only \
+          "${f}.pkr.hcl" >/dev/null 2>&1 ) \
+        || fail "packer validate ${f}.pkr.hcl — builder args invalid against the gridscale plugin schema"
+      ok "packer validate ${f} (builder args valid)"
+    else
+      echo "SKIP: gridscale packer plugin unavailable (no registry egress) — validate ${f} skipped; fmt enforced"
+    fi
+  done
 else
   echo "packer not installed — skip packer fmt/validate (CI installs packer)"
 fi
