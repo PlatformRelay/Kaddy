@@ -60,6 +60,11 @@ spec:
         - imageReferences:
             - "ghcr.io/platformrelay/*"
           failureAction: Audit
+          # Kyverno's policy-validation webhook requires mutateDigest: false
+          # when failureAction is Audit (an Audit rule must not mutate the
+          # image reference). Found on the first live sync — the offline
+          # `kyverno test` CLI cannot evaluate verifyImages rules (D-024).
+          mutateDigest: false
           attestors:
             - entries:
                 - keys:
