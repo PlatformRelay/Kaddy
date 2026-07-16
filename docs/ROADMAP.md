@@ -375,10 +375,10 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E12-S01 | Slidev scaffold + reproducible static build | 🚧 (scaffold + deck content + visual layer ✅ on main; failing-test + CI build pending) |
-| E12-S02 | Word-by-word speaker notes on every slide (5–10 min script) | ⬜ |
-| E12-S03 | Live iframes embed running platform surfaces (GIF fallback) | ⬜ |
-| E12-S04 | Narrative beats: pitch → arch → security → auto-gen money-shot → mulligan → marshal → scorecard | ⬜ |
+| E12-S01 | Slidev scaffold + reproducible static build | ✅ (`tests/deck/slidev-build.sh` + deck CI) |
+| E12-S02 | Word-by-word speaker notes on every slide (5–10 min script) | ✅ (30/30 slides; 1358 words ≈ 9–10 min; coverage + wordcount gates) |
+| E12-S03 | Live iframes embed running platform surfaces (GIF fallback) | ✅ (3 live + 2 fallback embeds; `iframe-surfaces.sh`) |
+| E12-S04 | Narrative beats: pitch → arch → security → auto-gen money-shot → mulligan → marshal → scorecard | ✅ (7 ordered beats; 590 s budget; `narrative-beats.sh`) |
 
 ---
 
