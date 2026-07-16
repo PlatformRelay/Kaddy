@@ -37,6 +37,11 @@ Do **not** hold. Queue next steps: (2) Taskfile lint-hardening (after WIP lint s
 
 ## Operator tasks
 
+- [ ] **Enable GitHub Pages (build_type=workflow)** — the merged `scorecard-pages` workflow fails with
+      "Get Pages site failed / Not Found" because the repo has no Pages site yet. Permission layer vetoed
+      the harness doing it (public surface). Exact command:
+      `gh api repos/PlatformRelay/Kaddy/pages -X POST -f build_type=workflow`
+      (or repo Settings → Pages → Source: GitHub Actions). Then re-run the workflow and curl the page.
 - [ ] Review design-phase commit(s) on `main` before starting `/agent-loop`
 - [ ] Review review-authored artifacts: TF-09/10/11 specs, `verify.yaml`, `agent-context/GUIDELINES.md` (need an independent pass)
 - [x] ~~Build [driving-range](../../driving-range/) cluster (phase 0) before kaddy E1~~ — superseded by D-025 (kind + Cilium substrate, E1e)
