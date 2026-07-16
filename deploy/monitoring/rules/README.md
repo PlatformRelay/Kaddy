@@ -55,16 +55,25 @@ alert carries `severity`, `service`, `owner` labels for self-routing.
   fire demo (`task demo:fire`) is watchable in minutes. With the 15s probe
   interval it still needs 4 consecutive failures (not single-sample-noisy);
   production guidance would be 3–5m to ride out flaky probes.
+- **Demo side-effect (expected):** during/after an outage window,
+  `EdgeHTTPErrorRate` may co-fire for up to ~10m — the probe's own 503s
+  dominate the low lab edge traffic (5m rate window + 5m `for:`). That is
+  correct response-code alerting, not a bug; it resolves on its own.
 
 ### ClubhouseProbeLatencyHigh (REQ-E5-S03-03)
 
 - Severity: `warning`
 - Threshold: end-to-end probe duration (TLS + edge + app) averaged over `5m`
   exceeds `500ms`, sustained `5m`.
+- Gated on the probe SUCCEEDING — failed probes record their timeout (~5s) as
+  duration; "down" is `ClubhouseDown`'s job, this alert means "up but slow"
+  (steady-state lab baseline ~4ms).
 - PromQL:
 
   ```promql
   avg_over_time(probe_duration_seconds{job="blackbox",service="clubhouse"}[5m]) > 0.5
+    and on (job, service)
+  min by (job, service) (probe_success{job="blackbox",service="clubhouse"}) == 1
   ```
 
   with `for: 5m`.

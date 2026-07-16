@@ -68,9 +68,15 @@ spec:
 
         # REQ-E5-S03-03 / S06-03 — brief: latency. End-to-end probe duration
         # (TLS handshake + edge + app) averaged over 5m above 500ms.
+        # Gated on the probe SUCCEEDING: failed probes record their timeout
+        # (~5s) as duration, which would keep this firing for minutes after an
+        # outage — but "down" is ClubhouseDown's job; this alert means "up but
+        # slow". Steady-state lab baseline is ~4ms, so 500ms is generous.
         - alert: ClubhouseProbeLatencyHigh
           expr: >-
             avg_over_time(probe_duration_seconds{job="blackbox",service="clubhouse"}[5m]) > 0.5
+            and on (job, service)
+            min by (job, service) (probe_success{job="blackbox",service="clubhouse"}) == 1
           for: 5m
           labels:
             severity: warning

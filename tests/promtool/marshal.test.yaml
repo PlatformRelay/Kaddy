@@ -84,6 +84,8 @@ tests:
     input_series:
       - series: 'probe_duration_seconds{job="blackbox",service="clubhouse"}'
         values: '0.8x15'
+      - series: 'probe_success{job="blackbox",service="clubhouse"}'
+        values: '1x15'
     alert_rule_test:
       - eval_time: 12m
         alertname: ClubhouseProbeLatencyHigh
@@ -102,6 +104,22 @@ tests:
     input_series:
       - series: 'probe_duration_seconds{job="blackbox",service="clubhouse"}'
         values: '0.05x15'
+      - series: 'probe_success{job="blackbox",service="clubhouse"}'
+        values: '1x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: ClubhouseProbeLatencyHigh
+        exp_alerts: []
+
+  # ClubhouseProbeLatencyHigh stays SILENT while the probe is FAILING — failed
+  # probes record their timeout as duration; "down" is ClubhouseDown's job
+  # (the success gate in the expr), so an outage must not masquerade as latency.
+  - interval: 1m
+    input_series:
+      - series: 'probe_duration_seconds{job="blackbox",service="clubhouse"}'
+        values: '5x15'
+      - series: 'probe_success{job="blackbox",service="clubhouse"}'
+        values: '0x15'
     alert_rule_test:
       - eval_time: 12m
         alertname: ClubhouseProbeLatencyHigh
