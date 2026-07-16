@@ -1,0 +1,199 @@
+# E6 default-deny baseline — `websites` namespace (mirrors network/gateway.yaml).
+#
+# The websites namespace hosts the self-service tenant sites composed from
+# Website XRs (deploy/crossplane/composition-website.yaml): per site a
+# Deployment/Service (:port, default 8080), an HTTPRoute attached to the
+# clubhouse Gateway and a ServiceMonitor.
+#
+# Allowed paths (derived from the composition + the gateway-namespace baseline):
+#   1. Cilium Gateway (Envoy) -> site pods. Gateway API traffic reaches the
+#      backends with the RESERVED IDENTITY `ingress` — only a CNP can admit it
+#      (same constraint as allow-gateway-to-clubhouse).
+#   2. Prometheus (monitoring ns) -> :8080 scrapes (composed ServiceMonitor).
+#   3. DNS egress to kube-system CoreDNS :53 (static sites initiate nothing else).
+#   4. Transient smoke probes (kubectl run, tests/smoke/e6-s04-01.sh) hairpin
+#      through the in-cluster edge — the same TWO egress legs as the gateway
+#      namespace's allow-probe-egress-to-edge (Cilium re-evaluates the client
+#      identity against the backend inside Envoy).
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E6-S03-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-dns-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E6-S03-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-prometheus-scrape
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E6-S05-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Cilium-specific: admit Gateway API (Envoy) traffic to composed site pods.
+# The Envoy proxy carries the reserved `ingress` entity identity — not
+# selectable by a K8s NetworkPolicy peer, so this must be a CNP. Selects any
+# pod composed by the Website Composition (deterministic `website` selector
+# label) — new claims are admitted without policy edits (self-service).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-websites
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-gateway-to-websites
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E6-S04-01
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: website
+        operator: Exists
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Cilium-specific: allow transient smoke-probe pods (kubectl run — they carry
+# the kubectl `run` label) to egress to the in-cluster edge and — hairpin leg 2
+# (see network/gateway.yaml for the hubble-verified explanation) — to the site
+# pods the Gateway proxies to.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-probe-egress-to-edge
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-probe-egress-to-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E6-S04-01
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: run
+        operator: Exists
+  egress:
+    - toEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+            - port: "443"
+              protocol: TCP
+    # Hairpin leg 2: the client's egress policy is re-evaluated against the
+    # backend site pod identity inside the Gateway proxy.
+    - toEndpoints:
+        - matchExpressions:
+            - key: website
+              operator: Exists
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

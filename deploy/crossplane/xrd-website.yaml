@@ -1,0 +1,82 @@
+# REQ-E6-S02-01 — the `Website` XRD: kaddy's platform orchestrator API.
+#
+# D-027: shipped as a Crossplane v2 NAMESPACED XR — the XR *is* the resource
+# (Claims are deprecated in v2). The E10 Backstage portal auto-generates its
+# scaffolder form from THIS OpenAPI schema (ADR-0109/0111) — keep the surface
+# small, stable and portable: image/port (content source), path (route), replicas.
+#
+# One claim = one monitored site: the Composition turns a Website into a
+# Deployment + Service + HTTPRoute (clubhouse Gateway) + Certificate
+# (kaddy-local-ca) + ServiceMonitor. ADR-0301 labels on the XR are propagated
+# to every composed resource (Kyverno denies unlabeled pods — set them).
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: websites.platform.kaddy.io
+  labels:
+    owner: platform-team
+    service: website-api
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: websites.platform.kaddy.io
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S02-01
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  scope: Namespaced
+  group: platform.kaddy.io
+  names:
+    kind: Website
+    plural: websites
+    categories:
+      - kaddy
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
+                  description: >-
+                    Container image serving the site on `port` (pinned tag
+                    required — the platform denies :latest). Must answer GET
+                    /healthz (probes) and SHOULD expose Prometheus metrics on
+                    /metrics (the composed ServiceMonitor scrapes it).
+                  default: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
+                port:
+                  type: integer
+                  description: HTTP port the image listens on (unprivileged).
+                  default: 8080
+                  minimum: 1024
+                  maximum: 65535
+                path:
+                  type: string
+                  description: >-
+                    Route path prefix on the shared clubhouse.kaddy.local host
+                    (e.g. /putting-green). The edge rewrites the prefix away, so
+                    the image serves from /. Host-based routing + per-site edge
+                    certs land with E6g/E10.
+                  pattern: '^/[a-z0-9][a-z0-9-]*$'
+                replicas:
+                  type: integer
+                  description: Pod replicas (small static sites — keep modest).
+                  default: 1
+                  minimum: 1
+                  maximum: 3
+              required:
+                - path
+          required:
+            - spec

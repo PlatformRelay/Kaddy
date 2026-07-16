@@ -1,0 +1,139 @@
+# REQ-E6-S02-02: a Website XR (Crossplane v2 NAMESPACED XR, D-027 — the "claim"
+# in v2 is the XR itself) composes Deployment + Service + HTTPRoute +
+# Certificate + ServiceMonitor in ITS OWN namespace, all carrying the ADR-0301
+# labels propagated from the XR.
+#
+# Runs in an ephemeral chainsaw-* namespace: composed-resource EXISTENCE and
+# label propagation are asserted; edge attachment / scrape reachability are the
+# live-namespace concerns of tests/smoke/e6-s03-01.sh..e6-s05-01.sh (the
+# clubhouse Gateway only admits routes from the `websites` namespace and the
+# netpol allows live there).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: crossplane-website-claim-composed
+  annotations:
+    kaddy.io/req: REQ-E6-S02-02
+    # skip: true — needs Crossplane + the Website XRD/Composition + cert-manager
+    # + Gateway API/monitoring CRDs, which the ephemeral CI chainsaw kind cluster
+    # does NOT provision (same class as the gateway/tls suites). Verified PASSING
+    # against the live kind-kaddy-dev cluster with:
+    #   chainsaw test --test-file tests/chainsaw/crossplane/website-claim-composed.yaml .
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-crossplane
+spec:
+  skip: true
+  description: Website XR composes a labeled Deployment/Service/HTTPRoute/Certificate/ServiceMonitor
+  timeouts:
+    assert: 240s
+  steps:
+    - name: claim-website
+      try:
+        - apply:
+            resource:
+              apiVersion: platform.kaddy.io/v1alpha1
+              kind: Website
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  service: chainsaw-site
+                  part-of: kaddy
+                  managed-by: chainsaw
+                  data-classification: public
+                  business-criticality: business-operational
+                  track: stable
+              spec:
+                image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
+                port: 8080
+                path: /chainsaw-site
+                replicas: 1
+    - name: composed-deployment-and-service
+      try:
+        - assert:
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  service: chainsaw-site
+                  part-of: kaddy
+                  managed-by: crossplane
+                  data-classification: public
+                  business-criticality: business-operational
+                  track: stable
+              spec:
+                template:
+                  metadata:
+                    labels:
+                      owner: platform-team
+                      service: chainsaw-site
+                      part-of: kaddy
+                      data-classification: public
+                      business-criticality: business-operational
+                      track: stable
+        - assert:
+            resource:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  service: chainsaw-site
+                  part-of: kaddy
+                  managed-by: crossplane
+              spec:
+                (ports[0].port): 8080
+      catch:
+        - describe:
+            apiVersion: platform.kaddy.io/v1alpha1
+            kind: Website
+            name: chainsaw-site
+    - name: composed-route-cert-monitor
+      try:
+        - assert:
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  service: chainsaw-site
+                  part-of: kaddy
+                  managed-by: crossplane
+              spec:
+                (parentRefs[0].name): clubhouse
+                (parentRefs[0].namespace): gateway
+                (rules[0].matches[0].path.value): /chainsaw-site
+        - assert:
+            resource:
+              apiVersion: cert-manager.io/v1
+              kind: Certificate
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  managed-by: crossplane
+              spec:
+                issuerRef:
+                  kind: ClusterIssuer
+                  name: kaddy-local-ca
+        - assert:
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                name: chainsaw-site
+                labels:
+                  owner: platform-team
+                  managed-by: crossplane
+              spec:
+                (endpoints[0].path): /metrics
+      catch:
+        - describe:
+            apiVersion: platform.kaddy.io/v1alpha1
+            kind: Website
+            name: chainsaw-site

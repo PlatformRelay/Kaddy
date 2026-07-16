@@ -44,6 +44,10 @@ spec:
     # demo (deploy/workloads/mulligan/) into its own namespace:
     - server: https://kubernetes.default.svc
       namespace: mulligan
+    # E6: the self-service Website XRs (deploy/workloads/website-demo/) live
+    # in the websites namespace (v2 namespaced XRs, D-027):
+    - server: https://kubernetes.default.svc
+      namespace: websites
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

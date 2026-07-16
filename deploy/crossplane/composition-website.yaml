@@ -1,0 +1,343 @@
+# REQ-E6-S02-02 — Composition: one Website XR = one monitored, TLS-served site.
+#
+# Composes NATIVE Kubernetes resources (Crossplane v2 — no provider-kubernetes)
+# into the XR's own namespace via function-patch-and-transform (pinned):
+#
+#   Deployment + Service   the site itself (hardened pod: non-root, RO rootfs,
+#                          no caps, pinned image — the Kyverno baseline enforces
+#                          all of this in the websites namespace)
+#   HTTPRoute              path route on the existing clubhouse Gateway's https
+#                          listener (cross-namespace attach; prefix rewritten
+#                          away so images serve from /)
+#   Certificate            per-site cert from the kaddy-local-ca ClusterIssuer
+#                          (secret <name>-tls in the XR namespace; consumed by
+#                          per-host listeners when host-based routing lands —
+#                          E6g/E10 — issued per-claim from day one)
+#   ServiceMonitor         Prometheus scrapes <site>:port/metrics — one claim =
+#                          one monitored site
+#
+# ADR-0301: the 6 identity labels are PROPAGATED from the XR (patchsets below);
+# managed-by is stamped `crossplane` on composed resources (the tool that
+# manages them). Missing labels on the XR => Kyverno denies the pods — the
+# platform contract is enforced, not assumed.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: website.platform.kaddy.io
+  labels:
+    owner: platform-team
+    service: website-api
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: website.platform.kaddy.io
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S02-02
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  compositeTypeRef:
+    apiVersion: platform.kaddy.io/v1alpha1
+    kind: Website
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        patchSets:
+          # Composed resources are named after the XR (stable, demo-friendly).
+          - name: xr-name
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.name
+          # ADR-0301 identity labels propagated XR -> composed resource.
+          # managed-by is NOT propagated: base stamps `crossplane`.
+          - name: adr0301-labels
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['owner']
+                toFieldPath: metadata.labels['owner']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['service']
+                toFieldPath: metadata.labels['service']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['part-of']
+                toFieldPath: metadata.labels['part-of']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['data-classification']
+                toFieldPath: metadata.labels['data-classification']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['business-criticality']
+                toFieldPath: metadata.labels['business-criticality']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['track']
+                toFieldPath: metadata.labels['track']
+          # Same set onto the POD template (require-kaddy-labels matches Pods).
+          - name: adr0301-pod-labels
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['owner']
+                toFieldPath: spec.template.metadata.labels['owner']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['service']
+                toFieldPath: spec.template.metadata.labels['service']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['part-of']
+                toFieldPath: spec.template.metadata.labels['part-of']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['data-classification']
+                toFieldPath: spec.template.metadata.labels['data-classification']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['business-criticality']
+                toFieldPath: spec.template.metadata.labels['business-criticality']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.labels['track']
+                toFieldPath: spec.template.metadata.labels['track']
+        resources:
+          # ------------------------------------------------------------ site
+          - name: deployment
+            base:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                labels:
+                  managed-by: crossplane
+              spec:
+                selector:
+                  matchLabels: {}
+                template:
+                  metadata:
+                    labels:
+                      managed-by: crossplane
+                  spec:
+                    securityContext:
+                      runAsNonRoot: true
+                      runAsUser: 65532
+                      seccompProfile:
+                        type: RuntimeDefault
+                    containers:
+                      - name: site
+                        ports:
+                          - name: http
+                            containerPort: 8080
+                        readinessProbe:
+                          httpGet:
+                            path: /healthz
+                            port: http
+                          initialDelaySeconds: 2
+                          periodSeconds: 5
+                        livenessProbe:
+                          httpGet:
+                            path: /healthz
+                            port: http
+                          initialDelaySeconds: 5
+                          periodSeconds: 10
+                        resources:
+                          requests:
+                            cpu: 10m
+                            memory: 32Mi
+                          limits:
+                            cpu: 100m
+                            memory: 128Mi
+                        securityContext:
+                          allowPrivilegeEscalation: false
+                          readOnlyRootFilesystem: true
+                          capabilities:
+                            drop:
+                              - ALL
+                        volumeMounts:
+                          - name: tmp
+                            mountPath: /tmp
+                    volumes:
+                      - name: tmp
+                        emptyDir: {}
+            patches:
+              - type: PatchSet
+                patchSetName: xr-name
+              - type: PatchSet
+                patchSetName: adr0301-labels
+              - type: PatchSet
+                patchSetName: adr0301-pod-labels
+              # Deterministic selector decoupled from the identity labels.
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.selector.matchLabels['website']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.template.metadata.labels['website']
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.image
+                toFieldPath: spec.template.spec.containers[0].image
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.port
+                toFieldPath: spec.template.spec.containers[0].ports[0].containerPort
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.replicas
+                toFieldPath: spec.replicas
+            readinessChecks:
+              - type: MatchCondition
+                matchCondition:
+                  type: Available
+                  status: "True"
+          - name: service
+            base:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                labels:
+                  managed-by: crossplane
+              spec:
+                type: ClusterIP
+                selector: {}
+                ports:
+                  - name: http
+                    port: 8080
+                    targetPort: 8080
+                    protocol: TCP
+            patches:
+              - type: PatchSet
+                patchSetName: xr-name
+              - type: PatchSet
+                patchSetName: adr0301-labels
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: metadata.labels['website']
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.selector['website']
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.port
+                toFieldPath: spec.ports[0].port
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.port
+                toFieldPath: spec.ports[0].targetPort
+            readinessChecks:
+              # ClusterIP Services are usable on creation.
+              - type: None
+          # ------------------------------------------------------------ edge
+          - name: httproute
+            base:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                labels:
+                  managed-by: crossplane
+              spec:
+                parentRefs:
+                  - name: clubhouse
+                    namespace: gateway
+                    sectionName: https
+                hostnames:
+                  - clubhouse.kaddy.local
+                rules:
+                  - matches:
+                      - path:
+                          type: PathPrefix
+                          value: /placeholder
+                    filters:
+                      # Sites serve from /; the shared-host path prefix is an
+                      # edge concern and is rewritten away.
+                      - type: URLRewrite
+                        urlRewrite:
+                          path:
+                            type: ReplacePrefixMatch
+                            replacePrefixMatch: /
+                    backendRefs:
+                      - name: placeholder
+                        port: 8080
+            patches:
+              - type: PatchSet
+                patchSetName: xr-name
+              - type: PatchSet
+                patchSetName: adr0301-labels
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.path
+                toFieldPath: spec.rules[0].matches[0].path.value
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.rules[0].backendRefs[0].name
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.port
+                toFieldPath: spec.rules[0].backendRefs[0].port
+            readinessChecks:
+              # Acceptance lives per-parent under status.parents (no top-level
+              # Ready condition); asserted by tests/smoke/e6-s03-01.sh.
+              - type: None
+          # ------------------------------------------------------------- tls
+          - name: certificate
+            base:
+              apiVersion: cert-manager.io/v1
+              kind: Certificate
+              metadata:
+                labels:
+                  managed-by: crossplane
+              spec:
+                secretName: placeholder-tls
+                dnsNames:
+                  - placeholder.kaddy.local
+                issuerRef:
+                  kind: ClusterIssuer
+                  name: kaddy-local-ca
+                  group: cert-manager.io
+            patches:
+              - type: PatchSet
+                patchSetName: xr-name
+              - type: PatchSet
+                patchSetName: adr0301-labels
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.secretName
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s-tls"
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.dnsNames[0]
+                transforms:
+                  - type: string
+                    string:
+                      type: Format
+                      fmt: "%s.kaddy.local"
+            readinessChecks:
+              - type: MatchCondition
+                matchCondition:
+                  type: Ready
+                  status: "True"
+          # ------------------------------------------------------ monitoring
+          - name: servicemonitor
+            base:
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                labels:
+                  managed-by: crossplane
+              spec:
+                selector:
+                  matchLabels: {}
+                endpoints:
+                  - port: http
+                    path: /metrics
+                    interval: 30s
+            patches:
+              - type: PatchSet
+                patchSetName: xr-name
+              - type: PatchSet
+                patchSetName: adr0301-labels
+              - type: FromCompositeFieldPath
+                fromFieldPath: metadata.name
+                toFieldPath: spec.selector.matchLabels['website']
+            readinessChecks:
+              # ServiceMonitors have no status; scrape liveness is asserted by
+              # tests/smoke/e6-s05-01.sh (up == 1 in Prometheus).
+              - type: None

@@ -5,8 +5,10 @@
 # in its own namespace). An HTTP listener is present to drive the optional
 # HTTP->HTTPS redirect (REQ-E4-S03-03).
 #
-# allowedRoutes.from: Same — the HTTPRoutes live in this same `gateway` namespace,
-# so no ReferenceGrant is needed.
+# allowedRoutes: http stays Same-namespace. The https listener additionally
+# admits routes from the `websites` namespace (E6 Website XR composed routes;
+# name-pinned selector). backendRefs stay same-namespace as their routes, so no
+# ReferenceGrant is needed anywhere.
 #
 # Cilium provisions a LoadBalancer Service `cilium-gateway-clubhouse` for this
 # Gateway; the E4 smoke pins its NodePort to a free port and curls it in-cluster
@@ -36,6 +38,10 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+    # REQ-E6-S02-02: the Website Composition attaches per-site HTTPRoutes from
+    # the self-service `websites` namespace to the https listener (path routing
+    # under the shared host). Name-pinned selector — behaves like `Same` PLUS
+    # exactly the websites namespace; every other namespace stays rejected.
     - name: https
       protocol: HTTPS
       port: 443
@@ -47,4 +53,11 @@ spec:
             name: clubhouse-tls
       allowedRoutes:
         namespaces:
-          from: Same
+          from: Selector
+          selector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - gateway
+                  - websites

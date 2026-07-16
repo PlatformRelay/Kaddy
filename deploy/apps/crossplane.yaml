@@ -1,0 +1,57 @@
+# REQ-E6-S01-01: crossplane child Application — the Crossplane v2 control
+# plane (namespaced XRs per D-027) plus the kaddy platform API built on it
+# (Website XRD + Composition + pinned composition function).
+#
+# Mirrors the observability nested-app pattern: this app syncs deploy/crossplane/
+# which contains a Helm-based grandchild Application (crossplane-core, pinned
+# chart 2.3.3 from charts.crossplane.io) beside the Crossplane CRs (Function,
+# DeploymentRuntimeConfig, XRD, Composition). The CRs' kinds only exist after
+# the chart installs, so they carry SkipDryRunOnMissingResource + sync-waves and
+# this app retries until the control plane is up (first-boot convergence).
+#
+# selfHeal OFF (documented exception class: heavy controller install, same as
+# kyverno/rollouts); auto create/update stays on.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crossplane
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: crossplane
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: crossplane
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S01-01
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/crossplane
+  destination:
+    server: https://kubernetes.default.svc
+    # Default for namespaced resources; the nested crossplane-core Application
+    # pins argocd explicitly (same as the observability grandchildren).
+    namespace: crossplane-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+    # First boot: XRD/Composition/Function kinds appear only after the nested
+    # Helm app installs the Crossplane CRDs — retry until convergence.
+    retry:
+      limit: 10
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,91 @@
+# REQ-E6-S01-01 — Crossplane v2 core as a pinned Helm grandchild Application
+# (nested-app pattern, same as deploy/observability/kube-prometheus-stack.yaml).
+#
+# v2 (D-027): the Website XRD ships as a NAMESPACED XR — Claims are deprecated,
+# the XR is the resource. Chart 2.3.3 = latest stable v2.x at pin time.
+#
+# NO cloud providers in this slice (provider-gridscale is phase 2 / E6g) and no
+# provider-kubernetes either: Crossplane v2 composes native Kubernetes resources
+# directly, so the only extension package is function-patch-and-transform
+# (pinned, see function-patch-and-transform.yaml).
+#
+# Policy compliance (crossplane-system is NOT excluded by the Kyverno baseline):
+#   - customLabels flows into every chart resource INCLUDING pod templates
+#     (require-kaddy-labels enforces the 7 bare ADR-0301 keys on Pods);
+#   - podSecurityContext* adds runAsNonRoot (require-run-as-nonroot);
+#   - chart pins image tags by appVersion (disallow-latest-tag).
+#
+# CAPACITY TRIMS (8GB single kind node): single replicas (chart default) +
+# small explicit requests; webhooks/metrics left at chart defaults.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crossplane-core
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: control-plane
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: crossplane-core
+    app.kubernetes.io/component: control-plane
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S01-01
+spec:
+  project: platform
+  source:
+    repoURL: https://charts.crossplane.io/stable
+    chart: crossplane
+    targetRevision: 2.3.3
+    helm:
+      releaseName: crossplane
+      valuesObject:
+        replicas: 1
+        customLabels:
+          owner: platform-team
+          service: crossplane
+          part-of: kaddy
+          managed-by: argocd
+          data-classification: internal
+          business-criticality: business-critical
+          track: stable
+        podSecurityContextCrossplane:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        podSecurityContextRBACManager:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        resourcesCrossplane:
+          requests:
+            cpu: 50m
+            memory: 192Mi
+          limits:
+            cpu: 300m
+            memory: 512Mi
+        resourcesRBACManager:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: crossplane-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      # Crossplane CRDs are large — server-side apply (same as kyverno).
+      - ServerSideApply=true

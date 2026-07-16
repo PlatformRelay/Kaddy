@@ -8,7 +8,8 @@
 # Members: root (app-of-apps), platform-core (ClusterIssuers), policies
 # (Kyverno ClusterPolicies + NetworkPolicies), kyverno (the admission
 # engine, vendored install), rollouts (Argo Rollouts controller, vendored
-# install), identity (deferred).
+# install), crossplane + crossplane-core (E6: Crossplane v2 + the Website
+# XRD/Composition platform API), identity (deferred).
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -34,6 +35,10 @@ spec:
     admission/network policies, identity. Source of truth is this repo only.
   sourceRepos:
     - https://github.com/PlatformRelay/Kaddy.git
+    # E6: the crossplane-core grandchild Application pulls the pinned Crossplane
+    # chart from the upstream Helm repo (nested-Helm-app pattern; the list
+    # stays closed — one repo, one chart, exact version pin).
+    - https://charts.crossplane.io/stable
   destinations:
     - server: https://kubernetes.default.svc
       namespace: argocd
@@ -48,9 +53,14 @@ spec:
       namespace: gateway
     - server: https://kubernetes.default.svc
       namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: websites
     # The rollouts app (vendored Argo Rollouts controller install):
     - server: https://kubernetes.default.svc
       namespace: argo-rollouts
+    # The crossplane app (E6): Crossplane v2 core + Website XRD/Composition.
+    - server: https://kubernetes.default.svc
+      namespace: crossplane-system
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace
@@ -66,3 +76,12 @@ spec:
       kind: ClusterRole
     - group: rbac.authorization.k8s.io
       kind: ClusterRoleBinding
+    # E6 Crossplane platform API (cluster-scoped CRs; still a closed list):
+    - group: apiextensions.crossplane.io
+      kind: CompositeResourceDefinition
+    - group: apiextensions.crossplane.io
+      kind: Composition
+    - group: pkg.crossplane.io
+      kind: Function
+    - group: pkg.crossplane.io
+      kind: DeploymentRuntimeConfig

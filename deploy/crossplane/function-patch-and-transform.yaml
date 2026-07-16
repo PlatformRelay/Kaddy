@@ -1,0 +1,95 @@
+# REQ-E6-S02-01 — the single composition function the Website Composition
+# pipelines through: crossplane-contrib/function-patch-and-transform, PINNED to
+# v0.10.7 (SEC-4: no floating tags; Renovate picks up digest/tag bumps).
+#
+# The DeploymentRuntimeConfig makes the function's package-runtime pod comply
+# with the kaddy admission baseline (crossplane-system has NO Kyverno
+# exclusions): ADR-0301 bare-key labels on the pod + runAsNonRoot. Crossplane
+# merges its own pkg.crossplane.io labels/selectors on top.
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: function-patch-and-transform
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: composition-function
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: function-patch-and-transform
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S02-01
+    # Kind exists only after the crossplane-core chart installs (first boot).
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  package: xpkg.crossplane.io/crossplane-contrib/function-patch-and-transform:v0.10.7
+  runtimeConfigRef:
+    apiVersion: pkg.crossplane.io/v1beta1
+    kind: DeploymentRuntimeConfig
+    name: kaddy-function-runtime
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: kaddy-function-runtime
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: composition-function
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: kaddy-function-runtime
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S02-01
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  deploymentTemplate:
+    spec:
+      replicas: 1
+      selector: {}
+      template:
+        metadata:
+          labels:
+            owner: platform-team
+            service: crossplane
+            component: composition-function
+            part-of: kaddy
+            managed-by: crossplane
+            data-classification: internal
+            business-criticality: business-critical
+            track: stable
+        spec:
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: package-runtime
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi

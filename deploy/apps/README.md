@@ -18,6 +18,7 @@ app-of-apps pattern). It is one of the two **control-plane apps** that self-heal
 | `observability` | `deploy/observability` | off | kube-prometheus-stack + Loki + Alloy (stateful) |
 | `gateway` | `deploy/gateway` | off | placeholder; CRDs/GatewayClass owned by E1e |
 | `workloads` | `deploy/workloads` | off | placeholder; sample apps, later Rollouts-managed |
+| `crossplane` | `deploy/crossplane` | off | E6: Crossplane v2 (nested pinned Helm app) + Website XRD/Composition |
 | `identity` | `deploy/identity` | n/a (manual) | **deferred** — needs KSOPS (REQ-E3-S01-03) |
 
 ## selfHeal policy (REQ-E3-S01-02)

@@ -1,0 +1,23 @@
+# REQ-E6-S03-01 — the self-service websites namespace (tenant sites claimed via
+# the Website XR live here; v2 XRs are namespaced, D-027).
+#
+# Mirrors the mulligan pattern: the namespace manifest rides in the workload dir
+# (workloads Application, recurse:true) and resources pin `namespace: websites`
+# explicitly. The clubhouse Gateway's https listener admits HTTPRoutes from this
+# namespace by name selector (deploy/gateway/gateway.yaml); the Kyverno + netpol
+# baseline applies with NO exclusions (deploy/policies/network/websites.yaml).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: websites
+  labels:
+    owner: platform-team
+    service: websites
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: websites
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd

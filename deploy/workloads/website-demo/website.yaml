@@ -1,0 +1,35 @@
+# REQ-E6-S03-01 / REQ-E6-EXIT — the demo claim: ONE Website XR, GitOps-synced
+# by the workloads Application, becomes a Running, TLS-served, Prometheus-
+# monitored site with no manual kubectl edits (the E6 self-service story).
+#
+# putting-green serves the kaddy showcase image (our OWN cosign-signed image,
+# v0.1.0) at https://clubhouse.kaddy.local/putting-green/ through the Cilium
+# edge. The ADR-0301 labels below are PROPAGATED by the Composition onto every
+# composed resource — omit them and Kyverno denies the site's pods (enforced,
+# not assumed).
+apiVersion: platform.kaddy.io/v1alpha1
+kind: Website
+metadata:
+  name: putting-green
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: putting-green
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: putting-green
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S03-01
+    # Kind exists only after the crossplane app establishes the XRD (first boot).
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
+  port: 8080
+  path: /putting-green
+  replicas: 1

@@ -464,3 +464,33 @@ tasks:
       KUBECONFIG: '{{.KUBECONFIG}}'
     cmds:
       - bash tests/smoke/e5-exit.sh
+
+  bootstrap:e6:
+    desc: E6 — register the Crossplane platform (AppProjects + crossplane child app; Argo CD converges the rest; idempotent)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - |
+        set -euo pipefail
+        # SAFETY: never apply into a non-kind context (mirrors bootstrap:e4).
+        ctx="$(kubectl config current-context 2>/dev/null || true)"
+        [ "${ctx}" = "kind-kaddy-dev" ] \
+          || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
+        # Projects first (first-boot ordering — same rationale as bootstrap:e3),
+        # then the crossplane child Application; Argo CD installs the pinned
+        # chart, establishes the XRD/Composition and syncs the demo Website XR
+        # via the workloads app (retry handles the CRD-before-CR window).
+        kubectl apply -f deploy/apps/projects/platform.yaml
+        kubectl apply -f deploy/apps/projects/workloads.yaml
+        kubectl apply -f deploy/apps/crossplane.yaml
+        # The websites namespace netpol baseline rides in the MANUAL-sync
+        # policies app (deploy/policies/README.md) — sync it deliberately:
+        #   argocd app sync policies --core
+        echo "E6 registered. Watch: kubectl -n argocd get app crossplane; kubectl get xrd,composition"
+
+  test:smoke:e6:
+    desc: E6 — live smoke bundle (Crossplane core, Website XRD, claim -> TLS edge -> monitored; needs a green cluster)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash tests/smoke/e6-exit.sh
