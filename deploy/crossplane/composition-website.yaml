@@ -149,11 +149,20 @@ spec:
                             cpu: 100m
                             memory: 128Mi
                         securityContext:
-                          allowPrivilegeEscalation: false
+                          # Upstream caddy images ship /usr/bin/caddy with the
+                          # cap_net_bind_service FILE capability; with
+                          # no-new-privs the execve of a file-caps binary is
+                          # EPERM for non-root (verified live). Allow exactly
+                          # that one cap; everything else stays dropped and the
+                          # rootfs read-only. (Follow-up: strip the setcap in
+                          # the showcase image and flip this back to false/ALL.)
+                          allowPrivilegeEscalation: true
                           readOnlyRootFilesystem: true
                           capabilities:
                             drop:
                               - ALL
+                            add:
+                              - NET_BIND_SERVICE
                         volumeMounts:
                           - name: tmp
                             mountPath: /tmp
