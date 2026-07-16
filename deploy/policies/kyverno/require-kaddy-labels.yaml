@@ -70,10 +70,11 @@ spec:
           - resources:
               namespaces:
                 - e1e-smoke
-          # The E4 redirect smoke (tests/smoke/e4-s03-03.sh) runs a transient
-          # `kubectl run clubhouse-redir-$$` curl pod in the gateway
-          # namespace. Name+namespace-scoped — everything else in gateway
-          # stays enforced.
+          # The E4 smokes run transient curl pods in the gateway namespace:
+          # `clubhouse-redir-$$` (tests/smoke/e4-s03-03.sh) and
+          # `clubhouse-smoke-$$` (hack/smoke/https-clubhouse.sh).
+          # Name+namespace-scoped — everything else in gateway stays
+          # enforced.
           - resources:
               kinds:
                 - Pod
@@ -81,6 +82,7 @@ spec:
                 - gateway
               names:
                 - "clubhouse-redir-*"
+                - "clubhouse-smoke-*"
       validate:
         message: >-
           Pods must set the mandatory ADR-0301 labels (canonical bare keys):

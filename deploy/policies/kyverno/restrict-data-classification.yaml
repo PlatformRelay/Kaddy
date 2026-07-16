@@ -75,6 +75,7 @@ spec:
                 - gateway
               names:
                 - "clubhouse-redir-*"
+                - "clubhouse-smoke-*"
       validate:
         message: >-
           The data-classification label must be one of: public, internal,
