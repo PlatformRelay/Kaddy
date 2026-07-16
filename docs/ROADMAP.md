@@ -1,7 +1,7 @@
 # ROADMAP — kaddy
 
 Build order for the gridscale platform-engineering exercise. **Phase 1 underway** — the brief spine
-E1e → E1 → E3 → E4 is complete and demoable (**14/14** GitOps apps Synced/Healthy, clubhouse over
+E1e → E1 → E3 → E4 is complete and demoable (**15/15** GitOps apps Synced/Healthy, clubhouse over
 verified HTTPS through the Cilium edge); labels module (E1b), marshal monitoring (E5), gateway spike
 (E2), Crossplane Website (E6), mulligan rollouts (E7), scorecard offline + Getting Started (E8),
 security baseline cutover (E1c), identity (E1d), first security audit (E11-S01), and Slidev deck

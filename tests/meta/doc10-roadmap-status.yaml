@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 R="$ROOT/docs/ROADMAP.md"
 fail() { echo "FAIL: $*" >&2; exit 1; }
-grep -qF '14/14' "$R" || fail "ROADMAP intro must claim 14/14 GitOps apps"
+grep -qF '15/15' "$R" || fail "ROADMAP intro must claim 15/15 GitOps apps"
 ! grep -qE '9/9 GitOps' "$R" || fail "ROADMAP still claims stale 9/9"
 grep -qE 'E1c · Security baseline ✅' "$R" || fail "E1c header must be ✅"
 grep -qE 'E1d · Identity.*✅' "$R" || fail "E1d header must be ✅"

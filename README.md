@@ -88,7 +88,7 @@ task test           # L0 tofu test · L1 conftest + promtool · L2 Chainsaw
 ## Status
 
 **Brief answered end-to-end — serve → scrape → fire, plus progressive delivery and an enforcing
-security baseline, all GitOps.** Verified live: 14/14 GitOps apps Synced/Healthy; clubhouse served
+security baseline, all GitOps.** Verified live: 15/15 GitOps apps Synced/Healthy; clubhouse served
 over verified HTTPS through the Cilium Gateway (E4); observability spine
 (Prometheus/Alertmanager/Grafana + Loki/Alloy, E3); the marshal fires a real alert against the
 served site and resolves it — `task demo:fire` (E5) — with a provisioned Grafana dashboard and
