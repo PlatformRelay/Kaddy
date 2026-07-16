@@ -157,8 +157,16 @@ spec:
                   echo "FAIL: probe pod rejected by admission control, not the network path: ${out}" >&2
                   exit 2
                 fi
-                # Denied = curl exited nonzero AND never reported HTTP 200.
-                if [ "${rc}" -ne 0 ] && ! printf '%s' "${out}" | grep -q 'HTTP_200'; then
+                # Denied = curl exited nonzero AND emitted HTTP_000. curl's -w
+                # writeout fires even on a failed transfer, so a real network
+                # block (timeout rc=28 / refused rc=7) prints HTTP_000 as the
+                # POSITIVE deny signal. A pod that never ran curl (attach flake,
+                # pull/schedule failure) emits NO HTTP_ token and is correctly
+                # NOT counted as a deny — it retries instead of passing
+                # vacuously (tech-review F1). The probe runs in `default`
+                # (unrestricted egress), so HTTP_000 here means the ingress path
+                # was blocked, not a DNS/egress failure (tech-review F2).
+                if [ "${rc}" -ne 0 ] && printf '%s' "${out}" | grep -q 'HTTP_000'; then
                   echo "attempt ${i}: curl denied (rc=${rc}, out=${out}) — mulligan default-deny ingress enforced"
                   denied=1
                   break
