@@ -14,7 +14,7 @@ smoke_require_cluster
 source "${DIR}/e5-lib.sh"
 e5_grafana_up
 e5_grafana_creds
-G="http://127.0.0.1:${E5_GRAFANA_PORT:-13000}"
+G="http://127.0.0.1:${E5_GRAFANA_PORT:-23000}"
 AUTH=(-u "${E5_GRAFANA_USER}:${E5_GRAFANA_PASS}")
 
 # Resolve the provisioned Prometheus datasource UID (don't assume).

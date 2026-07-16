@@ -26,8 +26,11 @@ smoke_require_cluster
 NS_APP="gateway"
 NS_MON="monitoring"
 ALERT="ClubhouseDown"
-PROM_PORT="${PROM_PORT:-19090}"
-AM_PORT="${AM_PORT:-19093}"
+# Dedicated high ports — avoid colliding with ad-hoc 19090/13000 tunnels an
+# operator may have open (a stolen/stale tunnel dying mid-demo starves the
+# polls; see the self-healing ensure_pf below).
+PROM_PORT="${PROM_PORT:-29090}"
+AM_PORT="${AM_PORT:-29093}"
 FIRE_TIMEOUT="${FIRE_TIMEOUT:-360}"     # seconds to reach firing
 RESOLVE_TIMEOUT="${RESOLVE_TIMEOUT:-420}" # seconds to resolve after restore
 
@@ -41,19 +44,27 @@ trap cleanup EXIT
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%SZ)" "$*"; }
 
-# --- port-forwards ----------------------------------------------------------
-kubectl -n "${NS_MON}" port-forward svc/kps-prometheus "${PROM_PORT}:9090" >/dev/null 2>&1 &
-PF_PIDS+=($!)
-kubectl -n "${NS_MON}" port-forward svc/kps-alertmanager "${AM_PORT}:9093" >/dev/null 2>&1 &
-PF_PIDS+=($!)
-sleep 3
+# --- self-healing port-forwards ----------------------------------------------
+# kubectl port-forward tunnels can silently die over a multi-minute demo (pod
+# connection drops). Every query first ensures its tunnel answers /-/ready and
+# respawns it when it does not — the demo never starves on a dead tunnel.
+ensure_pf() { # $1 = local port, $2 = svc, $3 = remote port
+  if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:$1/-/ready" 2>/dev/null; then
+    return 0
+  fi
+  kubectl -n "${NS_MON}" port-forward "svc/$2" "$1:$3" >/dev/null 2>&1 &
+  PF_PIDS+=($!)
+  sleep 2
+}
 
 prom_query() { # $1 = promql; prints first value or empty
+  ensure_pf "${PROM_PORT}" kps-prometheus 9090
   curl -sf --get "http://127.0.0.1:${PROM_PORT}/api/v1/query" --data-urlencode "query=$1" \
     | yq -p json '.data.result[0].value[1] // ""' 2>/dev/null || true
 }
 
 alert_state() { # ClubhouseDown state in Prometheus: inactive|pending|firing
+  ensure_pf "${PROM_PORT}" kps-prometheus 9090
   curl -sf "http://127.0.0.1:${PROM_PORT}/api/v1/rules?type=alert" \
     | yq -p json ".data.groups[].rules[] | select(.name == \"${ALERT}\") | .state" 2>/dev/null \
     | head -1 || true
@@ -61,6 +72,7 @@ alert_state() { # ClubhouseDown state in Prometheus: inactive|pending|firing
 
 am_active() { # 0 (true) when the alert is ACTIVE in Alertmanager
   local n
+  ensure_pf "${AM_PORT}" kps-alertmanager 9093
   n="$(curl -sf "http://127.0.0.1:${AM_PORT}/api/v2/alerts?filter=alertname%3D%22${ALERT}%22&active=true&silenced=false&inhibited=false" \
     | yq -p json 'length' 2>/dev/null || echo 0)"
   [[ "${n}" =~ ^[1-9] ]]

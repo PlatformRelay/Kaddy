@@ -24,14 +24,14 @@ e5_port_forward() {
 
 # e5_prom_query <promql> — prints the first sample value ("" when no result).
 e5_prom_query() {
-  curl -sf --get "http://127.0.0.1:${E5_PROM_PORT:-19090}/api/v1/query" \
+  curl -sf --get "http://127.0.0.1:${E5_PROM_PORT:-29090}/api/v1/query" \
     --data-urlencode "query=$1" \
     | yq -p json '.data.result[0].value[1] // ""' 2>/dev/null || true
 }
 
-e5_prom_up() { e5_port_forward kps-prometheus "${E5_PROM_PORT:-19090}" 9090; }
-e5_am_up()   { e5_port_forward kps-alertmanager "${E5_AM_PORT:-19093}" 9093; }
-e5_grafana_up() { e5_port_forward kube-prometheus-stack-grafana "${E5_GRAFANA_PORT:-13000}" 80; }
+e5_prom_up() { e5_port_forward kps-prometheus "${E5_PROM_PORT:-29090}" 9090; }
+e5_am_up()   { e5_port_forward kps-alertmanager "${E5_AM_PORT:-29093}" 9093; }
+e5_grafana_up() { e5_port_forward kube-prometheus-stack-grafana "${E5_GRAFANA_PORT:-23000}" 80; }
 
 # e5_grafana_creds — exports E5_GRAFANA_USER / E5_GRAFANA_PASS from the chart's
 # admin Secret (never hardcoded; rotating the Secret keeps the smoke green).

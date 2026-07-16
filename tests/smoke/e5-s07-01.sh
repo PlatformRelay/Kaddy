@@ -9,8 +9,8 @@ source "${DIR}/lib.sh"
 smoke_require_cluster
 # shellcheck disable=SC1091
 source "${DIR}/e5-lib.sh"
-e5_port_forward loki 13100 3100
-L="http://127.0.0.1:13100"
+e5_port_forward loki 23100 3100
+L="http://127.0.0.1:23100"
 
 # Generate a fresh access-log line through the real edge (Gateway Service).
 kubectl -n monitoring exec deploy/kube-prometheus-stack-grafana -c grafana -- \

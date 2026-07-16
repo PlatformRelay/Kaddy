@@ -9,8 +9,8 @@ source "${DIR}/lib.sh"
 smoke_require_cluster
 # shellcheck disable=SC1091
 source "${DIR}/e5-lib.sh"
-e5_port_forward loki 13100 3100
-L="http://127.0.0.1:13100"
+e5_port_forward loki 23100 3100
+L="http://127.0.0.1:23100"
 
 start="$(( $(date +%s) - 3600 ))000000000"
 out="$(curl -sf --get "${L}/loki/api/v1/query_range" \

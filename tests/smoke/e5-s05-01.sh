@@ -17,7 +17,7 @@ smoke_ok "dashboard ConfigMap present with sidecar label"
 
 e5_grafana_up
 e5_grafana_creds
-G="http://127.0.0.1:${E5_GRAFANA_PORT:-13000}"
+G="http://127.0.0.1:${E5_GRAFANA_PORT:-23000}"
 
 # The sidecar needs a moment after the CM lands; poll briefly.
 found=""

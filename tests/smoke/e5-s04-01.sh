@@ -11,7 +11,7 @@ smoke_require_cluster
 # shellcheck disable=SC1091
 source "${DIR}/e5-lib.sh"
 e5_am_up
-AM="http://127.0.0.1:${E5_AM_PORT:-19093}"
+AM="http://127.0.0.1:${E5_AM_PORT:-29093}"
 
 # Alertmanager healthy?
 curl -sf "${AM}/-/healthy" >/dev/null || smoke_fail "Alertmanager not healthy"
