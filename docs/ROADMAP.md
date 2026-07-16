@@ -291,10 +291,12 @@ the page + feeds the `caddy_*` marshal alerts.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E13-S01 | Golden image build (Caddy/nginx + `/metrics`) → export `.gz` to object storage | ⬜ |
-| E13-S02 | Register + import Marketplace application via Terraform (both engines, private tenant) | ⬜ |
-| E13-S03 | Deploy proof: server from template serves page + `caddy_*` alert fires (serve→scrape→fire) | ⬜ |
-| E13-S04 | Runbook + exercise-traceability row | ⬜ |
+| E13-S01 | Golden image build (Caddy/nginx + `/metrics`) → export `.gz` to object storage | 🟨 offline-authored (live-proof pending) |
+| E13-S02 | Register + import Marketplace application via Terraform (both engines, private tenant) | 🟨 offline-authored (live-proof pending) |
+| E13-S03 | Deploy proof: server from template serves page + `caddy_*` alert fires (serve→scrape→fire) | 🟨 offline-authored (live-proof pending) |
+| E13-S04 | Runbook + exercise-traceability row | ✅ |
+
+🟨 = IaC/image-pipeline authored + proven by the OFFLINE gate (`task test:smoke:e13`: terramate codegen, `tofu fmt`/`validate`/`test` with mocked provider, `packer fmt`/`validate`, `promtool` caddy_* fire test). Live build → export → register → import → deploy (`task e13:up` + the export/deploy steps) is a later serialized, cost-gated step. Runbook: [docs/runbooks/gridscale-marketplace-deploy.md](runbooks/gridscale-marketplace-deploy.md).
 
 **Constraints (designed around):** `category` enum has no "web server" (use `Adminpanel`/`CMS` + `meta_*`);
 `object_storage_path` must be `.gz`/`s3://`; `meta_icon` required. Global listing needs gridscale review

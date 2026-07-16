@@ -87,6 +87,7 @@ tasks:
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e6g-offline.sh
       - bash tests/smoke/e8b-offline.sh
+      - bash tests/smoke/e13-offline.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)
@@ -420,6 +421,58 @@ tasks:
         # destroying the gridscale substrate reclaims everything. No standing env.
         task e1g:down
         echo "E8b demo torn down (gridscale substrate destroyed via e1g:down)."
+
+  test:smoke:e13:
+    desc: E13 — OFFLINE gate for the gridscale Marketplace template (terramate codegen + fmt + validate + tofu test + packer fmt/validate + promtool; no API/creds/build)
+    cmds:
+      - bash tests/smoke/e13-offline.sh
+
+  e13:generate:
+    desc: E13 — regenerate Terramate codegen (provider/backend/labels) into the marketplace stacks (offline, deterministic)
+    cmds:
+      - |
+        set -eu
+        if ! command -v terramate >/dev/null 2>&1; then
+          echo "terramate not installed — install to regenerate codegen (see docs/runbooks/gridscale-marketplace-deploy.md)"; exit 1
+        fi
+        terramate generate
+
+  e13:up:
+    desc: "E13 — LIVE Marketplace register + import (COSTS MONEY at export/deploy; needs real creds). Applies stacks/gridscale-marketplace/{caddy,nginx}. Build+export the golden image FIRST per the runbook."
+    env:
+      TF_VAR_gridscale_uuid: '{{.GRIDSCALE_USER_UUID}}'
+      TF_VAR_gridscale_token: '{{.GRIDSCALE_API_KEY}}'
+      TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "~/.terraform.d/plugin-cache"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        : "${GRIDSCALE_USER_UUID:?set GRIDSCALE_USER_UUID (direnv .envrc) before a live apply}"
+        : "${GRIDSCALE_API_KEY:?set GRIDSCALE_API_KEY (direnv .envrc) before a live apply}"
+        echo "LIVE gridscale Marketplace register/import — build+export the .gz golden image FIRST (see the runbook). Ctrl-C within 5s to abort."
+        sleep 5
+        # Register + import per engine. object_storage_path is threaded in via
+        # TF_VAR_object_storage_path (the exported .gz path); backend-config wires
+        # the S3 remote state (see docs/runbooks/gridscale-marketplace-deploy.md).
+        for s in caddy nginx; do
+          ( cd "stacks/gridscale-marketplace/${s}" && tofu init -input=false && tofu apply -auto-approve )
+        done
+        echo "Marketplace apps registered + imported (private tenant). Deploy a gridscale_server from the template per the runbook."
+
+  e13:down:
+    desc: "E13 — LIVE teardown: destroy the Marketplace apps/imports (+ any deploy-proof server). Run after EVERY live test (cost discipline)."
+    env:
+      TF_VAR_gridscale_uuid: '{{.GRIDSCALE_USER_UUID}}'
+      TF_VAR_gridscale_token: '{{.GRIDSCALE_API_KEY}}'
+      TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "~/.terraform.d/plugin-cache"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        : "${GRIDSCALE_USER_UUID:?set GRIDSCALE_USER_UUID before teardown}"
+        : "${GRIDSCALE_API_KEY:?set GRIDSCALE_API_KEY before teardown}"
+        for s in nginx caddy; do
+          ( cd "stacks/gridscale-marketplace/${s}" && tofu destroy -auto-approve ) || true
+        done
+        echo "Marketplace teardown complete — verify in the gridscale panel that no template/import/VM lingers."
 
   bootstrap:argocd:
     desc: E1 — install pinned ArgoCD + bootstrap Gateway overlay (idempotent)

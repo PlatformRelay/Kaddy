@@ -24,7 +24,7 @@ Maps the **Platform Engineer hiring exercise** requirements to epics/stories.
 | Brief requirement | kaddy deliverable | Epic / story |
 | --- | --- | --- |
 | Additional VM with nginx Hello World | Phase 1: `Website` claim demo (`websites/putting-green`) ✅; nginx legacy stand-in re-scoped → E6g; Phase 2: Crossplane `gridscale_server` | E6-S03 ✅, E6g-S03 |
-| Caddy/nginx web server — **gridscale-native delivery** | **Third way:** a gridscale **Marketplace 2.0 template** (Terraform: build → export `.gz` → `gridscale_marketplace_application` → import → deploy), monitored via marshal | E13 (`e13-gridscale-marketplace`) |
+| Caddy/nginx web server — **gridscale-native delivery** | **Third way:** a gridscale **Marketplace 2.0 template** (Terraform: build → export `.gz` → `gridscale_marketplace_application` → import → deploy), monitored via marshal — 🟨 offline-authored (module + both stacks + Packer builds + `caddy_*` promtool proof green via `task test:smoke:e13`; live build/export/register/deploy serialized, cost-gated; runbook [gridscale-marketplace-deploy.md](../runbooks/gridscale-marketplace-deploy.md)) | E13 (`e13-gridscale-marketplace`) |
 | Caddy reverse proxy path routing | HTTPRoute `/legacy` (platform Gateway) or tenant Caddy config — re-scoped → E6g | E6g, E10 |
 | Health checks | Composed ServiceMonitor per Website ✅; Gateway backend health-check policy → E6g | E6-S05 ✅, E6g |
 | SSL termination | cert-manager + Gateway TLS | E4-S03 ✅ |

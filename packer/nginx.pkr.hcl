@@ -1,0 +1,66 @@
+# E13-S01 — golden-image build for the nginx Marketplace template (mirror of
+# caddy.pkr.hcl). Builds Ubuntu + nginx + nginx-prometheus-exporter + the sample
+# page + a /metrics endpoint; the LIVE export step snapshots + exports it as a
+# .gz to the E1g object-storage bucket. Gated offline by packer fmt/validate.
+#
+# Refs: gridscale Packer tutorial — https://gridscale.io/community/tutorials/how-to-packer/
+
+packer {
+  required_plugins {
+    gridscale = {
+      source  = "github.com/gridscale/gridscale"
+      version = ">= 0.1.0"
+    }
+  }
+}
+
+variable "gridscale_uuid" {
+  type        = string
+  default     = "${env("GRIDSCALE_UUID")}"
+  description = "gridscale User-UUID (live only; unset offline)."
+  sensitive   = true
+}
+
+variable "gridscale_token" {
+  type        = string
+  default     = "${env("GRIDSCALE_TOKEN")}"
+  description = "gridscale API token (live only; unset offline)."
+  sensitive   = true
+}
+
+variable "base_template" {
+  type        = string
+  default     = "Ubuntu 24.04 LTS"
+  description = "gridscale public base template to build the golden image from."
+}
+
+source "gridscale" "nginx" {
+  api_key          = var.gridscale_token
+  user_uuid        = var.gridscale_uuid
+  template         = var.base_template
+  storage_capacity = 10
+  server_cores     = 1
+  server_memory    = 1
+  hostname         = "kaddy-nginx-golden"
+  ssh_username     = "root"
+}
+
+build {
+  name    = "kaddy-nginx"
+  sources = ["source.gridscale.nginx"]
+
+  provisioner "shell" {
+    inline = ["mkdir -p /tmp/kaddy"]
+  }
+  provisioner "file" {
+    source      = "${path.root}/files/index.html"
+    destination = "/tmp/kaddy/index.html"
+  }
+  provisioner "file" {
+    source      = "${path.root}/files/nginx.conf"
+    destination = "/tmp/kaddy/nginx.conf"
+  }
+  provisioner "shell" {
+    script = "${path.root}/scripts/provision-nginx.sh"
+  }
+}

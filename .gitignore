@@ -24,6 +24,9 @@ kubeconfig
 # E1g: commit the gridscale stack lock files for reproducible provider pinning
 # (multi-platform hashes) so CI/offline runs resolve the SAME provider build.
 !stacks/gridscale/**/.terraform.lock.hcl
+# E13: same reproducible-pinning intent for the Marketplace stacks + module.
+!stacks/gridscale-marketplace/**/.terraform.lock.hcl
+!modules/marketplace-template/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars

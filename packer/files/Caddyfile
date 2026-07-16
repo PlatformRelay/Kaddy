@@ -1,0 +1,34 @@
+# Golden-image Caddy config. Mirrors deploy/showcase/Caddyfile (single source of
+# truth) but self-contained for the VM: serves the sample page + /healthz +
+# exposes /metrics for the marshal caddy_* alerts (job="caddy" scrape).
+{
+	# admin off keeps the full admin API (default localhost:2019) closed on a
+	# public VM. With admin off, its built-in /metrics is NOT served — so we
+	# expose a dedicated, routable metrics listener below instead. per_host keeps
+	# host labels on the exported series.
+	admin off
+	metrics {
+		per_host
+	}
+}
+
+# Dedicated Prometheus metrics listener — the only thing on :2019 (admin is off).
+# Prometheus scrapes http://<vm>:2019/metrics under job="caddy"; this is what the
+# marshal caddy_* alerts (tests/promtool/gridscale-marketplace.test.yaml) fire
+# against on the deployed Marketplace VM.
+:2019 {
+	metrics /metrics
+}
+
+:80 {
+	root * /srv
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle {
+		encode gzip
+		file_server
+	}
+}

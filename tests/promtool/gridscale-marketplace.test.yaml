@@ -1,0 +1,94 @@
+# promtool test rules — E13 Marketplace deploy proof (serve → scrape → fire).
+#
+# REQ-E13-S03-02 — a gridscale_server deployed FROM the imported Marketplace
+# template exposes /metrics; Prometheus scrapes it under job="caddy"; the parked
+# caddy_* marshal alerts (D-026) must FIRE against this REAL gridscale target and
+# be SILENT otherwise. Same rules, same fire+silent rigor as the K8s path — only
+# the target changes (a gridscale VM instead of an in-cluster pod).
+#
+# Per-engine scrape ports (both scraped under the SAME job="caddy", so the
+# job-scoped CaddyTargetDown fires for either): the Caddy engine serves metrics
+# on :2019 (dedicated Caddy metrics listener, admin off — see packer/files/
+# Caddyfile); the nginx engine serves on :9113 (nginx-prometheus-exporter — see
+# packer/scripts/provision-nginx.sh). The instance label below models the Caddy
+# target; the nginx healthy-branch series models :9113.
+#
+# STANDALONE by design: rule_files points at the COMMITTED projection (no /tmp
+# extract), so the bare spec Verify command works:
+#   promtool test rules tests/promtool/gridscale-marketplace.test.yaml
+rule_files:
+  - ../../deploy/caddy-mvp/monitoring/rules/marshal-caddy.rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # -------------------------------------------------------------------------
+  # REQ-E13-S03-02 — CaddyTargetDown fires when the deployed Marketplace VM's
+  # /metrics target goes down (present-but-failing: up==0 for > 2m).
+  # instance is the VM host:port — proving the alert fires against the real
+  # gridscale target, not an in-cluster pod.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="caddy",instance="marketplace-vm:2019"}'
+        # up for 2m, then down (0) for 4m — crosses the 2m `for:` window.
+        values: '1 1 0 0 0 0'
+    alert_rule_test:
+      # Silent: only 1m into the outage — below the 2m `for:` window.
+      - eval_time: 2m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      # Fires: 3m into the outage (>2m), still down.
+      - eval_time: 5m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+              instance: marketplace-vm:2019
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # ABSENT-target branch: the deployed VM vanishes entirely (no up{job="caddy"}
+  # series scraped) — the absent() branch must fire. No instance label.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="other",instance="anchor:9090"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # Silent when healthy: the deployed VM serves + scrapes cleanly (up==1) — no
+  # CaddyTargetDown must fire. Guards against a rule that alerts on healthy.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # Caddy engine target (:2019) and nginx engine target (:9113) — both
+      # scraped under job="caddy", both healthy → no CaddyTargetDown.
+      - series: 'up{job="caddy",instance="marketplace-vm:2019"}'
+        values: '1 1 1 1 1 1'
+      - series: 'up{job="caddy",instance="marketplace-vm:9113"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: CaddyTargetDown
+        exp_alerts: []
