@@ -3,6 +3,118 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.2.0] — 2026-07-16
+
+### Features
+- **e1c:** Add narrowed :latest image gate (REQ-E1c-S03-01)
+- **ci:** Add Trivy CRITICAL scan-gate (E1c-S02)
+- **scorecard:** Offline E8 fixture capture and load gates
+- **ci:** Wire image digest gate into verify matrix
+- **scorecard:** Publish evidence HTML to GitHub Pages
+- **e1c:** Add offline External Secrets pattern for gridscale creds
+- **branding:** Land kaddy logos, favicons, and og-image
+- **taskfile:** Wire task deck:build + e12 guard into test:meta:ci — closes E12-S01 CI wiring (deck.yaml job pre-existed; tick tasks.md honestly)
+- **e8:** Getting Started guide + honest five-minute path
+- **caddy-mvp:** Variant B offline tenant manifests (S02)
+- **showcase:** Bake MkDocs Material /docs/ into showcase image
+- **caddy-mvp:** Revive caddy_http_* alerts against K8s origin
+- **caddy-mvp:** Dual HTTPRoute for nginx showcase topology
+- **caddy-mvp:** GitOps Application for re-homed monitoring slice
+- **e9:** S01 CRD types green — Caddy/CaddySite validation + defaults (REQ-E9-S01-01), design.md samples
+- **e9:** S02 green — caddyadmin client (idempotent @id upsert, ErrUnavailable taxonomy) + Caddy/CaddySite reconcilers with Ready conditions, finalizer drain
+- **e9:** S03 observability bundle — ServiceMonitor + PrometheusRule + Taskfile envtest gate
+
+### Fixes
+- **websites:** Pin kaddy-showcase to multi-arch 0.1.1 — GHCR public + arm64 included; side-load retired
+- **e1c:** Treat :Latest as floating tag in image digest gate
+- **tests:** SEC-5 guard also scans flow-style '{ uses: ... }' steps (review F-1)
+- **policies:** Default-deny netpol baseline for mulligan (audit F-01)
+- **tests:** Tighten e12 deck CI guard to require upload-artifact path
+- **caddy-mvp:** Route showcase hop by header, not path
+- **tests:** Harden batch2 meta guard; clear stale S05 promtool note
+- **caddy-mvp:** Exclude promtool projection from Argo directory sync
+- **e9:** PATCH-based idempotent upsert (real Caddy verb semantics), exact+subtree path match, admin.listen admission pattern, least-privilege RBAC, lint clean
+- **gitops:** Unblock tenant policy and rollout sync
+- **chainsaw:** Poll-until-denied mulligan netpol probe — de-flake Cilium programming race
+- **chainsaw:** Use HTTP_000 as positive deny signal — close vacuous-pass hole (tech-review F1)
+- **test:** Make test:promrules hermetic — project rules before promtool
+- **gitops:** Pin observability grandchildren onto the observability AppProject (SEC-17)
+- **gitops:** Correct blackbox-exporter status in observability project header (tech-review L2-1)
+- **docs:** E9 landed AFTER v0.1.1, not shipped in it (tech-review L1-1)
+- **tls:** Point ACME staging solver at the real clubhouse/gateway Gateway (SEC-13)
+- **operator:** Self-heal CaddySite watches + non-swallowing status update (ARCH-9)
+- **operator:** CRD-gate observability Owns() + behavioral self-heal test (tech-review F1/F2)
+
+### Tests
+- **meta:** WS3 CI-wiring guards — TEST-1 advisory strict-spec job + repo-wide SEC-5 SHA-pin assert
+- **policies:** Failing chainsaw suite — mulligan default-deny baseline (audit F-01)
+- **security:** Enforce — not just presence — of the mulligan netpol baseline
+- **meta:** Failing e12-deck-ci-wired guard — asserts deck.yaml runs the exit gate + publishes slides/dist + task deck:build exists (red: deck:build unwired)
+- **e8:** Failing E8-S04 getting-started + demo contracts
+- **docs:** DOC-10 expects E1d-S03 deferred as pending
+- **caddy-mvp:** Add showcase promtool suite for re-homed caddy_* alerts
+- **e8:** Strengthen Pages publish smoke contract
+- **ci:** Require S05-03 + E8-S03 smokes in test:meta:ci
+- **e9:** S01 API-shape envtest suite (red) — CRD Established, Caddy/CaddySite defaults + validation contract from design.md
+- **e9:** S02 red — admin client contract (idempotent @id upsert), TestCaddy_Reconcile_Ready, CaddySite idempotency vs fake admin server
+- **e9:** Review red — fake admin server now models REAL Caddy verbs (POST appends, PUT inserts, PATCH replaces); expect PATCH upserts, exact+subtree path match, admin.listen admission, missing-ref requeue
+- **gitops:** Assert platform AppProject allows mulligan
+- **caddy-mvp:** Complete epic test-artifact coverage (S01-04, S03, S04, S05, EXIT)
+- **operator:** Hoist repeated site names to constants (golangci goconst)
+
+### Documentation
+- **e1c:** External Secrets pattern for gridscale creds (E1c-S04)
+- **testing:** Document offline E8 L3/L4 scorecard gates
+- **e-caddy-mvp:** Honest phase-1 gate status for Variant B
+- **e1c:** Tick Trivy + digest gates done in tasks.md
+- **e1c:** Tick SOPS/KSOPS items done in tasks.md
+- **arch:** Note E8 offline scorecard evidence status
+- **audits:** E11-S01 first dated security & compliance audit — PASS WITH NOTES (0 P0, 1 P1, 8 P2, 2 P3)
+- **testing:** Retcon chainsaw layout to all 10 suites, pin chainsaw@v0.2.15, real CI workflow table (DOC-4/DOC-5/TEST-6, DOC-11)
+- **substrate:** Retcon dev prereqs/gates + driving-range runbook to kind+Cilium reality, flag ADR-0102 amendment in index (ARCH-1/DIR-5 residuals, D-025)
+- **status:** Traceability status-truth sweep — 14/14 apps, E5/E6/E7 landed markers, E6g re-scopes; seed audit history with 07-16 runs (DOC-2/DOC-8/DOC-10 class)
+- **review:** E7-S04 honest partial marker, qualify 14/14 leaf apps, add E11-S01 audit history row; gitignore mkdocs site/ (review F1-F3, F5)
+- **audit-remediation:** Tick WS2 (docs retcon fa81b37) + WS3 (CI gates 19b0db7) done — ARCH-5 stays blocked on REQ-TF-11
+- **e8:** Expand E8-S04 getting-started + reviewer demo contract
+- **e8:** Getting Started + honest five-minute reviewer path (E8-S04)
+- **roadmap:** DOC-10 status-truth — 14/14 apps, E1c/E6/E8 done markers
+- **inbox:** Podman-only runtime; mark Pages/policies/direnv done
+- **roadmap:** DOC-10 status-truth — E1d + E11-S01 landed markers
+- **roadmap:** Mark E1d-S03 Grafana OAuth deferred (not done)
+- **e8:** Tick Pages live URL 200 + offline scorecard gate
+- **roadmap:** E8-S03 Pages live URL confirmed HTTP 200
+- **e8:** Flip reviewer surfaces to Pages live (keep deck unpublished)
+- **e8:** Keep deck Pages labeled unavailable in Getting Started
+- **e8:** Repair Getting Started artifacts table
+- **audits:** E11-S02 second dated audit with diff vs S01
+- **audits:** Fix E11-S02 finding rollup (11 P2 inventory)
+- **inbox:** Reopen Argo policies/workloads re-sync after E11-S02
+- **e12:** Tick ROADMAP S01–S04 — recording-ready gates green
+- **e9:** Mark S01–S03 done on ROADMAP
+- **e9:** Point EXIT Test path at operator/ envtest file
+- Release-truth sweep — README/ROADMAP reflect v0.1.1 + E9 (DOC-10)
+
+### CI & build
+- **e8:** Run offline scorecard in verify workflow
+- **verify:** STRICT_TEST_FILES=1 advisory job (TEST-1, non-blocking) + wire WS3 meta guards into task verify
+- **caddy-mvp:** Wire S02 offline smokes into test:meta:ci
+- **e8:** Harden scorecard-pages for enabled site
+- **caddy-mvp:** Wire monitoring GitOps smoke; status 15/15 apps
+
+### Chores
+- **agent-context:** Record D-033 + reconcile PR ledger (8 merged, 9/10 closed via ref-push)
+- **inbox:** Operator task — enable GitHub Pages for scorecard-pages workflow
+- **inbox:** Operator tasks — sync policies app (mulligan netpol live) + note parallel session's e8 tech-review dispatch
+- **inbox:** Tick PR #11 merged (E8-S04, operator merge authorization 2026-07-16)
+- **e8:** Tick E8-S01..S04 tasks and ROADMAP status
+- **e9:** Kubebuilder v4 scaffold — kaddy-operator module, Caddy + CaddySite APIs (gateway.kaddy.io/v1alpha1)
+- **e9:** Tick S01+S02 in tasks.md
+- **agent-context:** Sync INBOX + decisions bookkeeping after D-036 loop
+
+### Other
+- **e-caddy-mvp:** S00 — full spec surface for S01-S03 with REQ IDs + Test:/Verify: contracts
+- **e-caddy-mvp:** Code-labelled Caddy SLI series + rollout-aware S05-03 Verify (review F1/F2)
+
 ## [0.1.1] — 2026-07-16
 
 ### Features
@@ -35,6 +147,9 @@ gitmoji-conventional commit history.
 
 ### Documentation
 - **e1d:** Runbook rewritten to live reality + honest scoping (REQ-E1d-S03 deferral)
+
+### Chores
+- **release:** V0.1.1 changelog
 
 ## [0.1.0] — 2026-07-16
 
