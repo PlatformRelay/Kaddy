@@ -362,7 +362,7 @@ reviewer path.
 | ID | Story | Status |
 | --- | --- | --- |
 | E11-S01 | First dated audit report | ✅ ([2026-07-16](audits/2026-07-16-audit.md)) |
-| E11-S02 | Diff vs subsequent run | ⬜ |
+| E11-S02 | Diff vs subsequent run | ✅ ([2026-07-16-s02](audits/2026-07-16-s02-audit.md)) |
 
 ---
 
