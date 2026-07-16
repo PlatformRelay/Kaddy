@@ -7,15 +7,16 @@ metadata:
   name: gateway-root-path-200
   annotations:
     kaddy.io/req: REQ-E4-S02-01
-    # skip: true — needs the live Cilium Gateway + HTTPRoute + clubhouse + the
-    # kaddy-local-ca issuer, none of which the ephemeral CI chainsaw kind cluster
-    # provisions (cert-manager only; no Cilium/Gateway API/GatewayClass/local-CA).
-    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    # Un-skipped by CI substrate parity (2026-07-16): chainsaw CI now builds its
+    # cluster from the LIVE substrate recipe (hack/cluster/kind-up.sh — Cilium +
+    # Gateway API CRDs + LB-IPAM + cert-manager/kaddy-local-ca, pinned via
+    # hack/cluster/versions.env) and applies the E4 edge manifests
+    # (deploy/gateway/ + clubhouse + the kaddy-local-ca-issued Certificate), so
+    # the verified-HTTPS curl through the Cilium Gateway runs here too. Also
+    # verified PASSING against the live kind-kaddy-dev cluster with:
     #   chainsaw test --test-file tests/chainsaw/gateway/root-path-200.yaml .
-    # Un-skip once CI stands up the Cilium substrate (infra follow-up, out of lane).
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-gateway
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   description: Gateway Programmed, HTTPRoute Accepted/ResolvedRefs, / returns 200 with clubhouse marker
   namespace: gateway
   steps:

@@ -13,12 +13,16 @@ metadata:
   name: rollouts-bluegreen-blocks-bad-promotion
   annotations:
     kaddy.io/req: REQ-E7-S01-02
-    # skip: true — needs the Argo Rollouts controller (absent in the CI chainsaw
-    # kind cluster). Verified PASSING live with:
+    # Un-skipped by CI substrate parity (2026-07-16): the chainsaw workflow now
+    # installs the Argo Rollouts controller (deploy/rollouts/, pinned v1.9.0)
+    # and applies deploy/workloads/mulligan/ before the suites run. Also
+    # verified PASSING live with:
     #   chainsaw test --test-file tests/chainsaw/rollouts/bluegreen-blocks-bad-promotion.yaml .
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-rollouts-gateway
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
+  # Serialized alongside the canary suites: the promote/patch churn shares the
+  # mulligan namespace and the Rollouts controller's reconcile budget.
+  concurrent: false
   description: A new blue/green revision stays on preview (not promoted) without an explicit promote.
   namespace: mulligan
   steps:

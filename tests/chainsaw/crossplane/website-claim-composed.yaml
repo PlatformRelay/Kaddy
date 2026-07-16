@@ -14,10 +14,13 @@ metadata:
   name: crossplane-website-claim-composed
   annotations:
     kaddy.io/req: REQ-E6-S02-02
-    # skip: true — needs Crossplane + the Website XRD/Composition + cert-manager
-    # + Gateway API/monitoring CRDs, which the ephemeral CI chainsaw kind cluster
-    # does NOT provision (same class as the gateway/tls suites). Verified PASSING
-    # against the live kind-kaddy-dev cluster with:
+    # skip: true — needs the Crossplane ENGINE + the Website XRD/Composition
+    # (deploy/crossplane/), which CI does not install. Since the CI substrate
+    # parity change (2026-07-16) the OTHER dependencies (cert-manager +
+    # kaddy-local-ca, Gateway API + Cilium, monitoring CRDs) DO exist in CI —
+    # un-skipping now only requires installing Crossplane + applying
+    # deploy/crossplane/ in .github/workflows/chainsaw.yaml (follow-up).
+    # Verified PASSING against the live kind-kaddy-dev cluster with:
     #   chainsaw test --test-file tests/chainsaw/crossplane/website-claim-composed.yaml .
     kaddy.io/status: live-cluster-only-ci-substrate-lacks-crossplane
 spec:

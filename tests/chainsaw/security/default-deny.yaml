@@ -9,16 +9,16 @@ metadata:
   name: security-default-deny
   annotations:
     kaddy.io/req: REQ-E1c-S01-01
-    # skip: true — needs the live policies app (Cilium CNI + the manual-sync
-    # `policies` Application); the ephemeral CI chainsaw kind cluster runs
-    # vanilla kindnet with no netpol enforcement and never syncs
-    # deploy/policies/. Verified PASSING against live kind-kaddy-dev
-    # (2026-07-16) with:
-    #   cd tests/chainsaw/security && chainsaw test --test-file default-deny.yaml .
-    #   (skip flipped off locally for the run, reverted after)
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+    # Un-skipped by CI substrate parity (2026-07-16): chainsaw CI now builds its
+    # cluster from the LIVE substrate recipe (hack/cluster/kind-up.sh — Cilium +
+    # Gateway API CRDs + LB-IPAM + cert-manager/kaddy-local-ca, pinned via
+    # hack/cluster/versions.env), and applies the SAME
+    # deploy/policies/network/{gateway,monitoring,argocd}.yaml baseline the live
+    # policies app syncs (argocd ns is created bare in CI — no Argo CD there,
+    # the namespace-wide deny floor still applies). Also verified PASSING
+    # against live kind-kaddy-dev (2026-07-16).
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   concurrent: false
   description: default-deny NetworkPolicies present in gateway, monitoring and argocd
   steps:

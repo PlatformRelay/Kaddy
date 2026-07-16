@@ -1,4 +1,13 @@
-# Chainsaw CI (enabled after E3) — L2 declarative cluster e2e on kind
+# Chainsaw CI (enabled after E3) — L2 declarative cluster e2e on kind.
+#
+# CI SUBSTRATE PARITY (2026-07-16): the CI cluster is built with the SAME recipe
+# as the live kaddy-dev substrate — hack/cluster/kind-up.sh (kind config with
+# disableDefaultCNI:true + kubeProxyMode:none, Cilium + Gateway API CRDs +
+# LB-IPAM, cert-manager + kaddy-local-ca, all pinned via
+# hack/cluster/versions.env). That un-skips the Cilium/Gateway/Rollouts/local-CA
+# dependent suites (gateway, security netpol, rollouts, tls certificate-renewal)
+# so the platform's headline behaviors are enforced regression here, not
+# live-only proofs.
 name: chainsaw
 
 on:
@@ -9,12 +18,14 @@ on:
     paths:
       - 'deploy/**'
       - 'tests/chainsaw/**'
+      - 'hack/cluster/**'
       - 'Taskfile.yml'
       - '.github/workflows/chainsaw.yaml'
   pull_request:
     paths:
       - 'deploy/**'
       - 'tests/chainsaw/**'
+      - 'hack/cluster/**'
       - 'Taskfile.yml'
       - '.github/workflows/chainsaw.yaml'
 
@@ -24,53 +35,78 @@ permissions:
 jobs:
   chainsaw:
     runs-on: ubuntu-latest
+    # Substrate bring-up (Cilium + observability + rollouts + workloads) plus the
+    # full suite run budgets ~20 min; hard-stop well under the 6h default so a
+    # wedged install fails fast.
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      # SEC-5: all action refs pinned to full commit SHAs (version as comment),
+      # Renovate-compatible (github-actions manager updates sha + comment).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: stable
-      - name: Create kind cluster
-        uses: helm/kind-action@v1
-        with:
-          wait: 120s
       - name: Install Chainsaw
         # SEC-4: pin to an exact tag (was @latest) so builds are reproducible
         # and Renovate can track the bump.
         run: go install github.com/kyverno/chainsaw@v0.2.15
-      # Suites are gated by `skip: true` until their epic lands (labeling→E1b,
-      # security→E1c, tls→E3, identity→E1d, monitoring→E5, rollouts→E7, portal→E10).
-      # Each epic's implementation installs its deps here (Kyverno, kube-prometheus-stack, …)
-      # and flips its suite's skip flag off.
+      - name: Install kind (pinned)
+        # The cluster itself is created by hack/cluster/kind-up.sh (parity with
+        # the live substrate) — helm/kind-action is gone. Only the kind BINARY
+        # is provisioned here; kubectl, helm and jq are runner-preinstalled.
+        # SEC-4: exact version, paired with KIND_NODE_IMAGE v1.33.1
+        # (hack/cluster/versions.env).
+        run: |
+          KIND_VERSION="v0.29.0"
+          sudo curl -sSL -o /usr/local/bin/kind \
+            "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          sudo chmod +x /usr/local/bin/kind
+      - name: Raise inotify limits (kind on a shared runner)
+        # The parity substrate runs many watch-heavy pods (Cilium, kps, Loki,
+        # Alloy, Kyverno, Rollouts) on one kind node; the runner's default
+        # inotify limits cause spurious "too many open files" crash-loops.
+        run: |
+          sudo sysctl -w fs.inotify.max_user_watches=524288
+          sudo sysctl -w fs.inotify.max_user_instances=512
+      - name: Create kind cluster (live substrate recipe — Cilium + Gateway API + LB-IPAM + cert-manager + kaddy-local-ca)
+        # REUSES hack/cluster/kind-up.sh — the exact scripts + versions.env pins
+        # the live kaddy-dev cluster is built from (that's the parity point).
+        # On the runner: docker is rootful (podman guards no-op), the loopback
+        # 30080/30443 extraPortMappings are free, and the LB-IPAM pool is carved
+        # from the real docker "kind" bridge subnet by install-cilium.sh.
+        run: |
+          bash hack/cluster/kind-up.sh
+          # hack/cluster isolates its kubeconfig at .state/kubeconfig (never the
+          # runner default) — export it for every following step. Taskfile's
+          # KUBECONFIG default points at the same file.
+          echo "KUBECONFIG=${GITHUB_WORKSPACE}/.state/kubeconfig" >> "$GITHUB_ENV"
+      # Suites still skipped here are gated by `skip: true` until their epic
+      # lands (identity→E1d, portal→E10, caddy-mvp→e-caddy-mvp, crossplane→needs
+      # Crossplane in CI, unsigned-image→cosign Enforce flip). Each epic's
+      # implementation installs its deps here and flips its suite's skip off.
       - name: Install Kyverno (labeling/security suites)
         run: |
           if ls tests/chainsaw/labeling/*.yaml tests/chainsaw/security/*.yaml >/dev/null 2>&1; then
-            # E1c: the labeling suite is UN-SKIPPED and runs on vanilla kind
-            # (the test applies its own ClusterPolicies), so this install must
-            # actually succeed — no failure-swallowing || true (TEST-8), and
-            # the same vendored+pinned manifest the live cluster syncs
-            # (deploy/kyverno/, v1.18.2). Server-side apply: the CRDs exceed
-            # client-side annotation limits.
+            # E1c: the labeling suite applies its own ClusterPolicies, so this
+            # install must actually succeed — no failure-swallowing || true
+            # (TEST-8), and the same vendored+pinned manifest the live cluster
+            # syncs (deploy/kyverno/, v1.18.2). Server-side apply: the CRDs
+            # exceed client-side annotation limits.
             kubectl apply --server-side -f deploy/kyverno/install.yaml
             kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=300s
           fi
-      # E3: install cert-manager (the ACME issuers + tls suites need it) — the
-      # ephemeral CI kind cluster has no E1e bootstrap. Pinned to the same version
-      # the live cluster runs (see runbook). The letsencrypt-staging issuer needs
-      # only outbound reachability, which GitHub runners have.
-      - name: Install cert-manager (tls suites)
+      # E3: cert-manager + the kaddy-local-ca ClusterIssuer are already installed
+      # by kind-up.sh (hack/cluster/install-cert-manager.sh, pinned
+      # CERT_MANAGER_VERSION) — only the ACME issuer is applied on top.
+      - name: Apply ACME staging issuer (tls suites)
         if: ${{ hashFiles('tests/chainsaw/tls/*.yaml') != '' }}
         run: |
-          helm repo add jetstack https://charts.jetstack.io
-          helm repo update
-          helm upgrade --install cert-manager jetstack/cert-manager \
-            --namespace cert-manager --create-namespace \
-            --version v1.18.2 --set crds.enabled=true --wait --timeout 5m
           # Only the STAGING issuer is exercised by the tls suite. Applying the
           # prod issuer too would register an account against the Let's Encrypt
           # PRODUCTION ACME API on every PR run — unnecessary prod-API traffic —
@@ -119,5 +155,63 @@ jobs:
           install_app deploy/observability/alloy.yaml
           # The Grafana Loki datasource ConfigMap is a plain manifest (not Helm).
           kubectl apply -f deploy/observability/grafana-loki-datasource.yaml
+      # E7: Argo Rollouts controller + the Gateway API trafficRouting plugin —
+      # same vendored+pinned manifests the live cluster syncs (deploy/rollouts/).
+      - name: Install Argo Rollouts + Gateway API plugin (rollouts suites)
+        if: ${{ hashFiles('tests/chainsaw/rollouts/*.yaml') != '' }}
+        run: |
+          set -euo pipefail
+          kubectl apply -f deploy/rollouts/namespace.yaml
+          # ARCH NOTE: deploy/rollouts/config.yaml pins the plugin binary for the
+          # LIVE kind node arch (linux-arm64 — Apple-silicon podman). GitHub
+          # runners are linux-amd64, so rewrite ONLY the arch suffix of the same
+          # pinned v0.16.0 release asset at apply time. The live manifest stays
+          # byte-identical; no floating tag is introduced (SEC-4).
+          sed 's#gatewayapi-plugin-linux-arm64#gatewayapi-plugin-linux-amd64#' \
+            deploy/rollouts/config.yaml | kubectl apply -f -
+          # Server-side apply: the Rollout CRD exceeds client-side annotation
+          # limits. The plugin ConfigMap is applied BEFORE the controller starts,
+          # so it is loaded on first boot — no `rollout restart` needed (live
+          # needs one because Argo CD may sync the CM after the controller).
+          kubectl apply --server-side -f deploy/rollouts/install.yaml
+          kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=300s
+      # E4/E7: the platform edge + demo workloads the un-skipped suites assert
+      # against — applied from the SAME GitOps manifests the live cluster syncs.
+      - name: Apply platform edge + demo workloads (gateway/tls/security/rollouts suites)
+        if: ${{ hashFiles('tests/chainsaw/gateway/*.yaml', 'tests/chainsaw/security/*.yaml', 'tests/chainsaw/tls/*.yaml', 'tests/chainsaw/rollouts/*.yaml') != '' }}
+        run: |
+          set -euo pipefail
+          # E4 edge: gateway ns + Gateway + HTTPRoutes + clubhouse app + the
+          # kaddy-local-ca-issued Certificate (gateway + tls + security suites).
+          kubectl apply -f deploy/gateway/
+          kubectl apply -f deploy/workloads/clubhouse/
+          kubectl apply -f deploy/cert-manager/clubhouse-certificate.yaml
+          kubectl -n gateway rollout status deploy/clubhouse --timeout=300s
+          kubectl -n gateway wait --for=condition=Ready certificate/clubhouse-tls --timeout=180s
+          kubectl -n gateway wait --for=condition=Programmed gateway/clubhouse --timeout=180s
+          # E7 mulligan progressive-delivery demo (needs the Rollouts CRDs above).
+          if ls tests/chainsaw/rollouts/*.yaml >/dev/null 2>&1; then
+            kubectl apply -f deploy/workloads/mulligan/
+            kubectl -n mulligan wait --for=condition=Programmed gateway/mulligan --timeout=180s
+            # Both Rollouts must be Healthy before the suites patch/abort them.
+            kubectl -n mulligan wait --for=jsonpath='{.status.phase}'=Healthy \
+              rollout/mulligan rollout/mulligan-bg --timeout=300s
+          fi
+      # E1c: the default-deny NetworkPolicy baseline (security suites) — applied
+      # AFTER the stacks are up, mirroring the live cutover order. Cilium (the CI
+      # CNI since parity) actually enforces these.
+      - name: Apply default-deny network baseline (security suites)
+        if: ${{ hashFiles('tests/chainsaw/security/*.yaml') != '' }}
+        run: |
+          set -euo pipefail
+          # No Argo CD runs in the ephemeral CI cluster; create the bare argocd
+          # namespace so its namespace-wide deny floor applies and the
+          # default-deny suite asserts the same namespace set as live.
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f deploy/policies/network/gateway.yaml
+          kubectl apply -f deploy/policies/network/monitoring.yaml
+          kubectl apply -f deploy/policies/network/argocd.yaml
+          # websites.yaml is NOT applied: the websites namespace belongs to the
+          # Crossplane suite, which stays live-only (no Crossplane in CI).
       - name: Run Chainsaw suites
         run: task test:chainsaw

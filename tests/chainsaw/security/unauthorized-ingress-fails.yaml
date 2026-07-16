@@ -9,15 +9,16 @@ metadata:
   name: security-unauthorized-ingress-fails
   annotations:
     kaddy.io/req: REQ-E1c-S01-03
-    # skip: true — same live-substrate dependency as default-deny.yaml
-    # (Cilium netpol enforcement; CI kindnet enforces nothing, so this test
-    # would FALSE-PASS... actually false-FAIL open: the curl would succeed).
-    # Verified PASSING against live kind-kaddy-dev (2026-07-16) with:
-    #   cd tests/chainsaw/security && chainsaw test --test-file unauthorized-ingress-fails.yaml .
-    #   (skip flipped off locally for the run, reverted after)
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+    # Un-skipped by CI substrate parity (2026-07-16): chainsaw CI now builds its
+    # cluster from the LIVE substrate recipe (hack/cluster/kind-up.sh — Cilium +
+    # Gateway API CRDs + LB-IPAM + cert-manager/kaddy-local-ca, pinned via
+    # hack/cluster/versions.env), so the CNI ENFORCES
+    # NetworkPolicy — the deny branch is meaningful here (on kindnet the curl
+    # would have succeeded and failed the test open). The default-deny baseline
+    # is applied by the workflow before the suites run. Also verified PASSING
+    # live (2026-07-16).
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   concurrent: false
   description: default-ns pod -> clubhouse :8080 direct is denied under default-deny
   steps:

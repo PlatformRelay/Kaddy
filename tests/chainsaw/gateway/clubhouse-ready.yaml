@@ -6,16 +6,15 @@ metadata:
   name: gateway-clubhouse-ready
   annotations:
     kaddy.io/req: REQ-E4-S01-01
-    # skip: true — this suite needs the clubhouse Deployment/Service in ns `gateway`
-    # (deploy/workloads/clubhouse), which the ephemeral CI chainsaw kind cluster does
-    # NOT provision (it installs cert-manager only, no Cilium/Gateway/workloads).
-    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    # Un-skipped by CI substrate parity (2026-07-16): chainsaw CI now builds its
+    # cluster from the LIVE substrate recipe (hack/cluster/kind-up.sh — Cilium +
+    # Gateway API CRDs + LB-IPAM + cert-manager/kaddy-local-ca, pinned via
+    # hack/cluster/versions.env) and applies deploy/gateway/ +
+    # deploy/workloads/clubhouse/ before the suites run. Also verified PASSING
+    # against the live kind-kaddy-dev cluster with:
     #   chainsaw test --test-file tests/chainsaw/gateway/clubhouse-ready.yaml .
-    # Un-skip once CI stands up the Cilium substrate + applies the E4 manifests
-    # (a .github/workflows change — infra follow-up, outside the E4 lane boundary).
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-gateway
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   description: clubhouse Deployment has ReadyReplicas >= 1 with mandatory labels; Service exposes 8080
   namespace: gateway
   steps:

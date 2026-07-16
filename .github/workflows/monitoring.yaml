@@ -2,6 +2,15 @@
 name: monitoring
 
 on:
+  # TEST-9: also run on push to main (was PR-only) — the local-merge workflow
+  # pushes straight to main, so a PR-only gate never enforced anything there.
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/monitoring/**'
+      - 'tests/promtool/**'
+      - 'Taskfile.yml'
+      - '.github/workflows/monitoring.yaml'
   pull_request:
     paths:
       - 'deploy/monitoring/**'
@@ -16,9 +25,10 @@ jobs:
   promrules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # SEC-5: action refs pinned to full commit SHAs (version as comment).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
