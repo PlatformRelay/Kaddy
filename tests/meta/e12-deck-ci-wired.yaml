@@ -19,8 +19,14 @@ test -f "$wf" || fail "missing $wf (deck CI workflow)"
 grep -qE 'tests/deck/exit-recording-ready\.sh' "$wf" \
   || fail "deck.yaml does not run tests/deck/exit-recording-ready.sh (build + notes + wordcount + iframes + beats)"
 
-grep -qE 'slides/dist' "$wf" \
-  || fail "deck.yaml does not publish slides/dist (the static SPA artifact)"
+# Require a real publish step: upload-artifact with path slides/dist.
+# Strip #-comments first so header prose / step-name mentions of slides/dist
+# cannot satisfy the assert (tech-review F1).
+wf_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$wf")"
+printf '%s\n' "$wf_nocomment" | grep -qE 'actions/upload-artifact|upload-artifact@' \
+  || fail "deck.yaml does not use actions/upload-artifact to publish the deck"
+printf '%s\n' "$wf_nocomment" | grep -qE 'path:[[:space:]]*slides/dist' \
+  || fail "deck.yaml upload-artifact does not set path: slides/dist"
 
 grep -qE "slides/\*\*" "$wf" \
   || fail "deck.yaml does not trigger on slides/** changes"
