@@ -57,3 +57,4 @@ evidence/runs/
 
 # Un-ignore the committed harness charter (overrides global ~/.config/git/ignore)
 !AGENTS.md
+site/

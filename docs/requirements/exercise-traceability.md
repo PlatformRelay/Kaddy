@@ -8,7 +8,7 @@ Maps the **Platform Engineer hiring exercise** requirements to epics/stories.
 | --- | --- | --- |
 | Install Caddy on Linux | **Tenant** Caddy via Backstage scaffold (not platform ingress) | [e-caddy-mvp](../../openspec/changes/e-caddy-mvp/); platform edge = Cilium (E2 ✅, ADR-0104) |
 | Serve sample web app | clubhouse static site over verified HTTPS | E4-S01 ✅ (`deploy/workloads/clubhouse/`) |
-| Prometheus monitoring | kube-prometheus-stack + PodMonitor — live, 14/14 apps Synced | E3-S02 ✅, E5-S01 ✅ |
+| Prometheus monitoring | kube-prometheus-stack + PodMonitor — live, 14/14 leaf apps Synced (16 incl. the root/observability app-of-apps) | E3-S02 ✅, E5-S01 ✅ |
 | HTTP response codes, latency, uptime | Gateway + app metrics + blackbox probes + rules | E5-S01 ✅, E5-S02 ✅ |
 | Regular scrape intervals | Prometheus scrape config / OperatorMonitor | E5-S01 ✅ |
 | Alerting on thresholds + server down | PrometheusRules + Alertmanager — fires + resolves live (`task demo:fire`) | E5-S03 ✅, E5-S04 ✅ |
@@ -33,7 +33,7 @@ Maps the **Platform Engineer hiring exercise** requirements to epics/stories.
 
 | Brief requirement | kaddy deliverable | Epic / story |
 | --- | --- | --- |
-| Health checks / fault tolerance | K8s probes + canary auto-rollback + chaos demo (`task demo:chaos`) | E6-S05 ✅, E7-S04 ✅ |
+| Health checks / fault tolerance | K8s probes + canary auto-rollback + chaos demo (`task demo:chaos`) | E6-S05 ✅, E7-S04 🚧 (in-boundary canary auto-rollback ✅; VM chaos deferred → e-caddy-mvp/E6g) |
 | SSL encryption | TLS at Gateway | E4-S03 ✅ |
 
 ## Beyond brief (interview signal)
