@@ -56,6 +56,14 @@
 - [x] Trivy CI job (REQ-E1c-S02-*) — `.github/workflows/trivy.yaml` (CRITICAL fails)
 - [x] Digest verify script (REQ-E1c-S03-01) — `hack/verify-image-digests.sh` + wired into verify
 - [x] ExternalSecret pattern (REQ-E1c-S04-*)
-- [ ] `.sops.yaml` + encrypted `deploy/secrets/identity/dex-github.enc.yaml`
-      (REQ-E1c-S05-*) — partially landed via identity epic
-- [ ] Argo CD KSOPS plugin wiring (REQ-E1c-S05-02; pairs with E3-S01-03)
+- [x] `.sops.yaml` + encrypted `deploy/secrets/identity/dex-github.enc.yaml`
+      (REQ-E1c-S05-01/-03) — landed with identity epic: root `.sops.yaml`
+      (age recipients for `deploy/secrets/**`) + SOPS-encrypted
+      `deploy/secrets/identity/{dex-github,dex-clients}.enc.yaml` (and
+      `deploy/secrets/argocd/argocd-oidc-client.enc.yaml`); values are
+      `ENC[AES256_GCM,…]`, not plaintext
+- [x] Argo CD KSOPS plugin wiring (REQ-E1c-S05-02; pairs with E3-S01-03) —
+      landed as E1d-S00 deferred debt: pinned
+      `deploy/bootstrap/argocd-repo-server-ksops-patch.yaml`
+      (`viaductoss/ksops:v4.3.3`) + `deploy/identity/secret-generator.yaml`
+      (`kind: ksops`); E1d tasks/smoke prove the render path
