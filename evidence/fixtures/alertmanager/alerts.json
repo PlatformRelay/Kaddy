@@ -1,0 +1,20 @@
+[
+  {
+    "labels": {
+      "alertname": "HighRequestRate",
+      "severity": "warning",
+      "service": "gateway",
+      "owner": "platform-team"
+    },
+    "annotations": {
+      "summary": "Cilium Gateway edge request rate above 100 rps",
+      "description": "Fixture alert for offline scorecard (maps to EdgeRequestRateHigh in live marshal rules)."
+    },
+    "startsAt": "2026-07-16T12:00:00Z",
+    "endsAt": "0001-01-01T00:00:00Z",
+    "status": {
+      "state": "active"
+    },
+    "receivers": [{ "name": "platform-team" }]
+  }
+]

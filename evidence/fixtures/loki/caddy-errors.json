@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "data": {
+    "resultType": "streams",
+    "result": [
+      {
+        "stream": {
+          "service": "caddy",
+          "level": "error"
+        },
+        "values": [
+          ["1710000000000000000", "fixture: GET / 502 Bad Gateway"],
+          ["1710000001000000000", "fixture: upstream timeout"]
+        ]
+      }
+    ],
+    "stats": {
+      "summary": {
+        "bytesProcessedPerSecond": 0,
+        "linesProcessedPerSecond": 0,
+        "totalBytesProcessed": 128,
+        "totalLinesProcessed": 2,
+        "execTime": 0.001
+      }
+    }
+  },
+  "query": "{service=\"caddy\"} |= \"5\"",
+  "fixture": true
+}

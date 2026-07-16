@@ -1,0 +1,52 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [],
+    "checks": [
+      {
+        "name": "status is 2xx or 3xx",
+        "path": "::status is 2xx or 3xx",
+        "id": "fixture-check",
+        "passes": 27000,
+        "fails": 0
+      }
+    ]
+  },
+  "metrics": {
+    "http_reqs": {
+      "count": 27000,
+      "rate": 150
+    },
+    "http_req_duration": {
+      "avg": 12.4,
+      "med": 11.0,
+      "max": 85.0,
+      "p(95)": 28.0,
+      "p(99)": 45.0
+    },
+    "http_req_failed": {
+      "rate": 0.0,
+      "passes": 27000,
+      "fails": 0
+    },
+    "iterations": {
+      "count": 27000,
+      "rate": 150
+    }
+  },
+  "state": {
+    "isStdOutTTY": false,
+    "isStdErrTTY": false,
+    "testRunDurationMs": 180000
+  },
+  "options": {
+    "summaryTrendStats": ["avg", "p(95)", "p(99)", "max"]
+  },
+  "fixture": {
+    "RATE": 150,
+    "threshold_rps": 100,
+    "note": "Offline fixture summary — not a live k6 run"
+  }
+}
