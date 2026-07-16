@@ -2,7 +2,9 @@
 
 **Status:** re-homed against the **Kubernetes Caddy origin** in ns `caddy-mvp`
 (REQ-CADDY-S05-04). PodMonitor scrapes the origin `/metrics`; promtool proves
-fire + silent for every alert. Closes D-026 on the K8s path (serve → scrape → fire).
+fire + silent for every alert. GitOps Application `caddy-mvp-monitoring`
+(`deploy/apps/caddy-mvp-monitoring.yaml`) syncs this tree — no longer orphaned
+from Argo CD. Live serve→scrape→fire still needs the tenant Ready on cluster.
 The same rules also cover the VM-variant path once that scrape target lands
 (REQ-CADDY-S01-03).
 

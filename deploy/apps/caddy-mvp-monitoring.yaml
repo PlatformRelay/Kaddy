@@ -1,0 +1,38 @@
+# REQ-CADDY-S05-04 — sync the e-caddy-mvp monitoring slice (PodMonitor +
+# re-homed caddy_* PrometheusRules) under deploy/caddy-mvp/monitoring/.
+#
+# The platform `monitoring` Application only syncs deploy/monitoring/; without
+# this child, the re-homed alerts/PodMonitor stay GitOps-orphaned.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caddy-mvp-monitoring
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp-monitoring
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: observability
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/caddy-mvp/monitoring
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
