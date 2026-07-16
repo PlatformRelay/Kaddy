@@ -1,10 +1,11 @@
-# ADR-0106 pod-security baseline: disallow privileged containers.
-# AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+# ADR-0106 pod-security baseline: disallow privileged containers. LIVE and
+# ENFORCED — see deploy/policies/README.md (enforcement matrix).
 #
-# Audit (not Enforce) on first sync: the observability stack inherits chart
-# defaults (security review P2-2) and must be proven clean in Audit before the
-# flip to Enforce (cutover step 3). kube-* namespaces are excluded — CNI and
-# node agents legitimately run privileged there.
+# Flipped Audit -> Enforce during the E1c cluster cutover (2026-07-16): the
+# in-cluster PolicyReport background scan showed ZERO violations across all
+# non-excluded namespaces, and a mulligan rollout-pod restart was admitted
+# post-flip (canary). kube-* namespaces are excluded — CNI and node agents
+# legitimately run privileged there.
 # Offline test: kyverno test tests/kyverno/disallow-privileged-containers/.
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -33,7 +34,7 @@ metadata:
       host devices. Containers, init containers and ephemeral containers must
       not set securityContext.privileged to true.
 spec:
-  validationFailureAction: Audit
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: privileged-containers
