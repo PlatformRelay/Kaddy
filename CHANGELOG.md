@@ -3,6 +3,39 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.1.1] — 2026-07-16
+
+### Features
+- **crossplane:** Website platform API — v2 namespaced XRD + Composition + demo claim (REQ-E6-S01-01, REQ-E6-S02-01, REQ-E6-S02-02, REQ-E6-S03-01, REQ-E6-S04-01, REQ-E6-S04-02, REQ-E6-S05-01, REQ-E6-EXIT)
+- **crossplane:** Closed-list RBAC for composed Website kinds (REQ-E6-S02-02)
+- **secrets:** SOPS-encrypted ArgoCD OIDC client pair for the KSOPS chain (REQ-E1d-S01-05)
+- **identity:** Dex OIDC issuer rendered via KSOPS (REQ-E1d-S01-01/-02/-03/-06, ADR-0107/0110)
+- **bootstrap:** KSOPS on the repo-server + ArgoCD OIDC wiring (REQ-E3-S01-03 debt, REQ-E1d-S02-01/-03)
+- **policies:** Identity namespace default-deny netpol baseline (REQ-E1d-S04-01/-02)
+- **ci:** Chainsaw substrate parity — build CI cluster from hack/cluster (Cilium+GW-API+local-CA), un-skip 9 suites (TEST-9, SEC-5)
+
+### Fixes
+- **docs:** Mkdocs strict-build link fixes
+- **crossplane:** Numeric runAsUser for the function runtime pod (REQ-E6-S02-01)
+- **crossplane:** Admit caddy's cap_net_bind_service file capability (REQ-E6-S03-01)
+- **observability:** Raise Grafana resources — 200m/256Mi starved it into a liveness crash-loop (post-E6 load)
+- **websites:** Pin kaddy-showcase to the real GHCR tag 0.1.0 (metadata-action strips the v; package now public — side-load retired)
+- **websites:** Back to side-loaded v0.1.0 — GHCR 0.1.0 is amd64-only, node is arm64; multi-arch 0.1.1 pending
+- **e1d:** SSA overlay with distinct field manager + Kyverno-compliant netpol probes
+- **ci:** Apply vendored rollouts install.yaml with -n argo-rollouts — upstream manifest is namespace-less (Argo CD destination supplies it live)
+- **ci:** Apply gateway/mulligan namespace.yaml before their dirs (alphabetical apply order) + multi-arch showcase image
+- **ci:** Actually RUN the per-scenario chainsaw suites — default discovery only loads chainsaw-test.yaml files
+- **tests:** Chainsaw asserts arrays length-strictly — filter conditions with jmespath in never-executed suites
+- **tests:** 120s timeout on the bluegreen preview-service assert — 30s default too tight for green pod availability on the loaded CI node
+- **tests:** Quote rollouts-pod-template-hash in the bluegreen selector assert — unquoted dashes parse as JMESPath arithmetic, expression could never be true
+
+### Tests
+- **e6:** Green live exit bundle — probe run-label, honest caddy metric assert, runbook caveats (REQ-E6-S04-01, REQ-E6-S05-01)
+- **e1d:** Live smoke bundle + chainsaw identity suite (REQ-E1d-EXIT)
+
+### Documentation
+- **e1d:** Runbook rewritten to live reality + honest scoping (REQ-E1d-S03 deferral)
+
 ## [0.1.0] — 2026-07-16
 
 ### Features
@@ -134,6 +167,7 @@ gitmoji-conventional commit history.
 - **ci:** Remove stale PocketIDP ci.yaml (wrong-repo remnant)
 - **e4:** Add task bootstrap:e4 + test:smoke:e4; mark E4 tasks (REQ-E4)
 - **release:** Git-cliff config for gitmoji-conventional changelog
+- **release:** V0.1.0 changelog
 
 ### Other
 - **ws4:** Enumerate missing test artifacts + chainsaw un-skip tasks (TEST-3, TEST-4)
