@@ -29,9 +29,7 @@ metadata:
     # Kind exists only after the crossplane app establishes the XRD (first boot).
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  # v0.1.0 = side-loaded arm64 build (GHCR 0.1.0 is amd64-only; kind node is arm64).
-  # Bump to the multi-arch 0.1.1 once the QEMU build lands (CI-parity lane) + v0.1.1 tag.
-  image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
+  image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
   port: 8080
   path: /putting-green
   replicas: 1

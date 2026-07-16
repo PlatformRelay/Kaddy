@@ -63,13 +63,8 @@ kubectl -n websites describe website putting-green   # composed refs + condition
   `policies` app is manual-sync (deliberate; see `deploy/policies/README.md`).
 - First boot: `task bootstrap:e6` registers projects + the crossplane app;
   Argo CD retries through the CRD-before-CR window until Established.
-- **GHCR visibility (operator action):** the `kaddy-showcase` GHCR package is
-  currently **private** (org default), so the kind node cannot pull it
-  anonymously. Until the package is flipped to public, side-load the image
-  (bit-identical local build — the Dockerfile is deterministic):
-  `podman build -f deploy/showcase/Dockerfile -t ghcr.io/platformrelay/kaddy-showcase:v0.1.0 . && podman save ... | kind load image-archive - --name kaddy-dev`
-  (pull policy is IfNotPresent for pinned tags). Flip the package to public and
-  this step disappears.
+- **GHCR image:** `kaddy-showcase` is public and **multi-arch** (amd64+arm64) since `0.1.1` —
+  the kind node pulls it anonymously; no side-load needed.
 - Per-request `caddy_http_*` series need Caddy's global `servers { metrics }`
   option in the showcase image's Caddyfile (e-caddy-mvp follow-up); the scrape
   target itself is up and the config metrics flow today.
