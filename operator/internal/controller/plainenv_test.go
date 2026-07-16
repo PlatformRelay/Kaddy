@@ -33,6 +33,15 @@ import (
 	gatewayv1alpha1 "github.com/PlatformRelay/Kaddy/operator/api/v1alpha1"
 )
 
+// Shared fixture identifiers (mirroring the design.md sample) used across
+// the controller test files.
+const (
+	testNS        = "default"
+	testCaddyName = "edge"
+	testSiteName  = "clubhouse"
+	testHost      = "demo.example.com"
+)
+
 // startPlainEnv boots an isolated envtest control plane with the project
 // CRDs installed and returns a client against it. Stopped via t.Cleanup.
 func startPlainEnv(t *testing.T) client.Client {

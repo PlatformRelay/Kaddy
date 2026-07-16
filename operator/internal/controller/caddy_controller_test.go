@@ -34,7 +34,7 @@ var _ = Describe("Caddy Controller", func() {
 	Context("When reconciling a resource", func() {
 		const (
 			resourceName      = "test-resource"
-			resourceNamespace = "default"
+			resourceNamespace = testNS
 		)
 
 		ctx := context.Background()

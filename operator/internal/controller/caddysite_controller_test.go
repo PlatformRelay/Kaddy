@@ -34,7 +34,7 @@ var _ = Describe("CaddySite Controller", func() {
 	Context("When reconciling a resource", func() {
 		const (
 			resourceName      = "test-resource"
-			resourceNamespace = "default"
+			resourceNamespace = testNS
 		)
 
 		ctx := context.Background()
@@ -55,8 +55,8 @@ var _ = Describe("CaddySite Controller", func() {
 						Namespace: resourceNamespace,
 					},
 					Spec: gatewayv1alpha1.CaddySiteSpec{
-						CaddyRef: "edge",
-						Hosts:    []string{"demo.example.com"},
+						CaddyRef: testCaddyName,
+						Hosts:    []string{testHost},
 					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())

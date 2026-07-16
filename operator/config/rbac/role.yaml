@@ -8,22 +8,10 @@ rules:
   - gateway.kaddy.io
   resources:
   - caddies
-  - caddysites
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
-- apiGroups:
-  - gateway.kaddy.io
-  resources:
-  - caddies/finalizers
-  - caddysites/finalizers
-  verbs:
-  - update
 - apiGroups:
   - gateway.kaddy.io
   resources:
@@ -32,4 +20,20 @@ rules:
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - gateway.kaddy.io
+  resources:
+  - caddysites
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gateway.kaddy.io
+  resources:
+  - caddysites/finalizers
+  verbs:
   - update

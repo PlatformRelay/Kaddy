@@ -45,7 +45,7 @@ func TestCaddy_Reconcile_Ready(t *testing.T) {
 	t.Cleanup(cancel)
 
 	caddy := &gatewayv1alpha1.Caddy{
-		ObjectMeta: metav1.ObjectMeta{Name: "edge", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: testCaddyName, Namespace: testNS},
 		Spec: gatewayv1alpha1.CaddySpec{
 			Replicas:         ptr.To(int32(2)),
 			GatewayClassName: "caddy",
@@ -60,12 +60,12 @@ func TestCaddy_Reconcile_Ready(t *testing.T) {
 		Scheme:   c.Scheme(),
 		AdminURL: func(*gatewayv1alpha1.Caddy) string { return admin.URL() },
 	}
-	key := types.NamespacedName{Name: "edge", Namespace: "default"}
+	key := types.NamespacedName{Name: testCaddyName, Namespace: testNS}
 	req := reconcile.Request{NamespacedName: key}
 
 	fetched := &gatewayv1alpha1.Caddy{}
 	readyWithin := func(loops int) bool {
-		for i := 0; i < loops; i++ {
+		for i := range loops {
 			if _, err := r.Reconcile(tctx, req); err != nil {
 				t.Fatalf("reconcile #%d: %v", i+1, err)
 			}

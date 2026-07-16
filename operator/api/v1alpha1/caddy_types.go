@@ -31,9 +31,10 @@ type CaddyMetrics struct {
 
 // CaddyAdmin configures the Caddy admin API endpoint the operator drives.
 type CaddyAdmin struct {
-	// listen is the admin API listen address, e.g. ":2019".
+	// listen is the admin API listen address as [host]:port,
+	// e.g. ":2019", "0.0.0.0:2019" or "localhost:2019".
 	// +kubebuilder:default=":2019"
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^([A-Za-z0-9.\-]+)?:[0-9]{1,5}$`
 	// +optional
 	Listen string `json:"listen,omitempty"`
 }

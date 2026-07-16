@@ -50,9 +50,9 @@ type CaddyReconciler struct {
 	AdminURL func(*gatewayv1alpha1.Caddy) string
 }
 
-// +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies,verbs=get;list;watch;create;update;patch;delete
+// Least-privilege: this reconciler only reads Caddy CRs and writes status.
+// +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies/finalizers,verbs=update
 
 // Reconcile checks that the dataplane's admin API is reachable and mirrors
 // the outcome into the Ready condition (REQ-E9-S02-01). Deploying the

@@ -45,8 +45,10 @@ spec:
                 properties:
                   listen:
                     default: :2019
-                    description: listen is the admin API listen address, e.g. ":2019".
-                    minLength: 1
+                    description: |-
+                      listen is the admin API listen address as [host]:port,
+                      e.g. ":2019", "0.0.0.0:2019" or "localhost:2019".
+                    pattern: ^([A-Za-z0-9.\-]+)?:[0-9]{1,5}$
                     type: string
                 type: object
               gatewayClassName:

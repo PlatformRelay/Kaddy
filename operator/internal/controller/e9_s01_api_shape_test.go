@@ -40,7 +40,7 @@ import (
 )
 
 var _ = Describe("E9-S01 API shape", func() {
-	const ns = "default"
+	const ns = testNS
 
 	crdIsEstablished := func(name string) {
 		GinkgoHelper()
@@ -133,10 +133,10 @@ var _ = Describe("E9-S01 API shape", func() {
 			return &gatewayv1alpha1.CaddySite{
 				ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
 				Spec: gatewayv1alpha1.CaddySiteSpec{
-					CaddyRef: "edge",
-					Hosts:    []string{"demo.example.com"},
+					CaddyRef: testCaddyName,
+					Hosts:    []string{testHost},
 					Routes: []gatewayv1alpha1.CaddySiteRoute{
-						{Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "clubhouse", Port: 8080}},
+						{Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: testSiteName, Port: 8080}},
 					},
 				},
 			}

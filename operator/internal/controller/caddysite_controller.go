@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -61,14 +62,17 @@ type CaddySiteReconciler struct {
 	RoutesPath string
 }
 
-// +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites,verbs=get;list;watch;create;update;patch;delete
+// Least-privilege: reads CaddySites (update only for the drain finalizer,
+// never create/delete), writes status, resolves caddyRef read-only.
+// +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddysites/finalizers,verbs=update
 // +kubebuilder:rbac:groups=gateway.kaddy.io,resources=caddies,verbs=get;list;watch
 
 // Reconcile renders the site's route (tagged with a stable `@id`) and
 // upserts it idempotently through the Caddy admin API (REQ-E9-S02-02):
-// PUT /id/<id> replaces in place; only a missing route is POSTed once.
+// PATCH /id/<id> strictly replaces in place; only a missing route is
+// POSTed once (POST appends and PUT inserts in Caddy — both duplicate).
 func (r *CaddySiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 
@@ -202,8 +206,16 @@ func renderRoute(site *gatewayv1alpha1.CaddySite) caddyadmin.Route {
 		if path == "" {
 			path = "/"
 		}
+		// Prefix match without sibling bleed: "/" -> "/*"; "/api" -> exact
+		// "/api" plus subtree "/api/*" (a bare "/api*" would match "/apix").
+		var paths []any
+		if strings.HasSuffix(path, "/") {
+			paths = []any{path + "*"}
+		} else {
+			paths = []any{path, path + "/*"}
+		}
 		subroutes = append(subroutes, map[string]any{
-			"match": []any{map[string]any{"path": []any{path + "*"}}},
+			"match": []any{map[string]any{"path": paths}},
 			"handle": []any{map[string]any{
 				"handler": "reverse_proxy",
 				"upstreams": []any{map[string]any{

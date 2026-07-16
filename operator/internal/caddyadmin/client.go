@@ -17,8 +17,9 @@ limitations under the License.
 // Package caddyadmin is the port to the Caddy admin API
 // (https://caddyserver.com/docs/api). Routes are addressed by their
 // `@id` tag so that reconciliation is idempotent: an existing route is
-// replaced in place via PUT /id/<id>; only a route that does not exist
-// yet is appended via POST to the server's routes path.
+// strictly replaced in place via PATCH /id/<id> (PUT would *insert* a
+// duplicate — Caddy semantics); only a route that does not exist yet is
+// appended via POST to the server's routes path.
 package caddyadmin
 
 import (
@@ -28,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 	"time"
@@ -77,8 +79,11 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
-// UpsertRoute idempotently installs the route: PUT /id/<id> when the id
-// already exists, otherwise a single POST to routesPath (e.g.
+// UpsertRoute idempotently installs the route. Caddy admin API verb
+// semantics: POST appends to arrays and PUT *inserts* — both would pile up
+// duplicate routes — while PATCH strictly replaces an existing value. So:
+// PATCH /id/<id> replaces in place; only on 404 (unknown id) is the route
+// created exactly once via POST to routesPath (e.g.
 // "/config/apps/http/servers/srv0/routes").
 func (c *Client) UpsertRoute(ctx context.Context, routesPath string, route Route) error {
 	if route.ID == "" {
@@ -86,9 +91,7 @@ func (c *Client) UpsertRoute(ctx context.Context, routesPath string, route Route
 	}
 
 	body := make(map[string]any, len(route.Body)+1)
-	for k, v := range route.Body {
-		body[k] = v
-	}
+	maps.Copy(body, route.Body)
 	body["@id"] = route.ID
 
 	payload, err := json.Marshal(body)
@@ -96,7 +99,7 @@ func (c *Client) UpsertRoute(ctx context.Context, routesPath string, route Route
 		return fmt.Errorf("upsert route %q: encode: %w", route.ID, err)
 	}
 
-	status, err := c.do(ctx, http.MethodPut, "/id/"+route.ID, payload)
+	status, err := c.do(ctx, http.MethodPatch, "/id/"+route.ID, payload)
 	if err != nil {
 		return fmt.Errorf("upsert route %q: %w", route.ID, err)
 	}
@@ -106,7 +109,7 @@ func (c *Client) UpsertRoute(ctx context.Context, routesPath string, route Route
 	case status == http.StatusNotFound:
 		// Route does not exist yet — create it exactly once.
 	default:
-		return fmt.Errorf("upsert route %q: PUT /id/%s: unexpected status %d", route.ID, route.ID, status)
+		return fmt.Errorf("upsert route %q: PATCH /id/%s: unexpected status %d", route.ID, route.ID, status)
 	}
 
 	status, err = c.do(ctx, http.MethodPost, routesPath, payload)

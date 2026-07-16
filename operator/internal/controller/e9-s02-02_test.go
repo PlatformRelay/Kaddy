@@ -48,7 +48,7 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 	t.Cleanup(cancel)
 
 	caddy := &gatewayv1alpha1.Caddy{
-		ObjectMeta: metav1.ObjectMeta{Name: "edge", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: testCaddyName, Namespace: testNS},
 		Spec:       gatewayv1alpha1.CaddySpec{},
 	}
 	if err := c.Create(tctx, caddy); err != nil {
@@ -56,12 +56,12 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 	}
 
 	site := &gatewayv1alpha1.CaddySite{
-		ObjectMeta: metav1.ObjectMeta{Name: "clubhouse", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: testSiteName, Namespace: testNS},
 		Spec: gatewayv1alpha1.CaddySiteSpec{
-			CaddyRef: "edge",
-			Hosts:    []string{"demo.example.com"},
+			CaddyRef: testCaddyName,
+			Hosts:    []string{testHost},
 			Routes: []gatewayv1alpha1.CaddySiteRoute{
-				{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: "clubhouse", Port: 8080}},
+				{Path: "/", Backend: gatewayv1alpha1.CaddySiteBackend{ServiceName: testSiteName, Port: 8080}},
 			},
 		},
 	}
@@ -74,7 +74,7 @@ func TestCaddySite_AdminUpsert_Idempotent(t *testing.T) {
 		Scheme:   c.Scheme(),
 		AdminURL: func(*gatewayv1alpha1.Caddy) string { return admin.URL() },
 	}
-	key := types.NamespacedName{Name: "clubhouse", Namespace: "default"}
+	key := types.NamespacedName{Name: testSiteName, Namespace: testNS}
 	req := reconcile.Request{NamespacedName: key}
 
 	// Reconcile twice (plus once more for the finalizer add pass).
@@ -156,10 +156,10 @@ func TestCaddySite_CaddyRefNotFound(t *testing.T) {
 	t.Cleanup(cancel)
 
 	site := &gatewayv1alpha1.CaddySite{
-		ObjectMeta: metav1.ObjectMeta{Name: "orphan", Namespace: "default"},
+		ObjectMeta: metav1.ObjectMeta{Name: "orphan", Namespace: testNS},
 		Spec: gatewayv1alpha1.CaddySiteSpec{
 			CaddyRef: "missing",
-			Hosts:    []string{"demo.example.com"},
+			Hosts:    []string{testHost},
 		},
 	}
 	if err := c.Create(tctx, site); err != nil {
@@ -171,7 +171,7 @@ func TestCaddySite_CaddyRefNotFound(t *testing.T) {
 		Scheme:   c.Scheme(),
 		AdminURL: func(*gatewayv1alpha1.Caddy) string { return admin.URL() },
 	}
-	key := types.NamespacedName{Name: "orphan", Namespace: "default"}
+	key := types.NamespacedName{Name: "orphan", Namespace: testNS}
 
 	// Terminal-ish config error: no reconcile error (no hot-loop), Ready=False,
 	// but retry IS scheduled (RequeueAfter > 0) so a later caddyRef fix is seen.
