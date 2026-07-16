@@ -25,7 +25,7 @@ metadata:
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
 spec:
-  project: default
+  project: observability
   source:
     repoURL: https://grafana.github.io/helm-charts
     chart: alloy
