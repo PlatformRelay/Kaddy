@@ -146,6 +146,8 @@ grep -A40 'destinations:' "${WORKLOADS_PROJ}" | grep -q 'caddy-mvp' \
   || fail "workloads AppProject destinations must allow namespace caddy-mvp"
 grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'caddy-mvp' \
   || fail "platform AppProject destinations must allow namespace caddy-mvp (policies netpol)"
+grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'mulligan' \
+  || fail "platform AppProject destinations must allow namespace mulligan (policies netpol)"
 ok "workloads + platform AppProject destinations + ignoreDifferences for caddy-mvp"
 
 # --- 9) nginx reverse-proxy config present (showcase topology prep) ---------
