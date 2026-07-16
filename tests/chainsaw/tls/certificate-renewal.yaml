@@ -6,17 +6,14 @@ metadata:
   name: tls-certificate-renewal
   annotations:
     kaddy.io/req: REQ-E4-S03-05
-    # skip: true — needs the clubhouse-tls Certificate issued by the kaddy-local-ca
-    # ClusterIssuer in ns `gateway`. CI's ephemeral chainsaw cluster installs
-    # cert-manager + the letsencrypt-staging issuer only — NOT kaddy-local-ca and
-    # NOT the clubhouse Certificate — so this cannot issue there.
-    # Verified PASSING against the live kind-kaddy-dev cluster with:
+    # Un-skipped by CI substrate parity (2026-07-16): kind-up.sh provisions the
+    # kaddy-local-ca ClusterIssuer (hack/cluster/install-cert-manager.sh) and
+    # the workflow applies deploy/cert-manager/clubhouse-certificate.yaml and
+    # waits for it to be Ready — issuance + renewal scheduling happen in CI.
+    # Also verified PASSING against the live kind-kaddy-dev cluster with:
     #   chainsaw test --test-file tests/chainsaw/tls/certificate-renewal.yaml .
-    # Un-skip once CI provisions kaddy-local-ca + applies the clubhouse cert
-    # (infra follow-up, outside the E4 lane boundary).
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-local-ca
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   description: clubhouse-tls Certificate is Ready, has renewBefore, and cert-manager set a renewalTime
   namespace: gateway
   steps:

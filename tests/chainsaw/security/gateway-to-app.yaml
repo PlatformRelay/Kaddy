@@ -15,14 +15,15 @@ metadata:
   name: security-gateway-to-app
   annotations:
     kaddy.io/req: REQ-E1c-S01-02
-    # skip: true — same live-substrate dependency as default-deny.yaml
-    # (Cilium Gateway + clubhouse + policies app; CI kind has none).
-    # Verified PASSING against live kind-kaddy-dev (2026-07-16) with:
-    #   cd tests/chainsaw/security && chainsaw test --test-file gateway-to-app.yaml .
-    #   (skip flipped off locally for the run, reverted after)
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+    # Un-skipped by CI substrate parity (2026-07-16): chainsaw CI now builds its
+    # cluster from the LIVE substrate recipe (hack/cluster/kind-up.sh — Cilium +
+    # Gateway API CRDs + LB-IPAM + cert-manager/kaddy-local-ca, pinned via
+    # hack/cluster/versions.env), applies the E4 edge
+    # (deploy/gateway/ + clubhouse) AND the default-deny network baseline —
+    # Cilium enforces it, so the sanctioned Gateway->clubhouse path is a real
+    # allow-proof in CI. Also verified PASSING live (2026-07-16).
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
   concurrent: false
   description: gateway (Envoy) -> clubhouse :8080 stays allowed under default-deny
   steps:

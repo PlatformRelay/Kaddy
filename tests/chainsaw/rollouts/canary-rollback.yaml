@@ -11,13 +11,16 @@ metadata:
   name: rollouts-canary-rollback
   annotations:
     kaddy.io/req: REQ-E7-S02-02
-    # skip: true — same substrate dependency as canary-weights (Rollouts + Gateway
-    # API plugin + Cilium Gateway), absent in the CI chainsaw kind cluster.
-    # Verified PASSING live with:
+    # Un-skipped by CI substrate parity (2026-07-16): same substrate as
+    # canary-weights — Cilium Gateway + Argo Rollouts + the Gateway API plugin
+    # (linux-amd64 in CI, pinned v0.16.0) + deploy/workloads/mulligan/, all
+    # stood up by the chainsaw workflow. Also verified PASSING live with:
     #   chainsaw test --test-file tests/chainsaw/rollouts/canary-rollback.yaml .
-    kaddy.io/status: live-cluster-only-ci-substrate-lacks-rollouts-gateway
+    kaddy.io/status: ci-enforced-2026-07-16-substrate-parity
 spec:
-  skip: true
+  # This suite and canary-weights mutate the SAME mulligan Rollout/HTTPRoute;
+  # serialize so a full `chainsaw test tests/chainsaw` run cannot interleave them.
+  concurrent: false
   description: After aborting a canary the mulligan HTTPRoute canary weight returns to 0.
   namespace: mulligan
   steps:
