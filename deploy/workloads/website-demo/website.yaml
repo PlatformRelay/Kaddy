@@ -29,6 +29,15 @@ metadata:
     # Kind exists only after the crossplane app establishes the XRD (first boot).
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+  # E6g: once a SECOND Website Composition exists (the gridscale VM variant),
+  # selection is no longer implicit — pin the in-cluster Composition explicitly
+  # so this demo XR keeps resolving to it. `variant` records portal intent;
+  # `compositionSelector` performs the routing (matches the label on
+  # composition-website.yaml). No behavior change for the E6 smoke.
+  variant: in-cluster
+  compositionSelector:
+    matchLabels:
+      platform.kaddy.io/variant: in-cluster
   image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
   port: 8080
   path: /putting-green

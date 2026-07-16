@@ -261,10 +261,20 @@ provides Cilium Gateway + default StorageClass
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E6g-S01 | Generate thin `provider-gridscale` with Upjet (time-boxed) + plain-TF fallback | ⬜ |
-| E6g-S02 | Install `provider-gridscale` (ProviderConfig) | ⬜ |
-| E6g-S03 | Extend Composition: `gridscale_server` nginx VM | ⬜ |
-| E6g-S04 | Re-verify `/legacy` routing + monitoring on real VM | ⬜ |
+| E6g-S01 | Generate thin `provider-gridscale` with Upjet (time-boxed) + plain-TF fallback | 🟡 codegen done (sibling); xpkg build → live |
+| E6g-S02 | Install `provider-gridscale` (ProviderConfig) | 🟡 offline-complete; live install pending |
+| E6g-S03 | Extend Composition: `gridscale_server` nginx VM | 🟡 offline-complete; real VM pending |
+| E6g-S04 | Re-verify `/legacy` routing + monitoring on real VM | ⬜ live cycle only |
+
+**Offline (this repo):** Provider + ClusterProviderConfig + creds Secret template
+(`deploy/crossplane/provider-gridscale.yaml`, `providerconfig-gridscale.yaml`) and
+a variant-selected 2nd Website Composition
+(`composition-website-gridscale.yaml`: Server + Network/IPv4/Storage nginx VM,
+cloud-init page + `/metrics`) — the in-cluster path is untouched. Gated by
+`task test:smoke:e6g` (structural + `kubeconform` vs the sibling's generated
+CRDs). **Live-proof pending** (D-016): the sibling xpkg is not yet built/pushed,
+so provider install + real VM + `/legacy` are DEFERRED to the E6g live cycle —
+see [runbooks/gridscale-provider.md](runbooks/gridscale-provider.md).
 
 ---
 

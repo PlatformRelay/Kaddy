@@ -85,6 +85,7 @@ tasks:
       - bash tests/meta/batch2-smoke-wired.yaml
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
       - bash tests/smoke/e1g-offline.sh
+      - bash tests/smoke/e6g-offline.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)
@@ -688,3 +689,8 @@ tasks:
       KUBECONFIG: '{{.KUBECONFIG}}'
     cmds:
       - bash tests/smoke/e6-exit.sh
+
+  test:smoke:e6g:
+    desc: E6g — OFFLINE gate (provider-gridscale + ProviderConfig + gridscale Website Composition; no cluster, no gridscale API). Live install DEFERRED to the E6g live cycle.
+    cmds:
+      - bash tests/smoke/e6g-offline.sh

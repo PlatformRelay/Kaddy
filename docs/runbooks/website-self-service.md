@@ -26,6 +26,10 @@ metadata:
     business-criticality: business-operational
     track: stable
 spec:
+  variant: in-cluster          # E6g: in-cluster (default) | gridscale (real VM)
+  compositionSelector:         # routes to the matching Composition (required
+    matchLabels:               # now that a 2nd, gridscale-VM Composition exists)
+      platform.kaddy.io/variant: in-cluster
   image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0   # pinned, non-root, /healthz (+ /metrics)
   port: 8080
   path: /putting-green         # served at https://clubhouse.kaddy.local<path>/

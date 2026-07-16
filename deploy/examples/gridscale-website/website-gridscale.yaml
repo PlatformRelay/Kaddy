@@ -1,0 +1,46 @@
+# REQ-E6g-S03-01 — the gridscale VM demo claim (phase 2, LIVE cycle only).
+#
+# A Website with variant=gridscale: the SAME Website API, but routed to the
+# gridscale VM Composition (deploy/crossplane/composition-website-gridscale.yaml)
+# via compositionSelector. Provisions a REAL gridscale nginx VM serving /legacy —
+# proves one platform API spans in-cluster and cloud-VM backends (E6g / D-016).
+#
+# DELIBERATELY under deploy/examples/ (NOT deploy/workloads/, which the workloads
+# Application syncs with recurse:true). This claim provisions REAL,
+# cost-incurring gridscale infra, so it is applied MANUALLY during the E6g live
+# cycle and DESTROYED after — never auto-synced:
+#
+#   kubectl apply -f deploy/examples/gridscale-website/website-gridscale.yaml
+#   # ... verify /legacy, then:
+#   kubectl delete -f deploy/examples/gridscale-website/website-gridscale.yaml
+#
+# See docs/runbooks/gridscale-provider.md for the full live cycle + teardown.
+apiVersion: platform.kaddy.io/v1alpha1
+kind: Website
+metadata:
+  name: legacy
+  namespace: websites
+  labels:
+    owner: platform-team
+    service: legacy
+    part-of: kaddy
+    managed-by: kubectl
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: legacy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6g-S03-01
+spec:
+  # Portal intent + the routing selector (both gridscale — the selector is what
+  # actually routes to composition-website-gridscale.yaml).
+  variant: gridscale
+  compositionSelector:
+    matchLabels:
+      platform.kaddy.io/variant: gridscale
+  # image/port/replicas are in-cluster concepts; on the VM path the site is the
+  # cloud-init nginx. path is the /legacy edge route (LBaaS in the live cycle).
+  path: /legacy

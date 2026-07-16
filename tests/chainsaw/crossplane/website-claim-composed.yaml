@@ -46,6 +46,13 @@ spec:
                   business-criticality: business-operational
                   track: stable
               spec:
+                # E6g: pin the in-cluster Composition explicitly — a second
+                # (gridscale VM) Composition now exists for kind: Website, so a
+                # selector-less XR would be ambiguous and compose nothing.
+                variant: in-cluster
+                compositionSelector:
+                  matchLabels:
+                    platform.kaddy.io/variant: in-cluster
                 image: ghcr.io/platformrelay/kaddy-showcase:v0.1.0
                 port: 8080
                 path: /chainsaw-site

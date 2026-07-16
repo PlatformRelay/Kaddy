@@ -1,0 +1,52 @@
+# REQ-E6g-S02-01 — install the Upjet provider-gridscale (phase 2).
+#
+# A pkg.crossplane.io/v1 Provider that pulls the provider-gridscale package
+# (built from the sibling PlatformRelay/provider-gridscale repo, E6g-S01). The
+# package installs the gridscale.*.platformrelay.io CRDs (Server, Network, IPv4,
+# Storage, LoadBalancer, K8s, …) that the gridscale Website Composition
+# (composition-website-gridscale.yaml) composes.
+#
+# SafeStart: the sibling package declares `capabilities: [SafeStart]`, so the
+# provider pod starts healthy before any ProviderConfig/credentials exist —
+# credentials are resolved lazily per managed resource.
+#
+# selfHeal is inherited from the crossplane Application (OFF — heavy controller
+# install class, same as kyverno/rollouts); auto create/update stays on.
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gridscale
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: provider
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: provider-gridscale
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6g-S02-01
+    # Kind exists only after the crossplane-core chart installs (first boot).
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  # TODO(live): built + pushed in the E6g LIVE cycle. The sibling repo's package
+  # is NOT yet built to an .xpkg and its registry path is a documented
+  # placeholder (provider-gridscale/README.md "<PACKAGE>:<VERSION>"). This ghcr
+  # path is the DECIDED target (agent-context/INBOX.md, DECIDED E6g-pkg-ref):
+  #   cd ../provider-gridscale && make build publish \
+  #     XPKG_REG_ORGS=ghcr.io/platformrelay VERSION=v0.1.0
+  # then pin this tag by DIGEST (SEC-4: no floating tags) before live install.
+  package: ghcr.io/platformrelay/provider-gridscale:v0.1.0
+  # Runtime pod must comply with the kaddy admission baseline (crossplane-system
+  # has NO Kyverno exclusions) — same DeploymentRuntimeConfig the composition
+  # function uses (kaddy-function-runtime): non-root + ADR-0301 labels.
+  runtimeConfigRef:
+    apiVersion: pkg.crossplane.io/v1beta1
+    kind: DeploymentRuntimeConfig
+    name: kaddy-function-runtime

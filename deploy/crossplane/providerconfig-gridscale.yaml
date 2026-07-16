@@ -1,0 +1,105 @@
+# REQ-E6g-S02-01 — ProviderConfig + credentials Secret template for
+# provider-gridscale.
+#
+# CREDENTIAL SHAPE (verified against the provider source, not assumed):
+#   provider-gridscale/internal/clients/gridscale.go json.Unmarshal's a SINGLE
+#   secret key into a map and maps uuid/token/api_url into the gridscale
+#   Terraform provider config. So the Secret ships ONE key (`credentials`)
+#   holding a JSON blob — NOT separate uuid/token keys.
+#
+#       {"uuid":"<user-uuid>","token":"<api-token>","api_url":"<optional>"}
+#
+#   uuid + token are REQUIRED (missing/empty → the provider rejects with a
+#   descriptive error, audit guard CRED-1/CRED-2); api_url is optional.
+#
+# ENV-VAR MAPPING (the E1g mismatch, documented here as the single source):
+#   .envrc exports          gridscale provider wants     secret JSON key
+#   ----------------------  ---------------------------  ----------------
+#   GRIDSCALE_USER_UUID     GRIDSCALE_UUID   (User-UUID)  uuid
+#   GRIDSCALE_API_KEY       GRIDSCALE_TOKEN  (API-token)  token
+#
+#   Build the live Secret WITHOUT committing real values (see the runbook
+#   docs/runbooks/gridscale-provider.md):
+#     kubectl -n crossplane-system create secret generic gridscale-creds \
+#       --from-literal=credentials="$(jq -nc \
+#         --arg uuid "$GRIDSCALE_USER_UUID" --arg token "$GRIDSCALE_API_KEY" \
+#         '{uuid:$uuid,token:$token}')"
+#
+# SCOPE: a cluster-scoped ClusterProviderConfig (DECIDED). A NAMESPACED
+# ProviderConfig forces the creds Secret into each managed resource's namespace
+# (gridscale.go resolveModern overrides secretRef.namespace to mg.Namespace);
+# ClusterProviderConfig honors the secretRef.namespace as written, so ONE
+# central Secret in crossplane-system serves all gridscale MRs regardless of
+# the XR/Composition namespace. (agent-context/INBOX.md DECIDED E6g-pc-scope)
+---
+apiVersion: gridscale.m.platformrelay.io/v1beta1
+kind: ClusterProviderConfig
+metadata:
+  name: default
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: providerconfig
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: restricted
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: providerconfig-gridscale
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6g-S02-01
+    # Kind exists only after provider-gridscale installs its CRDs (first boot).
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: gridscale-creds
+      namespace: crossplane-system
+      key: credentials
+---
+# INERT TEMPLATE — committed for shape/documentation only. The REPLACE_ME values
+# are placeholders; the REAL Secret is created out-of-band at live time (see the
+# kubectl one-liner above) or via SOPS, and is NOT committed. ArgoCD is told to
+# ignore this object's data so a live-injected Secret is never clobbered back to
+# the placeholder.
+#
+# NOTE: real gridscale credentials must NEVER be committed. Deliver them via the
+# kubectl one-liner or a SOPS-encrypted Secret at live time.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gridscale-creds
+  namespace: crossplane-system
+  labels:
+    owner: platform-team
+    service: crossplane
+    component: credentials
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: restricted
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: gridscale-creds
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6g-S02-01
+    # Live cycle injects real creds out-of-band. Placeholder data is NOT synced
+    # over an already-provisioned Secret because the crossplane ArgoCD app runs
+    # WITHOUT selfHeal (manual sync) — the guarantee is self-heal-off, not these
+    # annotations. If auto-sync is ever enabled, add ignoreDifferences on this
+    # Secret's /data + /stringData to the app (compare-options/IgnoreExtraneous
+    # governs prune reporting, NOT data-field drift, so it would not protect here).
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+type: Opaque
+stringData:
+  # JSON blob the provider unmarshals; keys uuid/token map from GRIDSCALE_USER_UUID
+  # / GRIDSCALE_API_KEY (.envrc). REPLACE_ME → real values injected at live time.
+  credentials: |
+    {"uuid":"REPLACE_ME_GRIDSCALE_USER_UUID","token":"REPLACE_ME_GRIDSCALE_API_KEY"}

@@ -1,0 +1,103 @@
+# REQ-E6g-S03-01: a Website with variant=gridscale composes the gridscale VM
+# managed-resource graph (Network + IPv4 + Storage + Server) in its namespace,
+# each carrying the ADR-0301 labels propagated from the XR and a
+# providerConfigRef to the gridscale ClusterProviderConfig.
+#
+# skip: true — this asserts the COMPOSED gridscale MRs exist and are shaped
+# correctly, which needs the Crossplane ENGINE + the Website XRD/Composition +
+# the provider-gridscale CRDs installed (deploy/crossplane/ + the built xpkg).
+# None of that is in the CI substrate, and the xpkg is not yet built (E6g live
+# cycle). It also asserts EXISTENCE/shape only — it does NOT wait for Ready
+# (that needs real gridscale API calls + credentials, the live cycle's job).
+#
+# Un-skip in the E6g live cycle once provider-gridscale is installed:
+#   chainsaw test --test-file tests/chainsaw/e6g/gridscale-website-composed.yaml .
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: e6g-gridscale-website-composed
+  annotations:
+    kaddy.io/req: REQ-E6g-S03-01
+    kaddy.io/status: live-cluster-only-needs-provider-gridscale-xpkg
+spec:
+  skip: true
+  description: >-
+    Website(variant=gridscale) composes a labeled Network/IPv4/Storage/Server
+    graph via provider-gridscale, selected by compositionSelector.
+  timeouts:
+    assert: 120s
+  steps:
+    - name: claim-gridscale-website
+      try:
+        - apply:
+            resource:
+              apiVersion: platform.kaddy.io/v1alpha1
+              kind: Website
+              metadata:
+                name: chainsaw-legacy
+                labels:
+                  owner: platform-team
+                  service: chainsaw-legacy
+                  part-of: kaddy
+                  managed-by: chainsaw
+                  data-classification: public
+                  business-criticality: business-operational
+                  track: stable
+              spec:
+                variant: gridscale
+                compositionSelector:
+                  matchLabels:
+                    platform.kaddy.io/variant: gridscale
+                path: /chainsaw-legacy
+    - name: composed-gridscale-mrs-exist
+      try:
+        - assert:
+            resource:
+              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
+              kind: Server
+              metadata:
+                name: chainsaw-legacy
+                labels:
+                  owner: platform-team
+                  service: chainsaw-legacy
+                  part-of: kaddy
+                  managed-by: crossplane
+              spec:
+                forProvider:
+                  (cores): 1
+                  (memory): 1
+                providerConfigRef:
+                  kind: ClusterProviderConfig
+                  name: default
+        - assert:
+            resource:
+              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
+              kind: Network
+              metadata:
+                name: chainsaw-legacy
+                labels:
+                  managed-by: crossplane
+        - assert:
+            resource:
+              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
+              kind: IPv4
+              metadata:
+                name: chainsaw-legacy
+                labels:
+                  managed-by: crossplane
+        - assert:
+            resource:
+              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
+              kind: Storage
+              metadata:
+                name: chainsaw-legacy
+                labels:
+                  managed-by: crossplane
+              spec:
+                forProvider:
+                  (capacity): 10
+      catch:
+        - describe:
+            apiVersion: platform.kaddy.io/v1alpha1
+            kind: Website
+            name: chainsaw-legacy

@@ -35,6 +35,10 @@ metadata:
     app.kubernetes.io/name: website.platform.kaddy.io
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
+    # E6g: selector label so a Website with spec.variant=in-cluster (the
+    # default) resolves THIS composition via compositionSelector.matchLabels;
+    # the gridscale VM path lives in composition-website-gridscale.yaml.
+    platform.kaddy.io/variant: in-cluster
   annotations:
     kaddy.io/adr: "0105"
     kaddy.io/req: REQ-E6-S02-02
