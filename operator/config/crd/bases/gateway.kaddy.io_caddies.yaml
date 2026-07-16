@@ -40,27 +40,36 @@ spec:
             description: spec defines the desired state of Caddy
             properties:
               admin:
+                default: {}
                 description: admin configures the Caddy admin API endpoint.
                 properties:
                   listen:
+                    default: :2019
                     description: listen is the admin API listen address, e.g. ":2019".
+                    minLength: 1
                     type: string
                 type: object
               gatewayClassName:
+                default: caddy
                 description: gatewayClassName binds this dataplane to a Gateway API
                   GatewayClass.
+                minLength: 1
                 type: string
               metrics:
+                default: {}
                 description: metrics configures Prometheus metrics exposure.
                 properties:
                   enabled:
+                    default: true
                     description: enabled toggles the metrics endpoint and its scrape
                       assets.
                     type: boolean
                 type: object
               replicas:
+                default: 1
                 description: replicas is the desired number of Caddy dataplane pods.
                 format: int32
+                minimum: 0
                 type: integer
             type: object
           status:

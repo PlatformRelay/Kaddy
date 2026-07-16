@@ -2,8 +2,14 @@ apiVersion: gateway.kaddy.io/v1alpha1
 kind: Caddy
 metadata:
   labels:
-    app.kubernetes.io/name: kaddy-operator
+    app.kubernetes.io/name: caddy
+    app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: kustomize
-  name: caddy-sample
+  name: edge
 spec:
-  # TODO(user): Add fields here
+  replicas: 2
+  gatewayClassName: caddy
+  metrics:
+    enabled: true
+  admin:
+    listen: ":2019"

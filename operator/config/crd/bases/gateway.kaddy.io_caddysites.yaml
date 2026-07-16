@@ -42,11 +42,14 @@ spec:
               caddyRef:
                 description: caddyRef names the Caddy resource (same namespace) that
                   serves this site.
+                minLength: 1
                 type: string
               hosts:
                 description: hosts are the hostnames this site serves.
                 items:
+                  minLength: 1
                   type: string
+                minItems: 1
                 type: array
               observability:
                 description: observability toggles the per-site observability bundle.
@@ -75,17 +78,22 @@ spec:
                         port:
                           description: port is the target Service port.
                           format: int32
+                          maximum: 65535
+                          minimum: 1
                           type: integer
                         serviceName:
                           description: serviceName is the target Service in the CaddySite's
                             namespace.
+                          minLength: 1
                           type: string
                       required:
                       - port
                       - serviceName
                       type: object
                     path:
+                      default: /
                       description: path is the HTTP path prefix to match.
+                      pattern: ^/
                       type: string
                   required:
                   - backend

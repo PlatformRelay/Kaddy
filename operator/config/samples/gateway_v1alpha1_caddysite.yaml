@@ -2,8 +2,19 @@ apiVersion: gateway.kaddy.io/v1alpha1
 kind: CaddySite
 metadata:
   labels:
-    app.kubernetes.io/name: kaddy-operator
+    app.kubernetes.io/name: caddysite
+    app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: kustomize
-  name: caddysite-sample
+  name: clubhouse
 spec:
-  # TODO(user): Add fields here
+  caddyRef: edge
+  hosts: ["demo.example.com"]
+  routes:
+    - path: /
+      backend:
+        serviceName: clubhouse
+        port: 8080
+  observability:
+    prometheusRules: true
+    serviceMonitor: true
+    grafanaDashboard: true

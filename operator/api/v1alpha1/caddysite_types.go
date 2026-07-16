@@ -24,15 +24,22 @@ import (
 // CaddySiteBackend points a route at a Kubernetes Service.
 type CaddySiteBackend struct {
 	// serviceName is the target Service in the CaddySite's namespace.
+	// +kubebuilder:validation:MinLength=1
+	// +required
 	ServiceName string `json:"serviceName"`
 
 	// port is the target Service port.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +required
 	Port int32 `json:"port"`
 }
 
 // CaddySiteRoute binds a path to a backend Service.
 type CaddySiteRoute struct {
 	// path is the HTTP path prefix to match.
+	// +kubebuilder:default="/"
+	// +kubebuilder:validation:Pattern=`^/`
 	// +optional
 	Path string `json:"path,omitempty"`
 
@@ -59,9 +66,14 @@ type CaddySiteObservability struct {
 // binding onto a Caddy dataplane, with an optional observability bundle.
 type CaddySiteSpec struct {
 	// caddyRef names the Caddy resource (same namespace) that serves this site.
+	// +kubebuilder:validation:MinLength=1
+	// +required
 	CaddyRef string `json:"caddyRef"`
 
 	// hosts are the hostnames this site serves.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:MinLength=1
+	// +required
 	Hosts []string `json:"hosts"`
 
 	// routes bind paths to backend Services.

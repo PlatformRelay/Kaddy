@@ -54,7 +54,10 @@ var _ = Describe("CaddySite Controller", func() {
 						Name:      resourceName,
 						Namespace: resourceNamespace,
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: gatewayv1alpha1.CaddySiteSpec{
+						CaddyRef: "edge",
+						Hosts:    []string{"demo.example.com"},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

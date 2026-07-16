@@ -24,6 +24,7 @@ import (
 // CaddyMetrics configures Prometheus metrics exposure for the Caddy dataplane.
 type CaddyMetrics struct {
 	// enabled toggles the metrics endpoint and its scrape assets.
+	// +kubebuilder:default=true
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
 }
@@ -31,6 +32,8 @@ type CaddyMetrics struct {
 // CaddyAdmin configures the Caddy admin API endpoint the operator drives.
 type CaddyAdmin struct {
 	// listen is the admin API listen address, e.g. ":2019".
+	// +kubebuilder:default=":2019"
+	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Listen string `json:"listen,omitempty"`
 }
@@ -39,18 +42,24 @@ type CaddyAdmin struct {
 // (Deployment, Service, metrics) managed by the kaddy operator.
 type CaddySpec struct {
 	// replicas is the desired number of Caddy dataplane pods.
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=0
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// gatewayClassName binds this dataplane to a Gateway API GatewayClass.
+	// +kubebuilder:default=caddy
+	// +kubebuilder:validation:MinLength=1
 	// +optional
 	GatewayClassName string `json:"gatewayClassName,omitempty"`
 
 	// metrics configures Prometheus metrics exposure.
+	// +kubebuilder:default={}
 	// +optional
 	Metrics CaddyMetrics `json:"metrics,omitempty"`
 
 	// admin configures the Caddy admin API endpoint.
+	// +kubebuilder:default={}
 	// +optional
 	Admin CaddyAdmin `json:"admin,omitempty"`
 }
