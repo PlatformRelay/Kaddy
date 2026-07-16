@@ -1,0 +1,42 @@
+# REQ-E6-S02-02 — grant Crossplane exactly the composed kinds of the Website
+# Composition (v2 composes NATIVE resources with the core `crossplane` SA; the
+# rbac-manager only self-serves XRD/provider kinds). Aggregated via the
+# upstream `rbac.crossplane.io/aggregate-to-crossplane` label — a CLOSED list
+# of the five composed kinds (+status), NOT a wildcard: adding a new kind to
+# the Composition is a deliberate git-reviewed RBAC change here.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kaddy:crossplane:website-composed
+  labels:
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+    owner: platform-team
+    service: crossplane
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: kaddy-crossplane-website-composed
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0105"
+    kaddy.io/req: REQ-E6-S02-02
+    argocd.argoproj.io/sync-wave: "1"
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "services/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes", "httproutes/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates", "certificates/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors", "servicemonitors/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
