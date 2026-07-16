@@ -1,0 +1,57 @@
+# Fixtures — require-run-as-nonroot (ADR-0106 pod-security baseline).
+# good-pod-podlevel mirrors the clubhouse Deployment (pod-level runAsNonRoot);
+# good-pod-containerlevel sets it per container; bad pods omit it or run root.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod-podlevel
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod-containerlevel
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+      securityContext:
+        runAsNonRoot: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod-unset
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod-explicit-root
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  securityContext:
+    runAsNonRoot: false
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine

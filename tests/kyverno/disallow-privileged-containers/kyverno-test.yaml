@@ -1,0 +1,24 @@
+# kyverno test — disallow-privileged-containers (ADR-0106, D-024).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: disallow-privileged-containers
+policies:
+  - ../../../deploy/policies/kyverno/disallow-privileged-containers.yaml
+resources:
+  - resources.yaml
+results:
+  - policy: disallow-privileged-containers
+    rule: privileged-containers
+    kind: Pod
+    resources:
+      - default/good-pod
+      - default/good-pod-no-securitycontext
+    result: pass
+  - policy: disallow-privileged-containers
+    rule: privileged-containers
+    kind: Pod
+    resources:
+      - default/bad-privileged-pod
+      - default/bad-privileged-initcontainer-pod
+    result: fail

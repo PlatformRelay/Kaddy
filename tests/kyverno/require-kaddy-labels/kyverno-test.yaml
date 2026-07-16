@@ -1,0 +1,29 @@
+# kyverno test — require-kaddy-labels (REQ-E1b-S05-01, D-024).
+# Run: kyverno test tests/kyverno/  (CLI pinned v1.18.2, matches CI)
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: require-kaddy-labels
+policies:
+  - ../../../deploy/policies/kyverno/require-kaddy-labels.yaml
+resources:
+  - resources.yaml
+results:
+  - policy: require-kaddy-labels
+    rule: require-mandatory-adr0301-labels
+    kind: Pod
+    resources:
+      - default/good-pod
+    result: pass
+  - policy: require-kaddy-labels
+    rule: require-mandatory-adr0301-labels
+    kind: Pod
+    resources:
+      - default/bad-pod
+    result: fail
+  - policy: require-kaddy-labels
+    rule: require-mandatory-adr0301-labels
+    kind: Pod
+    resources:
+      - kube-system/system-pod
+    result: skip

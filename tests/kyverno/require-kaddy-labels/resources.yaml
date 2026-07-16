@@ -1,0 +1,48 @@
+# Fixtures — require-kaddy-labels (REQ-E1b-S05-01).
+# good-pod carries the full mandatory ADR-0301 bare-key set; bad-pod misses
+# `owner` and `data-classification`; system-pod lives in an excluded namespace.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod
+  namespace: default
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    data-classification: internal
+    business-criticality: business-operational
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod
+  namespace: default
+  labels:
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    business-criticality: business-operational
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: system-pod
+  namespace: kube-system
+  labels:
+    k8s-app: kube-dns
+spec:
+  containers:
+    - name: app
+      image: registry.k8s.io/coredns/coredns:v1.11.1

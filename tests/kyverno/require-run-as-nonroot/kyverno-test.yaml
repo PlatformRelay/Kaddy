@@ -1,0 +1,24 @@
+# kyverno test — require-run-as-nonroot (ADR-0106, D-024).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: require-run-as-nonroot
+policies:
+  - ../../../deploy/policies/kyverno/require-run-as-nonroot.yaml
+resources:
+  - resources.yaml
+results:
+  - policy: require-run-as-nonroot
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - default/good-pod-podlevel
+      - default/good-pod-containerlevel
+    result: pass
+  - policy: require-run-as-nonroot
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - default/bad-pod-unset
+      - default/bad-pod-explicit-root
+    result: fail

@@ -1,0 +1,36 @@
+# Fixtures — disallow-latest-tag (ADR-0106 / SEC-4: no floating tags).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pinned-pod
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-latest-pod
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  containers:
+    - name: app
+      image: nginx:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-untagged-pod
+  namespace: default
+  labels:
+    service: clubhouse
+spec:
+  containers:
+    - name: app
+      image: nginx

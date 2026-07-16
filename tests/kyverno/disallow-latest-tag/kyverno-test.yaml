@@ -1,0 +1,35 @@
+# kyverno test — disallow-latest-tag (ADR-0106 / SEC-4, D-024).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: disallow-latest-tag
+policies:
+  - ../../../deploy/policies/kyverno/disallow-latest-tag.yaml
+resources:
+  - resources.yaml
+results:
+  - policy: disallow-latest-tag
+    rule: require-image-tag
+    kind: Pod
+    resources:
+      - default/good-pinned-pod
+      - default/bad-latest-pod
+    result: pass
+  - policy: disallow-latest-tag
+    rule: require-image-tag
+    kind: Pod
+    resources:
+      - default/bad-untagged-pod
+    result: fail
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - default/good-pinned-pod
+    result: pass
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - default/bad-latest-pod
+    result: fail

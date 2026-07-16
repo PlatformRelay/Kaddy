@@ -1,0 +1,56 @@
+# Fixtures — restrict-data-classification (REQ-E1b-S05-02).
+# good-pod uses an allowed value; bad-value-pod uses a value outside the
+# ADR-0301 set; missing-label-pod omits the key entirely (also a fail — the
+# classification contract is presence AND allowed value).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod
+  namespace: default
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    data-classification: confidential
+    business-criticality: business-operational
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-value-pod
+  namespace: default
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    data-classification: top-secret
+    business-criticality: business-operational
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: missing-label-pod
+  namespace: default
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    business-criticality: business-operational
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
