@@ -258,6 +258,30 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
+## E13 · gridscale Marketplace template (Caddy + nginx) (phase 2 — deferred)
+
+**OpenSpec:** [e13-gridscale-marketplace](../openspec/changes/e13-gridscale-marketplace/)  
+**ADR:** [0105](adr/0105-crossplane-self-service.md) · **Decision:** D-032 · **Gate:** E1g complete
+
+The **third way** to satisfy the exercise (alongside E-Caddy-MVP Variant B / K8s and Variant A + E6g /
+Crossplane VM): a gridscale-native **Marketplace 2.0 template**. Terraform-native (operator-approved):
+build image → snapshot → export `.gz` to object storage → `gridscale_marketplace_application` (+ icon) →
+`_import` into our tenant (private; no global approval) → deploy a `gridscale_server` from it that serves
+the page + feeds the `caddy_*` marshal alerts.
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E13-S01 | Golden image build (Caddy/nginx + `/metrics`) → export `.gz` to object storage | ⬜ |
+| E13-S02 | Register + import Marketplace application via Terraform (both engines, private tenant) | ⬜ |
+| E13-S03 | Deploy proof: server from template serves page + `caddy_*` alert fires (serve→scrape→fire) | ⬜ |
+| E13-S04 | Runbook + exercise-traceability row | ⬜ |
+
+**Constraints (designed around):** `category` enum has no "web server" (use `Adminpanel`/`CMS` + `meta_*`);
+`object_storage_path` must be `.gz`/`s3://`; `meta_icon` required. Global listing needs gridscale review
+(`product@gridscale.io`) — out of scope; we publish privately into our own tenant.
+
+---
+
 ## E7 · Progressive delivery (mulligan)
 
 **OpenSpec:** [e7-mulligan-rollouts](../openspec/changes/e7-mulligan-rollouts/)  
@@ -328,32 +352,40 @@ provides Cilium Gateway + default StorageClass
 
 **OpenSpec:** [e12-slidev-deck](../openspec/changes/e12-slidev-deck/)
 
+**Deck = spine of a recorded 5–10 min video** (D-031): word-by-word speaker notes on every slide +
+heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, the Crossplane graph).
+
 | ID | Story | Status |
 | --- | --- | --- |
-| E12-S01 | Slidev scaffold + CI build | ⬜ |
-| E12-S02 | Deck content: pitch, arch, security, demo cues | ⬜ |
-| E12-S03 | GitHub Pages deploy | ⬜ |
+| E12-S01 | Slidev scaffold + reproducible static build | ⬜ |
+| E12-S02 | Word-by-word speaker notes on every slide (5–10 min script) | ⬜ |
+| E12-S03 | Live iframes embed running platform surfaces (GIF fallback) | ⬜ |
+| E12-S04 | Narrative beats: pitch → arch → security → auto-gen money-shot → mulligan → marshal → scorecard | ⬜ |
 
 ---
 
-## E10 · Portal / IDP ✂️
+## E10 · Portal / IDP ✂️ (auto-generated from the XRD)
 
 **OpenSpec:** [e10-portal-stretch](../openspec/changes/e10-portal-stretch/) — **cuttable**  
-**ADR:** [0109](adr/0109-idp-portal-orchestrator.md) · **Decision:** D-014 (INBOX)
+**ADR:** [0109](adr/0109-idp-portal-orchestrator.md), [0111](adr/0111-portal-auto-generation.md) · **Decisions:** D-014, D-027, D-028, D-029
 
 **Orchestrator = Crossplane (E6, already the platform API). Portal = Backstage (OSS, phased).**
-Turns kaddy into a fully-fledged IDP: a scaffolder form bootstraps an **nginx** or **Caddy** static
-site → opens a GitOps **PR** with a `WebsiteClaim` → Argo CD applies → Crossplane reconciles.
+The scaffolder form is **auto-generated from the `Website` XRD** by kubernetes-ingestor (no
+hand-written template) → opens a GitOps **PR** with a `Website` v2 XR → Argo CD applies → Crossplane
+reconciles. Read-path plugins (Crossplane graph, ArgoCD, K8s) render live status in-portal.
 
 | ID | Story | Status |
 | --- | --- | --- |
 | E10-S01 | Backstage via GitOps + OIDC (Dex) | ⬜ |
-| E10-S02 | `static-site` scaffolder → `WebsiteClaim` PR (golden-file tested) | ⬜ |
-| E10-S03 | Scaffolded claim reconciles end-to-end (Chainsaw) | ⬜ |
-| E10-S04 | Software Catalog + TechDocs | ⬜ |
+| E10-S02 | Auto-generated scaffolder (kubernetes-ingestor) → `Website` XR PR | ⬜ |
+| E10-S03 | Scaffolded XR reconciles end-to-end (Chainsaw) | ⬜ |
+| E10-S04 | Read-path plugins (Crossplane graph + ArgoCD + K8s), read-only RBAC | ⬜ |
+| E10-S05 | Software Catalog (+ auto-ingested XRs) + TechDocs | ⬜ |
+| E10-S06 | Runbook + demo (auto-gen money-shot) | ⬜ |
 
 **Scope guard (ADR-0109):** orchestrator-first — E6 already delivers the *capability*; the portal is
 *experience* and only starts if E1–E8 land early. SaaS (Port/Humanitec) rejected for the lab.
+**Read-path trade (D-029):** read-only cluster creds accepted — impressiveness > minimal-trust for the demo.
 
 ---
 

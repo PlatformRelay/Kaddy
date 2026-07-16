@@ -253,3 +253,105 @@ demo's point. Parking risks the alerts bit-rotting while deferred; guarded by ke
 green in the epic's gate so a regression is still caught.
 **Traceability:** audit ARCH-2, ARCH-3 · epic `openspec/changes/e-caddy-mvp/` · remediation WS1
 `openspec/changes/audit-remediation-2026-07/`.
+
+## D-027 — E6 `Website` XRD ships as a Crossplane v2 namespaced XR (not a v1 Claim)
+
+**Date:** 2026-07-15 (operator delegated: "you decide, whatever feels nicer")
+**Context:** E10 portal research asked whether the `Website` platform API should be a Crossplane **v1
+Claim** (cluster-scoped XR + namespaced Claim) or a **v2 namespaced XR** (Claims deprecated; the XR is
+the resource). The TeraSky Backstage plugins support both.
+**Decision:** **v2 namespaced XR.** Modern, simpler mental model ("the claim *is* the resource"),
+stronger interview signal, and it drops the Claim/XR duality. Amends ADR-0105 and the E6 spec (which
+currently reads `kind: WebsiteClaim`) → `kind: Website` (namespaced).
+**Consequences:** E6 spec REQ-E6-S02-* rename Claim→XR; E10 design/spec reference the namespaced XR;
+sample paths become namespace-scoped. Recorded in ADR-0111.
+**Traceability:** ADR-0105, ADR-0111 · epic `e6-crossplane-website`, `e10-portal-stretch` ·
+research `agent-context/research/e10-portal-wiring-and-demo-presentation.md` (A.4).
+
+## D-028 — E10 portal templates are AUTO-GENERATED from the XRD (kubernetes-ingestor), not hand-written
+
+**Date:** 2026-07-15 (operator-confirmed: "yes")
+**Context:** The earlier E10 cut hand-wrote a single `static-site/template.yaml` duplicating the XRD
+schema — which drifts whenever the platform API changes. TeraSky's **kubernetes-ingestor** generates a
+scaffolder template per XRD from its OpenAPI schema, and its `publishPhase` supports **pull-request**
+targets (verified) — so it preserves E10's "portal authors Git, never mutates the cluster" invariant.
+**Decision:** **Adopt auto-generation.** Replace the hand-written template with the ingestor. Add a
+field to the `Website` XRD → the form updates automatically ("the portal is a projection of the platform
+API, not a copy"). The write path holds **no** cluster credentials.
+**Consequences:** E10 proposal/design/tasks/spec rewritten (S02 = ingestor config; new REQ-E10-S02-03
+asserts the form adapts to XRD changes). Third-party OSS plugin enters the supply chain — pin + Renovate
++ E11 audit. Updates ADR-0109; detailed in ADR-0111.
+**Counterpoints (kept):** hand-written templates need no plugin dependency; rejected because drift +
+schema duplication is exactly the anti-pattern the demo should avoid.
+**Traceability:** ADR-0109, ADR-0111 · epic `e10-portal-stretch` · research (A.0).
+
+## D-029 — E10 read-path visibility plugins are IN scope (impressiveness > minimal-trust)
+
+**Date:** 2026-07-15 (operator: "impressiveness > security — it's a demo for a job application; not a
+bank, but we want to work for a cloud provider working for banks")
+**Context:** The read-path plugins (crossplane-resources graph, Kubernetes, ArgoCD status) render live
+status in-portal but require a **read-only** ServiceAccount to the cluster + a read-only ArgoCD account —
+added trust surface for a security-first repo. The write path alone needs no cluster creds.
+**Decision:** **Include the read path.** The in-portal XR→managed-resource graph is most of the demo's
+wow. Scope the trade sharply: read-only RBAC (`get/list/watch` only), NetworkPolicy `portal` →
+kube-apiserver + argocd-server only, plugins pinned + Renovate + E11-audited. The smallest-trust
+alternative (write-path only, status via the ArgoCD UI) is recorded and **rejected** for this demo.
+**Consequences:** E10 S04 (read-path plugins + RBAC guard test REQ-E10-S04-01). Kept as a *named* trade
+so a reviewer sees it was deliberate, not overlooked.
+**Traceability:** ADR-0111 · epic `e10-portal-stretch` · research (A.1, A.5).
+
+## D-030 — E-Caddy-MVP showcase: the demo site serves the Kaddy deck/docs via nginx→Caddy topology
+
+**Date:** 2026-07-15 (operator-confirmed: "sure, go ahead")
+**Context:** The served-website tenant needs content. Instead of placeholder pages, serve **the Kaddy
+project's own Slidev deck (E12) + MkDocs docs** — the demo site *is* the pitch, and the scraped/alerted
+content is real.
+**Decision:** Serve deck + docs from a **multi-stage image** (static `slidev build` + `mkdocs build`)
+through a deliberate **nginx (reverse proxy) → Caddy (static origin)** topology. This turns the
+exercise's "optional nginx reverse proxy" into a designed two-engine comparison and gives the parked
+`caddy_*` marshal alerts (D-026) a **real** scrape target — closing that loop. Optional stretch: a
+second tenant proving `Website.spec.source` (BYO external git).
+**Consequences:** New spec `openspec/changes/e-caddy-mvp/specs/showcase/spec.md` (REQ-CADDY-S05-01..05);
+tasks S05; MkDocs theme → `material`. E12 owns deck authoring; this epic serves its build output.
+**Traceability:** D-026 (parked alerts) · epic `e-caddy-mvp`, `e12-slidev-deck` · research (Part B).
+
+## D-031 — E12 deck: word-by-word speaker notes + heavy iframes, as the spine of a 5–10 min recorded video
+
+**Date:** 2026-07-15 (operator direction)
+**Context:** The deck will back a **recorded 5–10 minute video** for the job application. The operator
+wants **verbatim (word-by-word) speaker notes** on every slide (the video voiceover script) and **heavy
+use of Slidev iframes** embedding live platform surfaces (Backstage portal, ArgoCD, Grafana/marshal, the
+running clubhouse/Caddy site, the Crossplane resource graph).
+**Decision:** Make both first-class E12 scope. Speaker notes are verbatim scripts (not bullet hints),
+asserted by coverage + word-count tests (≈650–1500 words ≈ 5–10 min at ~130–150 wpm). Iframes embed
+**live** surfaces to prove the platform runs; fallback to recorded GIF/screenshot if a surface is down
+during recording.
+**Consequences:** E12 fleshed out from a stub — `proposal.md` + `specs/deck/spec.md`
+(REQ-E12-S01-01, S02-01 notes, S02-02 script length, S03-01 iframes, S04-01 beats, EXIT) + `tasks.md`.
+Tests under `tests/deck/`.
+**Traceability:** epic `e12-slidev-deck` · depends on E10 (auto-gen money-shot), E-Caddy-MVP (served
+content), E5/marshal, E7/mulligan, E8/scorecard · research (Part B).
+
+## D-032 — E13: a gridscale Marketplace template (Caddy + nginx) as a third way to satisfy the exercise
+
+**Date:** 2026-07-16 (operator direction: "add a story/epic for a gridscale marketplace template for
+Caddy and nginx as an additional way to achieve the exercise; Terraform is OK here")
+**Context:** kaddy satisfies the exercise via the K8s/Crossplane path (E-Caddy-MVP Variant B) and the
+Crossplane-VM path (Variant A / E6g). The operator wants a **third, gridscale-native** delivery: a
+**Marketplace 2.0 template** (build image → snapshot → export `.gz` to object storage → register via
+`gridscale_marketplace_application` → import via `_import` → deploy). High-signal for a gridscale role.
+Terraform is the right tool (the provider exposes these resources directly) — operator-approved for this
+path (unlike the crossplane-first E6/E6g).
+**Decision:** New epic **E13** (`e13-gridscale-marketplace`), Terraform-native, phase-2, gated on E1g.
+Publish **privately into our own tenant** (import by `unique_hash`) — **not** globally: global listing
+needs gridscale's manual review (`product@gridscale.io`), which the demo doesn't need. Work around the
+gridscale specifics: `category` enum has no "web server" (use `Adminpanel`/`CMS` + carry the real class
+in `meta_*`); `object_storage_path` must be `.gz`/`s3://`; a `meta_icon` is required.
+**Consequences:** New epic (proposal/design/tasks + `specs/marketplace/spec.md`, REQ-E13-S01-01,
+S02-01/02, S03-01/02, EXIT). Additive — does not replace Variants A/B. Deployed VM feeds the parked
+`caddy_*` marshal alerts against a real gridscale target (closes D-026 on the Marketplace path).
+ROADMAP + exercise-traceability updated.
+**Counterpoints (kept):** the image-build/export pipeline is heavier than a cloud-init `gridscale_server`
+(E6g) — justified because the deliverable is a reusable Marketplace *product*, not a one-off VM.
+**Traceability:** epic `e13-gridscale-marketplace` · depends E1g (object storage + creds), E-Caddy-MVP
+(image content), E5/marshal (alerts) · exercise-traceability optional-task row · ADR-0105 (self-service).

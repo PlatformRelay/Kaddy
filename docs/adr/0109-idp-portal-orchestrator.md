@@ -1,6 +1,11 @@
 # ADR-0109: IDP portal & orchestrator
 
-**Theme:** 01 · Foundations · **Status:** Proposed (operator decision D-014 open)
+**Theme:** 01 · Foundations · **Status:** Accepted (D-014) · **Refined by** [ADR-0111](0111-portal-auto-generation.md)
+
+> **Update (2026-07-15, ADR-0111):** the scaffolder template below is **auto-generated from the
+> `Website` XRD** by kubernetes-ingestor (not hand-written), the `Website` API is a **v2 namespaced
+> XR**, and **read-path** visibility plugins (Crossplane graph, ArgoCD, K8s) are in scope with
+> read-only credentials. See ADR-0111 (decisions D-027/D-028/D-029).
 
 ## Context
 

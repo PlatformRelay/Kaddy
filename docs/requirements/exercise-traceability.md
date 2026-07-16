@@ -24,6 +24,7 @@ Maps the **Platform Engineer hiring exercise** requirements to epics/stories.
 | Brief requirement | kaddy deliverable | Epic / story |
 | --- | --- | --- |
 | Additional VM with nginx Hello World | Phase 1: in-cluster nginx stand-in; Phase 2: Crossplane `gridscale_server` (E6g) | E6-S03, E6g-S03 |
+| Caddy/nginx web server — **gridscale-native delivery** | **Third way:** a gridscale **Marketplace 2.0 template** (Terraform: build → export `.gz` → `gridscale_marketplace_application` → import → deploy), monitored via marshal | E13 (`e13-gridscale-marketplace`) |
 | Caddy reverse proxy path routing | HTTPRoute `/legacy` (platform Gateway) or tenant Caddy config | E6-S04, E10 |
 | Health checks | Gateway backend health checks | E6-S05 |
 | SSL termination | cert-manager + Gateway TLS | E4-S03 |

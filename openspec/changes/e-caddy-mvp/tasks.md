@@ -38,6 +38,21 @@
 - [ ] Backstage form picks variant (VM / Kubernetes) and engine (Caddy / nginx). Surface is
       E10 (portal, cuttable) — this epic works via GitOps even if E10 is cut.
 
+## S05 — Showcase content · the demo site serves the Kaddy story (D-030)
+
+> New spec: `specs/showcase/spec.md` (REQ-CADDY-S05-01..05). The served-website tenant serves the
+> Kaddy **Slidev deck** (E12) + **MkDocs docs** — the demo site *is* the pitch.
+
+- [ ] Add failing `tests/deck/showcase-image-build.sh` + `tests/promtool/caddy-mvp-showcase.test.yaml`
+- [ ] Multi-stage image (`deploy/showcase/Dockerfile`): `slidev build` + `mkdocs build` → static assets
+      into the Caddy origin image (no build toolchain at runtime; scannable for E11)
+- [ ] Landing page → `/slides/` (deck) + `/docs/` (MkDocs Material — flip theme to `material`)
+- [ ] `nginx (reverse proxy) → Caddy (static origin)` topology through the Cilium Gateway edge
+- [ ] Enable Caddy `metrics`; **re-home the parked `caddy_*` marshal alerts against the Caddy origin**
+      target (closes D-026: real target, promtool fire + silent preserved)
+- [ ] (stretch, may) Second tenant proving `Website.spec.source` (BYO external git repo/path)
+- [ ] Gate (when active): `task test:promrules` + Chainsaw showcase suite + `tests/deck/showcase-image-build.sh`
+
 ## S04 — Stretch (optional)
 
 - [ ] Certificates via **Crossplane** (instead of / alongside cert-manager on Variant B).

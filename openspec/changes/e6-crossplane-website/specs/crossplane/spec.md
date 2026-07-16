@@ -1,10 +1,17 @@
 # Spec — E6 Crossplane self-service + nginx legacy (phase 1 — local)
 
-Epic: E6 · ADR: [0105](../../../docs/adr/0105-crossplane-self-service.md), [0109](../../../docs/adr/0109-idp-portal-orchestrator.md)  
+Epic: E6 · ADR: [0105](../../../docs/adr/0105-crossplane-self-service.md), [0109](../../../docs/adr/0109-idp-portal-orchestrator.md), [0111](../../../docs/adr/0111-portal-auto-generation.md)  
 **Phase:** 1 (driving-range) · **Refs:** brief optional task (path routing; VM deferred to E6g)
 
 > The `Website` XRD here **is kaddy's platform orchestrator API** — the E10 Backstage portal
-> (ADR-0109) drives it via GitOps PRs. Keep the claim surface stable and portable.
+> (ADR-0109/0111) drives it via GitOps PRs and **auto-generates its scaffolder form from this XRD's
+> OpenAPI schema**. Keep the surface stable and portable.
+>
+> **⚠ D-027 (2026-07-15) — ship as a Crossplane v2 namespaced XR, not a v1 Claim.** The REQs below
+> currently read `kind: WebsiteClaim`; when this epic implements, ship `kind: Website` (namespaced XR;
+> Claims deprecated in Crossplane v2 — the XR *is* the resource). Rename Claim→XR in REQ-E6-S02-*,
+> sample paths become namespace-scoped, and the E10 auto-gen + read-path plugins target the namespaced
+> XR. See ADR-0111.
 
 ---
 

@@ -101,10 +101,24 @@ are **unblocked** and assigned to the monitoring/Caddy lane, which retcons ADR-0
   *self-service form* referenced above is E10's surface, but the served-website product itself is
   this epic. E10 stays cuttable; this epic carries the MVP even if E10 is cut (the variants can be
   applied by GitOps without the portal form).
+- **E13 (`e13-gridscale-marketplace`):** the **third way** to satisfy the exercise — packages this
+  epic's Caddy/nginx config + content into a gridscale **Marketplace 2.0 template** (Terraform, D-032).
+  Variant B = K8s; Variant A / E6g = Crossplane VM; **E13 = Marketplace template.** Additive, phase-2.
 - **New slug justification:** neither E9 (operator/CRD) nor E10 (portal breadth) *is* the
   served-website MVP; a dedicated `e-caddy-mvp` names it cleanly. Reshaping E9 was rejected — the
   opening `git status` shows `e9-caddy-operator/specs/operator/spec.md` already modified by another
   lane, so reshaping risks a collision.
+
+## Showcase content — the demo site serves the Kaddy story (S05, D-030)
+
+The served-website tenant does not serve placeholder content: it serves **the Kaddy project's own
+Slidev deck (E12) + MkDocs docs**. The demo site *is* the pitch — self-referential, and the thing
+being scraped/alerted/rolled-out is real content. Delivered via a multi-stage image (static
+`slidev build` + `mkdocs build`), served through a deliberate **nginx (reverse proxy) → Caddy (static
+origin)** topology that turns the exercise's "optional nginx reverse proxy" into a designed two-engine
+comparison — and gives the parked `caddy_*` marshal alerts (D-026) a **real** scrape target, closing
+that loop. Full behaviour in `specs/showcase/spec.md` (REQ-CADDY-S05-01..05). E12 owns the deck's
+authoring; this epic only serves its build output.
 
 ## Links
 
