@@ -121,6 +121,17 @@ tasks:
           exit 0
         fi
 
+  test:kyverno:
+    desc: L1 — kyverno CLI tests on the e1c ClusterPolicies (offline, pin v1.18.2)
+    cmds:
+      - |
+        if command -v kyverno >/dev/null 2>&1 && [ -d tests/kyverno ]; then
+          kyverno test tests/kyverno/
+        else
+          echo "skip kyverno test (CLI not installed or tests/kyverno absent — CI installs v1.18.2)"
+          exit 0
+        fi
+
   test:policy:
     desc: L1 — conftest on OpenTofu plan fixtures (asserts expected outcomes)
     cmds:

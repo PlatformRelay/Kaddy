@@ -53,6 +53,16 @@ jobs:
         run: task test:unit
       - name: task test:policy (L1 conftest — ADR-0301 labels)
         run: task test:policy
+      # E1c offline subset: kyverno CLI tests prove the ClusterPolicies pass/deny
+      # before any cluster enforces them. Pinned to the same version the cluster
+      # lane will install (SEC-4).
+      - name: Install kyverno CLI
+        run: |
+          KYVERNO_VERSION="v1.18.2"
+          curl -sSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kyverno
+      - name: task test:kyverno (L1 kyverno CLI — e1c ClusterPolicies)
+        run: task test:kyverno
       # TEST-2: E1e offline meta gates (kind config + secure install) run in a
       # workflow so an E1e regression goes red in CI. No cluster required.
       - name: task test:meta:e1e (E1e offline meta gates)
