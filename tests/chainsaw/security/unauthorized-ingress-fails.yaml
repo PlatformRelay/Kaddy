@@ -1,0 +1,38 @@
+# REQ-E1c-S01-03: the deny branch — a pod in an UNSANCTIONED namespace
+# (default) cannot reach clubhouse :8080 directly; only the Gateway path and
+# Prometheus are allowed by the baseline (SEC-6 / review P1-1). The probe
+# pod is fully labeled + nonroot so the ONLY thing failing is the network
+# path (admission would otherwise deny it under the Enforce policies).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: security-unauthorized-ingress-fails
+  annotations:
+    kaddy.io/req: REQ-E1c-S01-03
+    # skip: true — same live-substrate dependency as default-deny.yaml
+    # (Cilium netpol enforcement; CI kindnet enforces nothing, so this test
+    # would FALSE-PASS... actually false-FAIL open: the curl would succeed).
+    # Verified PASSING against live kind-kaddy-dev (2026-07-16) with:
+    #   cd tests/chainsaw/security && chainsaw test --test-file unauthorized-ingress-fails.yaml .
+    #   (skip flipped off locally for the run, reverted after)
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+spec:
+  skip: true
+  concurrent: false
+  description: default-ns pod -> clubhouse :8080 direct is denied under default-deny
+  steps:
+    - name: direct-curl-times-out
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -u
+              kubectl -n default run e1c-unauth-probe --rm -i --restart=Never \
+                --image=curlimages/curl:8.11.0 --quiet \
+                --labels=owner=platform-team,service=e1c-smoke,part-of=kaddy,managed-by=kubectl,track=stable,data-classification=internal,business-criticality=business-operational \
+                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                -- curl -sS -m 5 http://clubhouse.gateway.svc.cluster.local:8080/
+            check:
+              # The curl MUST fail (timeout/refused) — a zero exit means the
+              # default-deny ingress on the gateway namespace is not enforced.
+              ($error != null): true

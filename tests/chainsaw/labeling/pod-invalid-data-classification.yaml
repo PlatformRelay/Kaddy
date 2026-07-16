@@ -1,0 +1,24 @@
+# Carries the full ADR-0301 bare-key set BUT an out-of-vocabulary
+# data-classification value — restrict-data-classification must deny it.
+# (securityContext keeps it clean against the pod-security Enforce policies
+# on the live cluster, so the ONLY denial reason is the label value.)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-classification
+  namespace: default
+  labels:
+    owner: platform-team
+    service: bad-example
+    part-of: kaddy
+    managed-by: kubectl
+    track: stable
+    data-classification: top-secret
+    business-criticality: business-operational
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.9

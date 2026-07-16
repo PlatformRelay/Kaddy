@@ -1,0 +1,23 @@
+# Fixture for unsigned-image-denied.yaml: fully labeled + nonroot so the
+# ONLY denial reason (once verify-signed-images is Enforce with a real key)
+# is the missing cosign signature on a ghcr.io/platformrelay/* image.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unsigned-image
+  namespace: default
+  labels:
+    owner: platform-team
+    service: e1c-smoke
+    part-of: kaddy
+    managed-by: kubectl
+    track: stable
+    data-classification: internal
+    business-criticality: business-operational
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+  containers:
+    - name: app
+      image: ghcr.io/platformrelay/unsigned-example:1.0.0

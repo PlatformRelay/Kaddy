@@ -1,0 +1,44 @@
+# REQ-E1c-S01-02: with the default-deny baseline live, the SANCTIONED path
+# still works — a client reaches clubhouse THROUGH the Cilium Gateway
+# (Envoy), which the CNPs allow (probe egress -> ingress entity + backend
+# hairpin leg; Envoy -> clubhouse:8080 fromEntities ingress).
+#
+# NOTE on the spec wording ("pod in gateway curls the Service"): the final
+# baseline is TIGHTER than the spec assumed — direct pod->Service ingress is
+# deny-by-default even inside the gateway namespace; only the Gateway path
+# and Prometheus are allowed. So the allow-proof curls THROUGH the edge.
+# TLS chain verification is E4's concern (hack/smoke/https-clubhouse.sh,
+# no -k); this suite proves netpol REACHABILITY, hence curl -k.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: security-gateway-to-app
+  annotations:
+    kaddy.io/req: REQ-E1c-S01-02
+    # skip: true — same live-substrate dependency as default-deny.yaml
+    # (Cilium Gateway + clubhouse + policies app; CI kind has none).
+    # Verified PASSING against live kind-kaddy-dev (2026-07-16) with:
+    #   cd tests/chainsaw/security && chainsaw test --test-file gateway-to-app.yaml .
+    #   (skip flipped off locally for the run, reverted after)
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+spec:
+  skip: true
+  concurrent: false
+  description: gateway (Envoy) -> clubhouse :8080 stays allowed under default-deny
+  steps:
+    - name: curl-through-gateway-succeeds
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -eu
+              GW_IP="$(kubectl -n gateway get svc cilium-gateway-clubhouse -o jsonpath='{.spec.clusterIP}')"
+              [ -n "${GW_IP}" ]
+              # Pod name matches the documented clubhouse-smoke-* admission
+              # exclude; the kubectl `run` label matches the probe-egress CNP.
+              kubectl -n gateway run clubhouse-smoke-chainsaw --rm -i --restart=Never \
+                --image=curlimages/curl:8.11.0 --quiet \
+                --overrides='{"spec":{"securityContext":{"runAsNonRoot":true,"runAsUser":100}}}' \
+                -- sh -c "code=\$(curl -sk -o /dev/null -m 15 -w '%{http_code}' --resolve clubhouse.kaddy.local:443:${GW_IP} https://clubhouse.kaddy.local/); echo \"CODE:\${code}\"; [ \"\${code}\" = \"200\" ]"
+            check:
+              ($error == null): true

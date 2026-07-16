@@ -50,10 +50,14 @@ jobs:
       - name: Install Kyverno (labeling/security suites)
         run: |
           if ls tests/chainsaw/labeling/*.yaml tests/chainsaw/security/*.yaml >/dev/null 2>&1; then
-            # SEC-4: pin to an exact release (was releases/latest) for a
-            # reproducible, Renovate-trackable install.
-            kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.18.2/install.yaml || true
-            kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=180s || true
+            # E1c: the labeling suite is UN-SKIPPED and runs on vanilla kind
+            # (the test applies its own ClusterPolicies), so this install must
+            # actually succeed — no failure-swallowing || true (TEST-8), and
+            # the same vendored+pinned manifest the live cluster syncs
+            # (deploy/kyverno/, v1.18.2). Server-side apply: the CRDs exceed
+            # client-side annotation limits.
+            kubectl apply --server-side -f deploy/kyverno/install.yaml
+            kubectl -n kyverno rollout status deploy/kyverno-admission-controller --timeout=300s
           fi
       # E3: install cert-manager (the ACME issuers + tls suites need it) — the
       # ephemeral CI kind cluster has no E1e bootstrap. Pinned to the same version

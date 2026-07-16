@@ -1,17 +1,65 @@
-# Placeholder — implement with E1b-S05 (TDD: test before Kyverno policy merge)
-
+# REQ-E1b-S05-02 / TEST-4: Kyverno label governance is REAL admission control.
+# Un-skipped by the E1c cluster cutover (2026-07-16): the suite applies the
+# two Enforce ClusterPolicies itself and needs only a Kyverno engine — the CI
+# chainsaw workflow installs Kyverno v1.18.2 on vanilla kind (no Cilium
+# needed), and the live kind-kaddy-dev cluster runs the same engine +
+# policies via GitOps (deploy/apps/kyverno.yaml + the policies app).
+#
+# On the LIVE cluster the two policies pre-exist (ArgoCD-managed, identical
+# content): chainsaw's apply becomes a no-op update, and cleanup only
+# deletes resources the test CREATED, so the live policies survive the run.
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
   name: labeling-require-data-classification
   annotations:
     kaddy.io/req: REQ-E1b-S05-02
-    kaddy.io/status: pending-kyverno-policy
+    kaddy.io/status: live-verified-2026-07-16-and-ci-vanilla-kind
 spec:
-  skip: true
+  # The applied ClusterPolicies are cluster-scoped Enforce admission rules —
+  # never run other suites' pod-creating steps concurrently with this test.
+  concurrent: false
+  description: Pods missing the data-classification label (or using a value outside the ADR-0301 vocabulary) are denied by admission
   steps:
-    - try:
+    - name: policies-live-and-ready
+      try:
+        - apply:
+            file: ../../../deploy/policies/kyverno/require-kaddy-labels.yaml
+        - apply:
+            file: ../../../deploy/policies/kyverno/restrict-data-classification.yaml
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: kyverno.io/v1
+              kind: ClusterPolicy
+              metadata:
+                name: require-kaddy-labels
+              status:
+                (conditions[?type=='Ready'].status | [0]): "True"
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: kyverno.io/v1
+              kind: ClusterPolicy
+              metadata:
+                name: restrict-data-classification
+              status:
+                (conditions[?type=='Ready'].status | [0]): "True"
+        # The Ready condition can precede the webhook rule rollout by a
+        # moment on a fresh engine — give admission a beat to settle.
+        - sleep:
+            duration: 5s
+    - name: unlabeled-pod-denied
+      try:
         - apply:
             file: pod-missing-data-classification.yaml
-        - error:
-            file: pod-missing-data-classification.yaml
+            expect:
+              - check:
+                  ($error != null): true
+    - name: invalid-classification-value-denied
+      try:
+        - apply:
+            file: pod-invalid-data-classification.yaml
+            expect:
+              - check:
+                  ($error != null): true

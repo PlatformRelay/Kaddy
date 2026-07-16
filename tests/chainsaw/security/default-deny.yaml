@@ -1,0 +1,67 @@
+# REQ-E1c-S01-01: the default-deny NetworkPolicy baseline is LIVE in every
+# covered namespace (gateway: ingress+egress; monitoring/argocd: ingress) —
+# the objects that make "any pod can reach any pod" false (SEC-6 / review
+# P1-1). Enforcement behaviour is proven by the sibling suites
+# (gateway-to-app allow, unauthorized-ingress-fails deny).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: security-default-deny
+  annotations:
+    kaddy.io/req: REQ-E1c-S01-01
+    # skip: true — needs the live policies app (Cilium CNI + the manual-sync
+    # `policies` Application); the ephemeral CI chainsaw kind cluster runs
+    # vanilla kindnet with no netpol enforcement and never syncs
+    # deploy/policies/. Verified PASSING against live kind-kaddy-dev
+    # (2026-07-16) with:
+    #   cd tests/chainsaw/security && chainsaw test --test-file default-deny.yaml .
+    #   (skip flipped off locally for the run, reverted after)
+    kaddy.io/status: live-cluster-only-ci-substrate-lacks-cilium-policies
+spec:
+  skip: true
+  concurrent: false
+  description: default-deny NetworkPolicies present in gateway, monitoring and argocd
+  steps:
+    - name: gateway-deny-all
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: gateway
+                name: default-deny-all
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Ingress
+                  - Egress
+    - name: monitoring-deny-ingress
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: monitoring
+                name: default-deny-ingress
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Ingress
+    - name: argocd-deny-ingress
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: argocd
+                name: default-deny-ingress
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Ingress
