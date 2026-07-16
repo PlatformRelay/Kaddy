@@ -1,11 +1,12 @@
-# E1c AppProject hardening (security review P1-2): restricted project for
-# demoable workloads and the edge. AUTHORED, NOT YET WIRED — see
-# platform.yaml header (root syncs deploy/apps/ with recurse OFF; cutover
-# happens in the cluster-hardening lane).
+# E1c AppProject hardening (security review P1-2 / SEC-11): restricted
+# project for demoable workloads and the edge. WIRED by the
+# cluster-hardening cutover — see platform.yaml header (root recurses
+# deploy/apps/; bootstrap:e3 applies projects first).
 #
-# Intended members: gateway (edge: Gateway/HTTPRoutes) and workloads
-# (clubhouse + future sample apps / Rollouts). Namespace-scoped only —
-# the single cluster-scoped grant is Namespace creation (CreateNamespace).
+# Members: gateway (edge: Gateway/HTTPRoutes) and workloads (clubhouse in
+# ns gateway + the mulligan Rollouts demo in ns mulligan). Namespace-scoped
+# only — the single cluster-scoped grant is Namespace creation
+# (CreateNamespace).
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -39,6 +40,10 @@ spec:
       namespace: default
     - server: https://kubernetes.default.svc
       namespace: apps
+    # The workloads app deploys the mulligan blue/green + canary Rollouts
+    # demo (deploy/workloads/mulligan/) into its own namespace:
+    - server: https://kubernetes.default.svc
+      namespace: mulligan
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

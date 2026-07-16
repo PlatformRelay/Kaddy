@@ -1,0 +1,50 @@
+# E1c cutover step 1: kyverno child Application — the Kyverno admission
+# engine (vendored + pinned v1.18.2, see deploy/kyverno/README.md).
+#
+# Mirrors the E7 rollouts pattern: vendored upstream controller install,
+# ServerSideApply (the 22 CRDs exceed client-side apply limits), selfHeal
+# OFF (heavy controller install; human in the loop for drift — same
+# documented exception as rollouts/observability).
+#
+# The engine is separate from the policies it evaluates: ClusterPolicies +
+# the netpol baseline sync via the MANUAL-sync `policies` Application
+# (deploy/apps/policies.yaml). This app carries no policy content, so
+# automated create/update sync is safe — installing the engine enforces
+# nothing by itself.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: kyverno
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: kyverno
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/kyverno
+  destination:
+    server: https://kubernetes.default.svc
+    # install.yaml carries the Namespace itself; this is the default for the
+    # namespaced resources.
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
