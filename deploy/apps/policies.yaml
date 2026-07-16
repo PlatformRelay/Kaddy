@@ -2,15 +2,12 @@
 # ClusterPolicies + the default-deny NetworkPolicy baseline).
 #
 # Registration vs apply: the root app discovers this file (flat sibling), so
-# Argo CD will REGISTER the Application — but syncPolicy is MANUAL (no
-# `automated` block): policies are high-blast-radius admission/network
-# controls, so a human performs the first sync deliberately, after Kyverno
-# v1.18.2 is installed (the ClusterPolicy CRD must exist or the sync fails).
-# Cutover order: deploy/policies/README.md.
-#
-# TODO(cutover): move to `project: platform` (deploy/apps/projects/) when the
-# cluster-hardening lane applies the restricted AppProjects and flips the
-# other Applications off `project: default`.
+# Argo CD REGISTERS the Application — but syncPolicy is MANUAL (no
+# `automated` block) and STAYS manual after the cutover: policies are
+# high-blast-radius admission/network controls, so every policy change is
+# human-synced deliberately (first sync performed 2026-07-16, Kyverno
+# v1.18.2 installed via deploy/apps/kyverno.yaml). Runbook + enforcement
+# matrix: deploy/policies/README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -30,9 +27,9 @@ metadata:
   annotations:
     kaddy.io/adr: "0106"
     kaddy.io/req: REQ-E1c-S01-01
-    kaddy.io/status: authored-manual-sync-first
+    kaddy.io/status: live-manual-sync-only
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main

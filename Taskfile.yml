@@ -308,6 +308,11 @@ tasks:
         [ "${ctx}" = "kind-kaddy-dev" ] \
           || { echo "refusing: context '${ctx}' is not kind-kaddy-dev" >&2; exit 1; }
         rev="{{.ARGO_TARGET_REV}}"
+        # E1c: the restricted AppProjects must exist BEFORE any Application
+        # that references them (root itself is project: platform). The root
+        # app also manages projects/ via recurse — this direct apply only
+        # solves the first-boot ordering and is otherwise a no-op.
+        kubectl apply -f deploy/apps/projects/
         if [ "${rev}" = "main" ]; then
           # Steady state: apply root only; Argo CD generates the children verbatim
           # from git (all pinned to main), which resolves once this lane is merged.

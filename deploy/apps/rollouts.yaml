@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main

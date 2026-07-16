@@ -1,9 +1,13 @@
 # REQ-E3-S01-01: App-of-apps ROOT Application (ADR-0103).
 #
 # The root Application points Argo CD at `deploy/apps/` and lets it discover the
-# child Applications there (directory recursion is off — the children are the
-# flat *.yaml siblings of this file). Committed steady-state truth is
-# `targetRevision: main`; merging this lane to main makes Argo CD sync for real.
+# child Applications there (the flat *.yaml siblings of this file) plus the
+# restricted AppProjects in projects/ (directory recursion is ON since the E1c
+# cutover, so the projects are GitOps-managed; `task bootstrap:e3` still applies
+# projects/ directly first — first-boot ordering, a child referencing a project
+# cannot be created before its AppProject exists). Committed steady-state truth
+# is `targetRevision: main`; merging this lane to main makes Argo CD sync for
+# real.
 #
 # LIVE proof before merge (per the lane runbook): apply a runtime-overridden copy
 # of THIS file with targetRevision set to the pushed lane branch, so Argo CD syncs
@@ -29,13 +33,14 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
     path: deploy/apps
     directory:
-      recurse: false
+      # recurse ON (E1c cutover): projects/*.yaml AppProjects are managed too.
+      recurse: true
       # Do not let Argo CD treat root.yaml itself as a child manifest.
       exclude: root.yaml
   destination:

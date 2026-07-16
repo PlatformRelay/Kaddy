@@ -29,7 +29,7 @@ metadata:
     kaddy.io/status: deferred-needs-ksops
     kaddy.io/req: REQ-E3-S01-03
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://github.com/PlatformRelay/Kaddy.git
     targetRevision: main
