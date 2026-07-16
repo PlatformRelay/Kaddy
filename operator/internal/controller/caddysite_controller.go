@@ -26,12 +26,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	gatewayv1alpha1 "github.com/PlatformRelay/Kaddy/operator/api/v1alpha1"
 	"github.com/PlatformRelay/Kaddy/operator/internal/caddyadmin"
@@ -151,18 +155,31 @@ func (r *CaddySiteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 // setReady mirrors the reconcile outcome into status (Ready condition +
-// observedGeneration) with optimistic-concurrency tolerance.
+// observedGeneration). On a write conflict it re-fetches the latest object and
+// re-applies, rather than swallowing the conflict — which previously left the
+// status stale until the next event (ARCH-9). observedGeneration reflects the
+// generation actually reconciled, taken before the retry loop.
 func (r *CaddySiteReconciler) setReady(ctx context.Context, site *gatewayv1alpha1.CaddySite,
 	status metav1.ConditionStatus, reason, message string) error {
-	meta.SetStatusCondition(&site.Status.Conditions, metav1.Condition{
-		Type:               conditionReady,
-		Status:             status,
-		Reason:             reason,
-		Message:            message,
-		ObservedGeneration: site.Generation,
+	gen := site.Generation
+	key := client.ObjectKeyFromObject(site)
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		latest := &gatewayv1alpha1.CaddySite{}
+		if getErr := r.Get(ctx, key, latest); getErr != nil {
+			// Object gone — nothing left to mark.
+			return client.IgnoreNotFound(getErr)
+		}
+		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:               conditionReady,
+			Status:             status,
+			Reason:             reason,
+			Message:            message,
+			ObservedGeneration: gen,
+		})
+		latest.Status.ObservedGeneration = gen
+		return r.Status().Update(ctx, latest)
 	})
-	site.Status.ObservedGeneration = site.Generation
-	if err := r.Status().Update(ctx, site); err != nil && !apierrors.IsConflict(err) {
+	if err != nil {
 		return fmt.Errorf("update CaddySite %s/%s status: %w", site.Namespace, site.Name, err)
 	}
 	return nil
@@ -246,9 +263,49 @@ func renderRoute(site *gatewayv1alpha1.CaddySite) caddyadmin.Route {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+//
+// Beyond watching CaddySites, it (ARCH-9):
+//   - Owns the per-site ServiceMonitor/PrometheusRule it creates, so external
+//     deletion or drift of those observability CRs re-triggers reconcile and
+//     self-heals — rather than waiting for the next CaddySite event. (Requires
+//     the prometheus-operator CRDs to be installed; the platform always ships
+//     kube-prometheus-stack.)
+//   - Watches Caddy objects and maps each change to the CaddySites that
+//     reference it, so a late-appearing or updated caddyRef heals dependent
+//     sites at once instead of only on the 30s missingRefRequeue.
 func (r *CaddySiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	serviceMonitor := &unstructured.Unstructured{}
+	serviceMonitor.SetGroupVersionKind(serviceMonitorGVK)
+	prometheusRule := &unstructured.Unstructured{}
+	prometheusRule.SetGroupVersionKind(prometheusRuleGVK)
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1alpha1.CaddySite{}).
+		Owns(serviceMonitor).
+		Owns(prometheusRule).
+		Watches(&gatewayv1alpha1.Caddy{},
+			handler.EnqueueRequestsFromMapFunc(r.caddySitesForCaddy)).
 		Named("caddysite").
 		Complete(r)
+}
+
+// caddySitesForCaddy enqueues every CaddySite in the changed Caddy's namespace
+// whose caddyRef names it — so a Caddy appearing or changing heals its
+// dependent sites immediately instead of waiting for missingRefRequeue.
+func (r *CaddySiteReconciler) caddySitesForCaddy(ctx context.Context, obj client.Object) []reconcile.Request {
+	sites := &gatewayv1alpha1.CaddySiteList{}
+	if err := r.List(ctx, sites, client.InNamespace(obj.GetNamespace())); err != nil {
+		logf.FromContext(ctx).Error(err, "list CaddySites for Caddy watch", "caddy", client.ObjectKeyFromObject(obj))
+		return nil
+	}
+	var reqs []reconcile.Request
+	for i := range sites.Items {
+		if sites.Items[i].Spec.CaddyRef == obj.GetName() {
+			reqs = append(reqs, reconcile.Request{NamespacedName: types.NamespacedName{
+				Namespace: sites.Items[i].Namespace,
+				Name:      sites.Items[i].Name,
+			}})
+		}
+	}
+	return reqs
 }
