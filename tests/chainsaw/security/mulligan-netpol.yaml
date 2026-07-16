@@ -1,0 +1,99 @@
+# Audit F-01 (P1): the mulligan namespace (E7 progressive-delivery demos,
+# public-facing via the mulligan Gateway/HTTPRoute) carries the SAME
+# default-deny NetworkPolicy baseline as the sibling tenant namespaces
+# (gateway/websites/identity) — a workload namespace with no NetworkPolicy is
+# a finding (GUIDELINES §3 / ADR-0106).
+#
+# Self-contained (the marshal-rules-present pattern): applies
+# deploy/policies/network/mulligan.yaml itself via a relative path, because
+# the CI workflow's network-baseline step predates mulligan and applies only
+# gateway/monitoring/argocd. Runs in the ephemeral CI kind cluster (mulligan
+# ns + workloads are applied there for the rollouts suites; the namespace
+# apply below is an idempotent no-op) AND against the live kaddy-dev cluster,
+# where the manual-sync policies app syncs the same file post-merge (kubectl
+# apply is idempotent and the content is identical to git — no drift).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: security-mulligan-netpol
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/audit: F-01
+spec:
+  concurrent: false
+  description: default-deny NetworkPolicy baseline present in mulligan
+  steps:
+    - name: apply-mulligan-netpol-baseline
+      try:
+        # Namespace first (idempotent — pre-exists in CI and live).
+        - apply:
+            file: ../../../deploy/workloads/mulligan/namespace.yaml
+        - apply:
+            file: ../../../deploy/policies/network/mulligan.yaml
+    - name: mulligan-deny-all
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: mulligan
+                name: default-deny-all
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Ingress
+                  - Egress
+    - name: mulligan-dns-egress
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: networking.k8s.io/v1
+              kind: NetworkPolicy
+              metadata:
+                namespace: mulligan
+                name: allow-dns-egress
+              spec:
+                podSelector: {}
+                policyTypes:
+                  - Egress
+                egress:
+                  - to:
+                      - namespaceSelector:
+                          matchLabels:
+                            kubernetes.io/metadata.name: kube-system
+                        podSelector:
+                          matchLabels:
+                            k8s-app: kube-dns
+                    ports:
+                      - protocol: UDP
+                        port: 53
+                      - protocol: TCP
+                        port: 53
+    - name: mulligan-gateway-ingress-cnp
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: cilium.io/v2
+              kind: CiliumNetworkPolicy
+              metadata:
+                namespace: mulligan
+                name: allow-gateway-to-mulligan
+              spec:
+                endpointSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - mulligan
+                        - mulligan-bg
+                ingress:
+                  - fromEntities:
+                      - ingress
+                    toPorts:
+                      - ports:
+                          - port: "8080"
+                            protocol: TCP
