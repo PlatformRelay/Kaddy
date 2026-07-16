@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# REQ-E1c-S02-01: Trivy fails on CRITICAL in CI.
+# Offline meta test — asserts .github/workflows/trivy.yaml exists, SHA-pins
+# actions (SEC-5), and documents CRITICAL → exit-code 1 (build fails) while
+# HIGH is logged without failing the job.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/trivy.yaml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf (REQ-E1c-S02-01)"
+
+# Triggers: PR + push to main (standalone security gate).
+grep -qE '^\s*pull_request:' "$wf" \
+  || fail "trivy.yaml missing pull_request trigger"
+grep -qE '^\s*push:' "$wf" \
+  || fail "trivy.yaml missing push trigger"
+grep -qE 'branches:\s*\[main\]|-\s*main' "$wf" \
+  || fail "trivy.yaml push trigger must include main"
+
+# SEC-5: every uses: line is pinned to a 40-char commit SHA (version comment OK).
+while IFS= read -r line; do
+  # shellcheck disable=SC2016  # intentional literal @ in the pattern
+  echo "$line" | grep -qE 'uses:\s*[^@]+@[0-9a-f]{40}' \
+    || fail "unpinned or non-SHA action ref: $line"
+done < <(grep -E '^\s*-?\s*uses:' "$wf")
+
+# aquasecurity/trivy-action must appear (SHA-pinned above).
+grep -qE 'uses:\s*aquasecurity/trivy-action@[0-9a-f]{40}' "$wf" \
+  || fail "trivy.yaml must use SHA-pinned aquasecurity/trivy-action"
+
+# CRITICAL fails the build: severity CRITICAL with exit-code 1.
+# Accept either a dedicated CRITICAL step or an inline comment documenting the gate.
+grep -qiE 'severity:.*CRITICAL' "$wf" \
+  || fail "trivy.yaml must set severity including CRITICAL"
+grep -qE "exit-code:\s*['\"]?1['\"]?" "$wf" \
+  || fail "trivy.yaml must set exit-code: 1 for CRITICAL (REQ-E1c-S02-01)"
+
+# HIGH logged (non-blocking): either exit-code 0 on a HIGH step, or an
+# explicit comment that HIGH is logged without failing.
+if ! grep -qE "exit-code:\s*['\"]?0['\"]?" "$wf" \
+  && ! grep -qiE 'HIGH.*(log|advisory|non-blocking|does not fail)' "$wf"; then
+  fail "trivy.yaml must log HIGH without failing (exit-code 0 or documented)"
+fi
+
+echo "OK: REQ-E1c-S02-01 trivy.yaml CRITICAL exit-code 1 + SHA-pinned actions"
