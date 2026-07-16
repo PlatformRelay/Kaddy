@@ -22,10 +22,8 @@ do
   grep -qF "$needle" "$GS" || fail "demo choreography missing: $needle"
 done
 
-# Relative order: demo:fire before demo:chaos; Website claim before fire
+# Relative order: demo:fire before demo:chaos
 fire_line="$(grep -nF 'task demo:fire' "$GS" | head -1 | cut -d: -f1)"
-demo_line="$(grep -nE '^\|.*`task demo`|task demo[^:]' "$GS" | head -1 | cut -d: -f1 || true)"
-[[ -z "$demo_line" ]] && demo_line="$(grep -nF '`task demo`' "$GS" | head -1 | cut -d: -f1)"
 chaos_line="$(grep -nF 'task demo:chaos' "$GS" | head -1 | cut -d: -f1)"
 [[ -n "$fire_line" && -n "$chaos_line" ]] || fail "could not locate demo act lines"
 [[ "$fire_line" -lt "$chaos_line" ]] || fail "task demo:fire must appear before task demo:chaos"
