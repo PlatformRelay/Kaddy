@@ -1,0 +1,27 @@
+# REQ-CADDY-S05-05 — STRETCH (may): a second Website XR whose spec.source points
+# at an external git repo proves the platform API's bring-your-own-git path (live).
+#
+# Priority `may` — stretch, does not gate the epic exit. No BYO tenant is wired in
+# phase 1, so this is a `skip: true` stub (house convention — see the sibling
+# showcase/proxy-topology stub). The stretch lane flips `skip` off when a second
+# Website XR with spec.source reconciles Ready.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-showcase-byo-source
+  annotations:
+    kaddy.io/req: REQ-CADDY-S05-05
+    kaddy.io/status: skip-stretch-optional
+spec:
+  description: >-
+    e-caddy-mvp S05-05 STRETCH — a Website XR with spec.source serves an external
+    git repo's content (skip until a BYO-source tenant reconciles Ready)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp showcase byo-source (stretch) — enable when a second Website XR"
+              echo "with spec.source reconciles; then assert it reaches Ready:"
+              echo "  kubectl get website -n byo-demo -o jsonpath='{.items[0].status.conditions[?(@.type==\"Ready\")].status}' | grep -q True"
+              exit 0

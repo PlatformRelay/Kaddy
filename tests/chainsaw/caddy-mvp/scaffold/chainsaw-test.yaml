@@ -1,0 +1,30 @@
+# REQ-CADDY-S03-01 — Backstage self-service form offers the engine (Caddy/nginx),
+# auto-generated from the Website XRD (D-028), publishing a git PR (live).
+#
+# The scaffolder SURFACE is E10's (cuttable ✂️); no Backstage runtime is present
+# in phase 1, so this suite is a `skip: true` stub (house convention — see the
+# sibling showcase/proxy-topology stub). The portal-free GitOps path that keeps
+# this epic alive when E10 is cut is proven separately by
+# tests/smoke/caddy-mvp-s03-02.sh. The E10 lane flips `skip` off and asserts the
+# XRD-projected form emits a Website-XR PR once the portal lands.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-scaffold
+  annotations:
+    kaddy.io/req: REQ-CADDY-S03-01
+    kaddy.io/status: skip-until-e10-portal
+spec:
+  description: >-
+    e-caddy-mvp S03-01 — self-service scaffolder projects the Website XRD and
+    publishes a git PR (skip until E10 Backstage + kubernetes-ingestor land)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp scaffold — enable when E10 Backstage projects the Website XRD;"
+              echo "then assert the XRD is Established and no hand-written template dir exists (D-028):"
+              echo "  kubectl get xrd websites.platform.kaddy.io -o jsonpath='{.status.conditions[?(@.type==\"Established\")].status}' | grep -q True"
+              echo "  ! test -d templates/caddy-mvp"
+              exit 0

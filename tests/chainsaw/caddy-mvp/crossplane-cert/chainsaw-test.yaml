@@ -1,0 +1,29 @@
+# REQ-CADDY-S04-01 — STRETCH (optional): certificates for the Kubernetes variant
+# provisioned via Crossplane instead of / alongside cert-manager.
+#
+# Priority `may` — this slice does NOT gate the epic exit and no Crossplane cert
+# path is wired in phase 1 (Crossplane stays live-only; there is no Crossplane in
+# CI, see .github/workflows/chainsaw.yaml). `skip: true` stub (house convention)
+# so STRICT_TEST_FILES=1 spec coverage resolves the REQ's `Test:` path; the
+# stretch lane flips `skip` off if/when the operator opts into the Crossplane
+# certificate path.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: caddy-mvp-crossplane-cert
+  annotations:
+    kaddy.io/req: REQ-CADDY-S04-01
+    kaddy.io/status: skip-stretch-optional
+spec:
+  description: >-
+    e-caddy-mvp STRETCH — tenant certificate provisioned via Crossplane (optional,
+    does not gate epic exit; skip until the operator opts into the stretch path)
+  skip: true
+  steps:
+    - try:
+        - script:
+            content: |
+              echo "caddy-mvp crossplane-cert (stretch) — enable when the operator opts in;"
+              echo "then assert a Crossplane-issued certificate for the caddy-mvp tenant:"
+              echo "  kubectl get certificaterequest.crossplane -n caddy-mvp | grep -q caddy"
+              exit 0
