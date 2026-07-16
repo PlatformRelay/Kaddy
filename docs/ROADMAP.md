@@ -109,9 +109,9 @@ provides Cilium Gateway + default StorageClass
 | --- | --- | --- |
 | E1g-S01 | Terramate root + gridscale provider (`~> 2.2`) + object-storage state backend | 🟨 offline-authored (live-proof pending) |
 | E1g-S02 | Network + firewall + IP stack | 🟨 offline-authored (live-proof pending) |
-| E1g-S03 | GSK cluster (`gridscale_k8s`) + node pool | 🟨 offline-authored (live-proof pending) |
+| E1g-S03 | GSK cluster (`gridscale_k8s`) + node pool | ✅ **LIVE-PROVEN** (2026-07-17: `kaddy-gsk` 1-node reachable via `kubectl`, torn down, tenant clean) |
 | E1g-S04 | LBaaS entry point in front of Gateway | 🟨 offline-authored (live-proof pending) |
-| E1g-S05 | Retrieve kubeconfig + re-point ArgoCD bootstrap | ⬜ |
+| E1g-S05 | Retrieve kubeconfig + re-point ArgoCD bootstrap | 🟨 kubeconfig retrieval live-proven; app-of-apps re-sync deferred (edge/TLS swap) |
 
 🟨 = IaC authored + proven by the OFFLINE gate (`task test:smoke:e1g`: terramate codegen, `tofu fmt`/`validate`/`test` with mocked provider, conftest plan policy). Live provisioning (`task e1g:up`) is a later serialized step. Runbook: [docs/runbooks/gridscale-day0.md](runbooks/gridscale-day0.md).
 
