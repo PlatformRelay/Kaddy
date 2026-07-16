@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# REQ-E1c-S03-01 (gate wiring): image digest verify cannot be skipped locally/CI.
+# Offline meta test — asserts Taskfile exposes test:image-digests (runs
+# hack/verify-image-digests.sh) and .github/workflows/verify.yaml invokes it.
+# Complements the standalone image-digests.yaml path-filtered workflow.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+tf="${ROOT}/Taskfile.yml"
+wf="${ROOT}/.github/workflows/verify.yaml"
+script="${ROOT}/hack/verify-image-digests.sh"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$tf" || fail "missing $tf"
+test -f "$wf" || fail "missing $wf"
+test -f "$script" || fail "missing $script"
+
+# Taskfile must define test:image-digests that runs the verify script.
+grep -qE '^[[:space:]]*test:image-digests:' "$tf" \
+  || fail "Taskfile.yml missing task test:image-digests"
+
+# The task body must invoke hack/verify-image-digests.sh (not a no-op stub).
+# Stop at the next top-level task key (two-space indent), not nested desc/cmds.
+awk '
+  /^  test:image-digests:/ { in_task=1; next }
+  in_task && /^  [A-Za-z0-9_:-]+:/ { exit }
+  in_task { print }
+' "$tf" | grep -q 'hack/verify-image-digests\.sh' \
+  || fail "task test:image-digests does not run hack/verify-image-digests.sh"
+
+# CI verify matrix must invoke the task (path-filtered standalone is not enough).
+grep -qE 'task[[:space:]]+test:image-digests' "$wf" \
+  || fail "verify.yaml does not invoke 'task test:image-digests'"
+
+echo "OK: REQ-E1c-S03 gate wiring — Taskfile test:image-digests + verify.yaml"

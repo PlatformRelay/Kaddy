@@ -64,7 +64,13 @@ tasks:
       - task: test:spec
       - task: test:fmt
       - task: test:unit
+      - task: test:image-digests
       - task: docs:tf:check
+
+  test:image-digests:
+    desc: E1c — fail on :latest in first-party deploy/ image refs (REQ-E1c-S03-01)
+    cmds:
+      - bash hack/verify-image-digests.sh
 
   test:fmt:
     desc: L0 — tofu fmt -check in modules/labels

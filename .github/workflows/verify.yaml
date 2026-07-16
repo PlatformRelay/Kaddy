@@ -67,3 +67,7 @@ jobs:
       # workflow so an E1e regression goes red in CI. No cluster required.
       - name: task test:meta:e1e (E1e offline meta gates)
         run: task test:meta:e1e
+      # REQ-E1c-S03-01: first-party deploy image digest/:latest gate. Also under
+      # `task verify` locally; explicit CI step so the matrix cannot skip it.
+      - name: task test:image-digests (E1c first-party :latest gate)
+        run: task test:image-digests
