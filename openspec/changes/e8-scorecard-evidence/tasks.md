@@ -3,6 +3,10 @@
 - [x] k6 profile (REQ-E8-S01-*) — `tests/load/marshal-threshold.js` + `tests/smoke/e8-s01-01.sh` on main
 - [x] capture.sh + HTML (REQ-E8-S02-*) — `hack/scorecard/capture.sh` + `template.html` + e8-s02-* smokes on main
 - [x] Pages workflow (REQ-E8-S03-*) — `.github/workflows/scorecard-pages.yaml` + `tests/smoke/e8-s03-01.sh` on main
+  - [x] Pages site enabled (`build_type=workflow`, html_url https://platformrelay.github.io/Kaddy/)
+  - [x] Workflow hardened: `enablement: true`, `hack/scorecard/**` path filter, `_site/index.html` layout
+  - [x] Smoke contract: offline fixture→index.html + optional `SCORECARD_PAGES_LIVE=1` curl 200
+  - [ ] Live URL HTTP 200 after first successful `scorecard-pages` deploy on main
 - [x] **E8-S04 · Getting Started + reviewer demo**
   - [x] Write the failing documentation contract
         `tests/meta/e8-s04-getting-started.sh` (REQ-E8-S04-01/03/05/06).

@@ -1,6 +1,10 @@
 # REQ-E8-S03-01: publish latest scorecard HTML to GitHub Pages.
 # Builds a fixture (or live, when available) bundle via hack/scorecard/capture.sh,
 # then deploys with the official Pages actions (SHA-pinned like verify.yaml).
+#
+# First failure (run 29496090112) was configure-pages Get Pages site Not Found
+# before the repo Pages site existed. Site is now enabled (build_type=workflow);
+# enablement: true is belt-and-suspenders if the site is ever wiped.
 name: scorecard-pages
 
 on:
@@ -8,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'evidence/**'
+      - 'hack/scorecard/**'
       - '.github/workflows/scorecard-pages.yaml'
   workflow_dispatch:
 
@@ -40,8 +45,15 @@ jobs:
           DEST="_site/$(basename "${RUN_DIR%/}")"
           mkdir -p "${DEST}"
           cp -R "${RUN_DIR}." "${DEST}/"
+          test -f _site/index.html
+          ls -la _site/
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+        with:
+          # No-op when the site already exists; helps if Pages is wiped.
+          # Creating a brand-new site still needs a token with administration
+          # (GITHUB_TOKEN alone cannot create Pages) — operator enables once.
+          enablement: true
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
