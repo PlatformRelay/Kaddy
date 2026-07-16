@@ -44,6 +44,8 @@ Mandatory TDD — see [testing.md](testing.md) and ADR-0701. Summary:
 task test:unit      # L0 tofu test
 task test:policy    # L1 conftest
 task test:chainsaw  # L2 cluster e2e
+task test:load      # L3 offline by default (SCORECARD_FIXTURES=1)
+task test:scorecard # L4 fixture capture + validate — see testing.md
 ```
 
 Every OpenSpec REQ includes a `Verify:` block — implement the test before the manifest.

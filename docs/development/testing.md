@@ -21,11 +21,64 @@ L0 tofu test (modules/labels)
 | `task test:policy` | L1 | conftest against generated plans |
 | `task test:promrules` | L1 | `promtool test rules` for marshal alerts |
 | `task test:chainsaw` | L2 | `chainsaw test tests/chainsaw` |
-| `task test:load` | L3 | k6 profile (marshal threshold) |
-| `task test:scorecard` | L4 | Full evidence capture |
+| `task test:load` | L3 | k6 marshal-threshold profile (offline structural by default) |
+| `task test:scorecard` | L4 | Evidence capture + schema validate (fixtures by default) |
 | `task test` | all | Runs available levels in order |
 
-Until implementation lands, `task test` runs L0 only when modules exist.
+`task test` runs L0→L2 when tools are present; L3/L4 are separate (`task test:load`,
+`task test:scorecard`) so CI and reviewers can gate evidence without a live cluster.
+
+## L3 / L4 — offline scorecard gates (E8)
+
+Offline mode is the **default** for developers and reviewers: set
+`SCORECARD_FIXTURES=1` (or rely on the Taskfile default). No cluster, Prometheus,
+Alertmanager, Loki, or k6 binary is required.
+
+| Gate | Command | What it checks |
+| --- | --- | --- |
+| L3 | `task test:load` | Structural smoke on `tests/load/marshal-threshold.js` (`tests/smoke/e8-s01-01.sh`) — RATE=150 above the 100 rps marshal threshold |
+| L4 | `task test:scorecard` | `hack/scorecard/capture.sh --fixtures` → `evidence/runs/<YYYY-MM-DD>/`, then `hack/scorecard/validate.sh` |
+
+```bash
+# Default offline path (CI / local review)
+task test:load
+task test:scorecard
+
+# Explicit fixture env (same as Taskfile default)
+SCORECARD_FIXTURES=1 task test:load
+SCORECARD_FIXTURES=1 task test:scorecard
+
+# Direct harness (equivalent to L4 offline)
+SCORECARD_FIXTURES=1 hack/scorecard/capture.sh
+# or: hack/scorecard/capture.sh --fixtures
+hack/scorecard/validate.sh
+```
+
+### Fixture inputs
+
+Committed snapshots under `evidence/fixtures/` feed capture when fixtures are on:
+
+| Path | Role |
+| --- | --- |
+| `evidence/fixtures/prometheus/queries.json` | up / error_rate / latency / request_rate |
+| `evidence/fixtures/alertmanager/alerts.json` | firing HighRequestRate |
+| `evidence/fixtures/k6/summary.json` | RATE=150 load summary |
+| `evidence/fixtures/loki/caddy-errors.json` | LogQL 5xx stream |
+| `evidence/fixtures/rollout/status.json` | Argo Rollouts Healthy snapshot |
+
+Details: `evidence/fixtures/README.md`.
+
+### Harness layout
+
+```
+hack/scorecard/
+  capture.sh       # --fixtures / SCORECARD_FIXTURES=1 → dated run bundle + index.html
+  validate.sh      # schema check on evidence/runs/<date>/ (or newest run)
+  template.html    # HTML scorecard sections (alerts / metrics / k6 / rollout)
+```
+
+Live capture (`SCORECARD_FIXTURES=0`) is deferred — `capture.sh` exits with a hint until
+live APIs land. Live L3 then needs `k6` + `BASE_URL` (and optional `RATE`).
 
 ## Chainsaw layout
 
