@@ -21,42 +21,70 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// CaddySiteBackend points a route at a Kubernetes Service.
+type CaddySiteBackend struct {
+	// serviceName is the target Service in the CaddySite's namespace.
+	ServiceName string `json:"serviceName"`
 
-// CaddySiteSpec defines the desired state of CaddySite
-type CaddySiteSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+	// port is the target Service port.
+	Port int32 `json:"port"`
+}
 
-	// foo is an example field of CaddySite. Edit caddysite_types.go to remove/update
+// CaddySiteRoute binds a path to a backend Service.
+type CaddySiteRoute struct {
+	// path is the HTTP path prefix to match.
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	Path string `json:"path,omitempty"`
+
+	// backend is the Service this route forwards to.
+	Backend CaddySiteBackend `json:"backend"`
+}
+
+// CaddySiteObservability toggles the per-site observability bundle.
+type CaddySiteObservability struct {
+	// prometheusRules creates alert rules (error rate, latency, down) for the site.
+	// +optional
+	PrometheusRules bool `json:"prometheusRules,omitempty"`
+
+	// serviceMonitor creates a ServiceMonitor scraping Caddy metrics for the site.
+	// +optional
+	ServiceMonitor bool `json:"serviceMonitor,omitempty"`
+
+	// grafanaDashboard creates a Grafana dashboard ConfigMap for the site.
+	// +optional
+	GrafanaDashboard bool `json:"grafanaDashboard,omitempty"`
+}
+
+// CaddySiteSpec defines the desired state of CaddySite — a hostname/path
+// binding onto a Caddy dataplane, with an optional observability bundle.
+type CaddySiteSpec struct {
+	// caddyRef names the Caddy resource (same namespace) that serves this site.
+	CaddyRef string `json:"caddyRef"`
+
+	// hosts are the hostnames this site serves.
+	Hosts []string `json:"hosts"`
+
+	// routes bind paths to backend Services.
+	// +optional
+	Routes []CaddySiteRoute `json:"routes,omitempty"`
+
+	// observability toggles the per-site observability bundle.
+	// +optional
+	Observability CaddySiteObservability `json:"observability,omitempty"`
 }
 
 // CaddySiteStatus defines the observed state of CaddySite.
 type CaddySiteStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// For Kubernetes API conventions, see:
-	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-
-	// conditions represent the current state of the CaddySite resource.
-	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
-	//
-	// Standard condition types include:
-	// - "Available": the resource is fully functional
-	// - "Progressing": the resource is being created or updated
-	// - "Degraded": the resource failed to reach or maintain its desired state
-	//
-	// The status of each condition is one of True, False, or Unknown.
+	// conditions represent the current state of the CaddySite resource
+	// (e.g. Ready, Configured).
 	// +listType=map
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// observedGeneration is the generation last acted on by the operator.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // +kubebuilder:object:root=true

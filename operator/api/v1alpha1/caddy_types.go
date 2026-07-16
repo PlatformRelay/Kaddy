@@ -21,42 +21,52 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// CaddySpec defines the desired state of Caddy
-type CaddySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	// The following markers will use OpenAPI v3 schema to validate the value
-	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
-
-	// foo is an example field of Caddy. Edit caddy_types.go to remove/update
+// CaddyMetrics configures Prometheus metrics exposure for the Caddy dataplane.
+type CaddyMetrics struct {
+	// enabled toggles the metrics endpoint and its scrape assets.
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// CaddyAdmin configures the Caddy admin API endpoint the operator drives.
+type CaddyAdmin struct {
+	// listen is the admin API listen address, e.g. ":2019".
+	// +optional
+	Listen string `json:"listen,omitempty"`
+}
+
+// CaddySpec defines the desired state of Caddy — the gateway dataplane
+// (Deployment, Service, metrics) managed by the kaddy operator.
+type CaddySpec struct {
+	// replicas is the desired number of Caddy dataplane pods.
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// gatewayClassName binds this dataplane to a Gateway API GatewayClass.
+	// +optional
+	GatewayClassName string `json:"gatewayClassName,omitempty"`
+
+	// metrics configures Prometheus metrics exposure.
+	// +optional
+	Metrics CaddyMetrics `json:"metrics,omitempty"`
+
+	// admin configures the Caddy admin API endpoint.
+	// +optional
+	Admin CaddyAdmin `json:"admin,omitempty"`
 }
 
 // CaddyStatus defines the observed state of Caddy.
 type CaddyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// For Kubernetes API conventions, see:
-	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-
-	// conditions represent the current state of the Caddy resource.
-	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
-	//
-	// Standard condition types include:
-	// - "Available": the resource is fully functional
-	// - "Progressing": the resource is being created or updated
-	// - "Degraded": the resource failed to reach or maintain its desired state
-	//
-	// The status of each condition is one of True, False, or Unknown.
+	// conditions represent the current state of the Caddy resource
+	// (e.g. Ready, Configured, MetricsAvailable).
 	// +listType=map
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// observedGeneration is the generation last acted on by the operator.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // +kubebuilder:object:root=true
