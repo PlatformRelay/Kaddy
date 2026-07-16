@@ -5,7 +5,9 @@
 - Task ([taskfile.dev](https://taskfile.dev))
 - pre-commit (optional locally)
 - OpenTofu + Terramate (for E1+ lanes)
-- `talosctl`, `kubectl` (for cluster lanes)
+- `kind`, `kubectl`, `helm` + a container runtime (podman/docker) — local substrate (D-025,
+  [local-substrate-handoff.md](../runbooks/local-substrate-handoff.md)); `talosctl` only for the
+  deferred driving-range spike
 - [direnv](https://direnv.net/) (recommended) — loads lab credentials from `.envrc`
 
 ### Lab credentials
@@ -26,15 +28,16 @@ Lab hostnames under `platformrelay.dev`. Dex: `https://dex.platformrelay.dev/` (
 Per PlatformRelay `AGENTS.md`: claim a lane on `agent-context/coordination/OPERATOR-BOARD.md`;
 implement in an isolated worktree; one logical change per PR.
 
-## Gates (design phase)
+## Gates
 
 ```bash
-task verify   # scrub + lint + openspec structure
+task verify   # scrub + lint + openspec structure + spec coverage + fmt + terraform-docs drift
 task scrub    # denylist only
 task lint     # markdown + shellcheck
 ```
 
-Implementation lanes add `task test`, `tofu test`, cluster integration checks per story.
+Implementation lanes add `task test` (L0–L2), promtool, and cluster integration checks per
+story — see [testing.md](testing.md) for the full matrix and the CI workflows that run it.
 
 ## Testing
 
@@ -65,5 +68,5 @@ Each lane references `openspec/changes/<slug>/`. Update `tasks.md` as work progr
 
 ## Docs
 
-- MkDocs site: `mkdocs serve` (when mkdocs.yml wired in E12/E8)
+- MkDocs site: `mkdocs serve` (`mkdocs.yml` at repo root; `mkdocs build --strict` must pass)
 - ADRs: `docs/adr/`

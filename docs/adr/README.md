@@ -17,7 +17,7 @@ Theme-numbered ADRs (`0Txx`) grouped by concern. Status: **Current** unless note
 | ADR | Title |
 | --- | --- |
 | [0101](0101-platform-over-vm.md) | Platform over VM for the hiring exercise |
-| [0102](0102-talos-immutable-substrate.md) | Two-phase substrate — driving-range then gridscale GSK |
+| [0102](0102-talos-immutable-substrate.md) | Two-phase substrate — **amended D-025**: phase 1 = kind + Cilium; Talos driving-range deferred |
 | [0103](0103-argocd-gitops.md) | ArgoCD GitOps app-of-apps |
 | [0104](0104-caddy-gateway-api.md) | Cilium Gateway API for platform ingress; Caddy as tenant product |
 | [0105](0105-crossplane-self-service.md) | Crossplane self-service via Upjet provider-gridscale |

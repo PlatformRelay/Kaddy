@@ -1,6 +1,11 @@
-# Runbook — driving-range → kaddy handoff
+# Runbook — driving-range → kaddy handoff (deferred spike)
 
-**Phase 1 only.** The platform cluster is built in [driving-range](https://github.com/PlatformRelay/driving-range) (local Talos + Cilium). Kaddy bootstraps GitOps on top.
+> **Retconned (D-025, 2026-07-15).** The phase-1 substrate is a local **kind + Cilium** cluster —
+> see [local-substrate-handoff.md](local-substrate-handoff.md), which supersedes this runbook for
+> daily development. The 3-node Talos driving-range is a **deferred optional maturity-contrast
+> spike**; this runbook is retained for that spike only.
+
+The spike cluster is built in [driving-range](https://github.com/PlatformRelay/driving-range) (local Talos + Cilium). Kaddy bootstraps GitOps on top.
 
 ## Prerequisites
 
