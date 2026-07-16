@@ -1,0 +1,52 @@
+# E1c: policies child Application — syncs deploy/policies/ (Kyverno
+# ClusterPolicies + the default-deny NetworkPolicy baseline).
+#
+# Registration vs apply: the root app discovers this file (flat sibling), so
+# Argo CD will REGISTER the Application — but syncPolicy is MANUAL (no
+# `automated` block): policies are high-blast-radius admission/network
+# controls, so a human performs the first sync deliberately, after Kyverno
+# v1.18.2 is installed (the ClusterPolicy CRD must exist or the sync fails).
+# Cutover order: deploy/policies/README.md.
+#
+# TODO(cutover): move to `project: platform` (deploy/apps/projects/) when the
+# cluster-hardening lane applies the restricted AppProjects and flips the
+# other Applications off `project: default`.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: policies
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-S01-01
+    kaddy.io/status: authored-manual-sync-first
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/policies
+    directory:
+      # recurse ON: kyverno/ and network/ subdirectories.
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    # ClusterPolicies are cluster-scoped and every NetworkPolicy pins its own
+    # namespace; `kyverno` is only the default for any un-namespaced
+    # namespaced resource (there are none today).
+    namespace: kyverno
+  # NO syncPolicy.automated — manual, human-triggered syncs only (see header).
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false

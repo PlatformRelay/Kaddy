@@ -1,0 +1,58 @@
+# E1c AppProject hardening (security review P1-2): restricted project for
+# the observability stack. AUTHORED, NOT YET WIRED — see platform.yaml header
+# (root syncs deploy/apps/ with recurse OFF; cutover happens in the
+# cluster-hardening lane).
+#
+# Intended members: observability (nested app-of-apps) and its grandchildren
+# kube-prometheus-stack, loki, alloy. Helm chart repos are pinned here —
+# these are the ONLY non-Git sources any kaddy Application may use.
+#
+# clusterResourceWhitelist is wider than the other projects because
+# kube-prometheus-stack legitimately installs CRDs, cluster RBAC and an
+# admission webhook; it is still a closed list, not `*/*`.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: observability
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: observability
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: observability
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-APPPROJECT
+spec:
+  description: >-
+    kaddy observability: kube-prometheus-stack, Loki, Alloy (+ the marshal
+    monitoring rules). Destinations are monitoring (workloads) and argocd
+    (the nested grandchild Application CRs).
+  sourceRepos:
+    - https://github.com/PlatformRelay/Kaddy.git
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration

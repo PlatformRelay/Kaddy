@@ -1,0 +1,44 @@
+# E1c AppProject hardening (security review P1-2): restricted project for
+# demoable workloads and the edge. AUTHORED, NOT YET WIRED — see
+# platform.yaml header (root syncs deploy/apps/ with recurse OFF; cutover
+# happens in the cluster-hardening lane).
+#
+# Intended members: gateway (edge: Gateway/HTTPRoutes) and workloads
+# (clubhouse + future sample apps / Rollouts). Namespace-scoped only —
+# the single cluster-scoped grant is Namespace creation (CreateNamespace).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workloads
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: workloads
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: workloads
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1c-APPPROJECT
+spec:
+  description: >-
+    kaddy sample workloads and the gateway edge (clubhouse, Caddy/nginx MVP
+    variants, future Rollouts-managed tenants). Namespace-scoped blast
+    radius; no cluster resources beyond Namespace.
+  sourceRepos:
+    - https://github.com/PlatformRelay/Kaddy.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: gateway
+    - server: https://kubernetes.default.svc
+      namespace: default
+    - server: https://kubernetes.default.svc
+      namespace: apps
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
