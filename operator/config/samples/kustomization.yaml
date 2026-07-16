@@ -1,0 +1,5 @@
+## Append samples of your project ##
+resources:
+- gateway_v1alpha1_caddy.yaml
+- gateway_v1alpha1_caddysite.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

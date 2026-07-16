@@ -1,0 +1,9 @@
+apiVersion: gateway.kaddy.io/v1alpha1
+kind: CaddySite
+metadata:
+  labels:
+    app.kubernetes.io/name: kaddy-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: caddysite-sample
+spec:
+  # TODO(user): Add fields here
