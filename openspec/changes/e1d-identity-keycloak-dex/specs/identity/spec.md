@@ -20,8 +20,10 @@ Epic: E1d · ADR: [0107](../../../docs/adr/0107-identity-keycloak-dex.md) · **D
 ## REQ-E1d-S01-02: Dex OIDC discovery document
 
 **Priority:** must  
-**Given** Dex Service reachable via Gateway or port-forward  
-**When** `curl -s https://dex.platformrelay.dev/.well-known/openid-configuration`  
+**Given** Dex Service reachable via the Gateway (kind lab issuer
+`https://dex.kaddy.local:30443` — the SNI listener on the loopback-mapped
+30443 port; `dex.platformrelay.dev` is the phase-2 public issuer)  
+**When** `curl -sk --resolve dex.kaddy.local:30443:127.0.0.1 https://dex.kaddy.local:30443/.well-known/openid-configuration`  
 **Then** JSON includes `issuer` and `authorization_endpoint`  
 **Test:** `tests/smoke/e1d-s01-02.sh`
 
@@ -32,12 +34,12 @@ Epic: E1d · ADR: [0107](../../../docs/adr/0107-identity-keycloak-dex.md) · **D
 ## REQ-E1d-S01-03: GitHub connector scoped to PlatformRelay
 
 **Priority:** must  
-**Given** Dex ConfigMap or Helm values  
+**Given** Dex ConfigMap  
 **When** parsed  
-**Then** connector `type: github`; `orgs[0].name` is **`PlatformRelay`** ([github.com/PlatformRelay](https://github.com/PlatformRelay)); teams include `platform-admins` and/or `platform-readonly`  
+**Then** connector `type: github`; `orgs[0].name` is **`PlatformRelay`** ([github.com/PlatformRelay](https://github.com/PlatformRelay)). The `teams:` allowlist filter is deliberately NOT set (locking login to teams that may not exist yet would brick the operator; Dex still emits `org:team` group claims, and `argocd-rbac-cm` already maps `PlatformRelay:platform-admins` → admin) — team-allowlist hardening rides E10 with the rest of team RBAC  
 **Test:** `tests/fixtures/dex-github-connector-golden.yaml`
 
-**Verify:** `diff deploy/identity/dex/connector.yaml tests/fixtures/dex-github-connector-golden.yaml` (or rendered golden)
+**Verify:** e1d-exit.sh diffs the LIVE `identity/dex` ConfigMap `.connectors` against the golden fixture
 
 ---
 
@@ -112,15 +114,20 @@ Epic: E1d · ADR: [0107](../../../docs/adr/0107-identity-keycloak-dex.md) · **D
 
 ---
 
-## REQ-E1d-S03-01: Grafana generic OAuth via Dex
+## REQ-E1d-S03-01: Grafana generic OAuth via Dex — DEFERRED → E10
 
-**Priority:** must · **Story:** E1d-S03 · **Level:** L2  
+**Priority:** deferred (E10) · **Story:** E1d-S03 · **Level:** L2  
+**Deferred 2026-07-16 (E1d scoping):** Grafana/portal SSO is E10 scope; the
+kube-prometheus-stack values live in the observability lane's boundary and
+wiring `auth.generic_oauth` there is not an identity-lane change. Dex's
+static-client pattern (see `argocd` in `deploy/identity/dex/configmap.yaml`
++ the paired SOPS secrets under `deploy/secrets/`) is the template E10 reuses.  
 **Given** Grafana Helm values with `auth.generic_oauth`  
 **When** user opens Grafana UI  
 **Then** OAuth login via Dex available; anonymous auth disabled  
-**Test:** `tests/smoke/e1d-s03-01.sh`
+**Test:** `tests/smoke/e1d-s03-01.sh` (authored with E10)
 
-**Verify:** smoke or Chainsaw when Grafana lands in E3
+**Verify:** smoke or Chainsaw when E10 wires Grafana OAuth
 
 ---
 
