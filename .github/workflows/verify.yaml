@@ -1,8 +1,9 @@
 # kaddy design/implementation gate — replaces the removed PocketIDP ci.yaml.
 # Runs the Taskfile gate matrix that needs no cluster: gitleaks secret scan
 # (SEC-1), verify (scrub + lint + openspec structure + spec coverage), L0 tofu
-# test, L1 conftest policy, and the E1e offline meta gates (TEST-2).
-# L2 chainsaw and L1 promtool live in chainsaw.yaml / monitoring.yaml.
+# test, L1 conftest policy, E1e offline meta gates (TEST-2), and E8 L4
+# offline scorecard (fixture mode). L2 chainsaw and L1 promtool live in
+# chainsaw.yaml / monitoring.yaml.
 name: verify
 
 on:
@@ -71,3 +72,7 @@ jobs:
       # `task verify` locally; explicit CI step so the matrix cannot skip it.
       - name: task test:image-digests (E1c first-party :latest gate)
         run: task test:image-digests
+      # E8 L4: offline scorecard (fixture mode default) — capture + validate
+      # without a live cluster. Meta smoke: tests/meta/e8-scorecard-ci-wired.yaml
+      - name: task test:scorecard (E8 L4 offline scorecard)
+        run: task test:scorecard

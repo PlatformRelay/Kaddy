@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# E8 L4 offline scorecard: CI verify matrix must invoke task test:scorecard
+# (fixture mode default). Offline meta smoke — no cluster required.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/verify.yaml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf"
+
+grep -qE 'task[[:space:]]+test:scorecard' "$wf" \
+  || fail "verify.yaml does not invoke 'task test:scorecard' (E8 L4 offline)"
+
+echo "OK: E8 scorecard CI wiring — verify.yaml invokes task test:scorecard"
