@@ -4,9 +4,9 @@ Build order for the gridscale platform-engineering exercise. **Phase 1 underway*
 E1e → E1 → E3 → E4 is complete and demoable (**14/14** GitOps apps Synced/Healthy, clubhouse over
 verified HTTPS through the Cilium edge); labels module (E1b), marshal monitoring (E5), gateway spike
 (E2), Crossplane Website (E6), mulligan rollouts (E7), scorecard offline + Getting Started (E8),
-security baseline cutover (E1c), and Slidev deck (E12) also landed on `main`. Remaining work:
-identity (E1d), Caddy-MVP live tenant sync, phase-2 GSK. Each epic links an OpenSpec change under
-`openspec/changes/`.
+security baseline cutover (E1c), identity (E1d), first security audit (E11-S01), and Slidev deck
+(E12) also landed on `main`. Remaining work: Caddy-MVP live tenant sync, phase-2 GSK. Each epic
+links an OpenSpec change under `openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 
@@ -149,7 +149,7 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E1d · Identity (Dex + GitHub)
+## E1d · Identity (Dex + GitHub) ✅ (Grafana OAuth deferred to E10)
 
 **OpenSpec:** [e1d-identity-keycloak-dex](../openspec/changes/e1d-identity-keycloak-dex/)  
 **ADR:** [0107](adr/0107-identity-dex.md) · **Decision:** D-018  
@@ -157,10 +157,10 @@ provides Cilium Gateway + default StorageClass
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1d-S01 | Dex deployment + GitHub connector (**PlatformRelay** org) + SOPS OAuth secret | ⬜ |
-| E1d-S02 | Argo CD OIDC via Dex + RBAC (GitHub teams → groups) | ⬜ |
-| E1d-S03 | Grafana OAuth via Dex | ⬜ |
-| E1d-S04 | NetworkPolicy for `identity` namespace | ⬜ |
+| E1d-S01 | Dex deployment + GitHub connector (**PlatformRelay** org) + SOPS OAuth secret | ✅ |
+| E1d-S02 | Argo CD OIDC via Dex + RBAC (GitHub teams → groups) | ✅ (teams allowlist → E10) |
+| E1d-S03 | Grafana OAuth via Dex | ✅ (deferred → E10) |
+| E1d-S04 | NetworkPolicy for `identity` namespace | ✅ |
 
 ### E1d-S02 — Argo CD OIDC
 
@@ -361,7 +361,7 @@ reviewer path.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E11-S01 | First dated audit report | ⬜ |
+| E11-S01 | First dated audit report | ✅ ([2026-07-16](audits/2026-07-16-audit.md)) |
 | E11-S02 | Diff vs subsequent run | ⬜ |
 
 ---
