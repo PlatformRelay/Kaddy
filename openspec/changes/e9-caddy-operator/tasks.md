@@ -9,7 +9,7 @@ Design phase (complete):
 
 Implementation (optional):
 
-- [ ] E9-S01 kubebuilder init + CRD types
-- [ ] E9-S02 Caddy reconciler + Admin client port
+- [x] E9-S01 kubebuilder init + CRD types (`operator/`, envtest-backed API-shape + validation tests)
+- [x] E9-S02 Caddy reconciler + Admin client port (`internal/caddyadmin` + reconcilers, fake admin server, race on)
 - [ ] E9-S03 CaddySite + observability bundle
-- [ ] Gate: envtest + `task test`
+- [ ] Gate: envtest + `task test` (operator envtest green standalone; `task test` wiring pending — Taskfile owned outside this lane)
