@@ -1,0 +1,67 @@
+# REQ-E1c-S02: Trivy CI scan-gate — CRITICAL fails the build; HIGH is logged.
+# Standalone workflow (does not edit verify.yaml). Scans first-party deploy/
+# filesystem for vulns + secrets; path-filtered to avoid vendored noise.
+name: trivy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - '.github/workflows/trivy.yaml'
+      - 'tests/meta/e1c-s02*'
+      - 'tests/smoke/e1c-s02*'
+  pull_request:
+    paths:
+      - 'deploy/**'
+      - '.github/workflows/trivy.yaml'
+      - 'tests/meta/e1c-s02*'
+      - 'tests/smoke/e1c-s02*'
+
+permissions:
+  contents: read
+
+jobs:
+  # Offline structure gate — keeps the CRITICAL/HIGH contract honest without
+  # needing Taskfile ownership (sibling lane).
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      # SEC-5: action refs pinned to full commit SHAs (version as comment).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Meta — CRITICAL exit-code contract (REQ-E1c-S02-01)
+        run: bash tests/meta/e1c-s02-01-workflow.yaml
+      - name: Smoke — fs scan config present (REQ-E1c-S02-02)
+        run: bash tests/smoke/e1c-s02-02.sh
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      # SEC-5: action refs pinned to full commit SHAs (version as comment).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      # CRITICAL fails the build (exit-code: 1). First-party deploy/ only.
+      - name: Trivy fs scan — CRITICAL (fail)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: deploy
+          # vuln + secret only — misconfig on intentional platform manifests is noisy.
+          scanners: vuln,secret
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
+
+      # HIGH is logged (advisory) — does not fail the build (exit-code: 0).
+      - name: Trivy fs scan — HIGH (log only)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: deploy
+          scanners: vuln,secret
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: table
