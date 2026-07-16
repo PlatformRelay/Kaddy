@@ -21,7 +21,9 @@ GW_IP="$(kubectl -n gateway get svc "${GW_SVC}" -o jsonpath='{.spec.clusterIP}' 
 [[ -n "${GW_IP}" ]] || smoke_fail "gateway service ${GW_SVC} has no clusterIP"
 
 POD="website-smoke-$$"
-LABELS="owner=platform-team,service=website-smoke,part-of=kaddy,managed-by=smoke-test,data-classification=internal,business-criticality=business-operational,track=stable"
+# NOTE: an explicit --labels suppresses kubectl's automatic run=<name> label,
+# and the websites allow-probe-egress-to-edge CNP selects on `run` — set it.
+LABELS="run=website-smoke,owner=platform-team,service=website-smoke,part-of=kaddy,managed-by=smoke-test,data-classification=internal,business-criticality=business-operational,track=stable"
 raw="$(kubectl -n "${NS}" run "${POD}" --rm -i --restart=Never \
   --image=curlimages/curl:8.11.0 --quiet \
   --labels="${LABELS}" \

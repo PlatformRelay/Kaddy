@@ -19,3 +19,11 @@
 - **Host-based routing + per-site edge certs** → E6g/E10. The composed per-site Certificate
   (kaddy-local-ca) is already issued per claim and Ready-gated; today's edge terminates the shared
   `clubhouse-tls` on the shared host, per-host listeners consume the per-site secrets later.
+- **GHCR package visibility (OPERATOR ACTION)** — `kaddy-showcase` is private (org default); the
+  kind node cannot pull it anonymously. Side-load documented in `docs/runbooks/website-self-service.md`;
+  flip the package public to retire it.
+- **caddy_http_* request metrics** — need the global `servers { metrics }` option in the showcase
+  Caddyfile (e-caddy-mvp follow-up; image out of this lane's boundary). Scrape target up==1 today.
+- **Showcase image setcap follow-up** — upstream caddy ships a setcap'd binary; the Composition
+  allows exactly NET_BIND_SERVICE with allowPrivilegeEscalation:true (commented). Strip the file
+  capability in the image build to flip the pod back to fully-restricted.
