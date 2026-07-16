@@ -86,11 +86,14 @@ spec:
             passwordKey: admin-password
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 100m
+              memory: 192Mi
+            # 2026-07-16: raised from 200m/256Mi — Grafana 12.x unified-storage
+            # cleanup + SQLite churn CPU-starved the pod into a liveness
+            # crash-loop once dashboards/alerts/datasources were provisioned.
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 400m
+              memory: 512Mi
           # Sidecar watches ConfigMaps labelled grafana_datasource=1 and
           # provisions them — this is how the Loki datasource (S02-05) is wired.
           sidecar:
