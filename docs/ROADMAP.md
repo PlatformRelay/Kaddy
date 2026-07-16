@@ -7,7 +7,8 @@ verified HTTPS through the Cilium edge); labels module (E1b), marshal monitoring
 security baseline cutover (E1c), identity (E1d), the optional Caddy operator (E9), first security
 audit (E11-S01), and Slidev deck (E12) also landed on `main`. Two releases are tagged and published:
 **v0.1.0** (serve → scrape → fire) and **v0.1.1** (self-service Websites, identity, CI parity). The
-Caddy-MVP tenant is live-synced (D-036). Remaining work: phase-2 GSK (E6g/E13), the Backstage portal
+Caddy-MVP tenant syncs live from git (the `e-caddy-mvp` epic; the platform AppProject was unblocked
+in D-036). Remaining work: phase-2 GSK (E6g/E13), the Backstage portal
 (E10, cuttable), and the E12 demo recording (E12b). Each epic links an OpenSpec change under
 `openspec/changes/`.
 
@@ -342,7 +343,7 @@ reviewer path.
 
 ---
 
-## E9 · Caddy operator (optional) ✅ (S01–S03 on `main`, envtest green; shipped in v0.1.1)
+## E9 · Caddy operator (optional) ✅ (S01–S03 on `main` after v0.1.1, envtest green)
 
 **OpenSpec:** [e9-caddy-operator](../openspec/changes/e9-caddy-operator/)  
 **ADR:** [0401](adr/0401-caddy-operator-design-first.md)
