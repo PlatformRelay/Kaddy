@@ -45,9 +45,11 @@ Do **not** hold. See decisions.md.
 
 ## Operator tasks
 
-- [x] **Sync the `policies` ArgoCD app** — DONE 2026-07-16 (operator).
-- [x] **Enable GitHub Pages (`build_type=workflow`)** — DONE 2026-07-16 (operator). Residual: re-run
-      `scorecard-pages` + curl the published URL if not already verified.
+- [ ] **Re-sync Argo apps `policies` + `workloads`** — E11-S02 (2026-07-16) found both **OutOfSync**;
+      mulligan + caddy-mvp have **zero** in-cluster NetworkPolicies despite manifests on `main`
+      (F-01 still P1). Also refresh `root` so `caddy-mvp-monitoring` is discovered.
+- [x] **Enable GitHub Pages (`build_type=workflow`)** — DONE 2026-07-16. Verified live:
+      `https://platformrelay.github.io/Kaddy/` HTTP 200 (scorecard-pages run 29511538700).
 - [x] **Container runtime** — workstation is **Podman-only** (no Docker). Recorded as D-035; start
       rootful podman machine before `task cluster:up` when a live E1e gate is needed.
 - [x] **`direnv allow`** — DONE 2026-07-16 (operator).
