@@ -28,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -265,28 +266,38 @@ func renderRoute(site *gatewayv1alpha1.CaddySite) caddyadmin.Route {
 // SetupWithManager sets up the controller with the Manager.
 //
 // Beyond watching CaddySites, it (ARCH-9):
-//   - Owns the per-site ServiceMonitor/PrometheusRule it creates, so external
-//     deletion or drift of those observability CRs re-triggers reconcile and
-//     self-heals — rather than waiting for the next CaddySite event. (Requires
-//     the prometheus-operator CRDs to be installed; the platform always ships
-//     kube-prometheus-stack.)
+//   - Owns the per-site ServiceMonitor/PrometheusRule it creates — but ONLY when
+//     the prometheus-operator CRDs are installed. Registering a cache-backed
+//     watch on an unknown GVK fails mgr.Start() and would crash the whole
+//     operator on a cluster without prometheus-operator (the operator ships via
+//     `make deploy`, not the app-of-apps, so nothing guarantees CRD-install
+//     ordering). When the CRDs are absent we degrade to reconcile-time creation
+//     of the observability CRs (the pre-ARCH-9 behaviour); the self-heal watch
+//     is a bonus that engages when the CRDs are present.
 //   - Watches Caddy objects and maps each change to the CaddySites that
 //     reference it, so a late-appearing or updated caddyRef heals dependent
 //     sites at once instead of only on the 30s missingRefRequeue.
 func (r *CaddySiteReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	serviceMonitor := &unstructured.Unstructured{}
-	serviceMonitor.SetGroupVersionKind(serviceMonitorGVK)
-	prometheusRule := &unstructured.Unstructured{}
-	prometheusRule.SetGroupVersionKind(prometheusRuleGVK)
-
-	return ctrl.NewControllerManagedBy(mgr).
+	b := ctrl.NewControllerManagedBy(mgr).
 		For(&gatewayv1alpha1.CaddySite{}).
-		Owns(serviceMonitor).
-		Owns(prometheusRule).
 		Watches(&gatewayv1alpha1.Caddy{},
 			handler.EnqueueRequestsFromMapFunc(r.caddySitesForCaddy)).
-		Named("caddysite").
-		Complete(r)
+		Named("caddysite")
+
+	mapper := mgr.GetRESTMapper()
+	log := logf.Log.WithName("caddysite-setup")
+	for _, gvk := range []schema.GroupVersionKind{serviceMonitorGVK, prometheusRuleGVK} {
+		if _, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version); err != nil {
+			log.Info("prometheus-operator CRD absent — skipping Owns watch; observability CRs still reconciled on CaddySite events",
+				"gvk", gvk.String())
+			continue
+		}
+		owned := &unstructured.Unstructured{}
+		owned.SetGroupVersionKind(gvk)
+		b = b.Owns(owned)
+	}
+
+	return b.Complete(r)
 }
 
 // caddySitesForCaddy enqueues every CaddySite in the changed Caddy's namespace
