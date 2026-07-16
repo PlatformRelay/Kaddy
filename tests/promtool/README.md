@@ -7,8 +7,9 @@ No cluster required — `promtool` feeds synthetic series and asserts alert firi
 
 ```bash
 task test:promrules                 # all *.test.yaml here
-promtool test rules tests/promtool/marshal.test.yaml            # active: needs extract-rules.sh first
-promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml  # parked epic: standalone, no extract
+promtool test rules tests/promtool/marshal.test.yaml              # active: needs extract-rules.sh first
+promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml    # epic: TargetDown (S01-03), standalone
+promtool test rules tests/promtool/caddy-mvp-showcase.test.yaml   # epic: re-homed set (S05-04), standalone
 ```
 
 ## Layout
@@ -16,13 +17,16 @@ promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml  # parked epic: s
 ```
 tests/promtool/
   README.md
-  marshal.test.yaml            # ACTIVE — deploy/monitoring/rules/marshal-http.yaml (E5)
-  caddy-mvp-marshal.test.yaml  # PARKED — e-caddy-mvp VM-variant CaddyTargetDown (D-026, REQ-CADDY-S01-03)
+  marshal.test.yaml              # ACTIVE — deploy/monitoring/rules/marshal-http.yaml (E5)
+  caddy-mvp-marshal.test.yaml    # EPIC — CaddyTargetDown (D-026, REQ-CADDY-S01-03)
+  caddy-mvp-showcase.test.yaml   # EPIC — re-homed caddy_* vs K8s origin (REQ-CADDY-S05-04)
 ```
 
-> `caddy-mvp-marshal.test.yaml` loads a **committed** rule projection
+> Both `caddy-mvp-*.test.yaml` suites load a **committed** rule projection
 > (`deploy/caddy-mvp/monitoring/rules/marshal-caddy.rules.yaml`) via a relative `rule_files:` path,
-> so it runs standalone with no `extract-rules.sh` step — matching the epic spec's bare Verify.
+> so they run standalone with no `extract-rules.sh` step — matching the epic spec's bare Verify.
+> Showcase covers TargetDown plus revived `HighHTTPErrorRate` / `HighHTTPLatency` /
+> `HighRequestRate` against the Kubernetes Caddy origin in ns `caddy-mvp`.
 
 ## How it maps to specs
 

@@ -1,0 +1,179 @@
+# promtool test rules — e-caddy-mvp showcase Caddy origin (REQ-CADDY-S05-04)
+#
+# Re-homes the parked E5 caddy_* marshal alerts against the real Kubernetes
+# Caddy origin in ns caddy-mvp (not a synthetic edge, not "VM pending").
+# Closes D-026 on the K8s path: serve → scrape → fire.
+#
+# STANDALONE: rule_files points at the committed projection so the spec's
+# bare Verify works with an empty /tmp:
+#   promtool test rules tests/promtool/caddy-mvp-showcase.test.yaml
+#
+# Fire + silent rigor preserved. HighHTTPErrorRate uses
+# caddy_http_request_duration_seconds_count (status-code-labelled); Caddy's
+# caddy_http_requests_total carries no code label (see k8s-tenant AnalysisTemplate).
+rule_files:
+  - ../../deploy/caddy-mvp/monitoring/rules/marshal-caddy.rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S05-04 / CaddyTargetDown — present-but-failing against the
+  # Kubernetes Caddy origin scrape (job="caddy", PodMonitor → ns caddy-mvp).
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="caddy",instance="caddy-origin:2019",namespace="caddy-mvp"}'
+        values: '1 1 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+              instance: caddy-origin:2019
+              namespace: caddy-mvp
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S05-04 / CaddyTargetDown — ABSENT-target branch (origin pods gone).
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="other",instance="anchor:9090"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: CaddyTargetDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: CaddyTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: caddy
+              owner: platform-team
+              job: caddy
+            exp_annotations:
+              summary: 'Caddy scrape target down'
+              description: 'Caddy scrape target (job caddy) has been down or absent for more than 2 minutes. Requests may be failing at the gateway.'
+
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S05-04 — HighHTTPErrorRate (revived parked caddy_http_* alert).
+  # 5xx share of duration_seconds_count > 5% sustained 5m must fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_request_duration_seconds_count{job="caddy",code="200"}'
+        values: '0+600x15'
+      - series: 'caddy_http_request_duration_seconds_count{job="caddy",code="500"}'
+        values: '0+60x15'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: HighHTTPErrorRate
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: HighHTTPErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: caddy
+              owner: platform-team
+            exp_annotations:
+              summary: 'Caddy HTTP 5xx error rate above 5%'
+              description: 'Caddy origin is returning 5xx responses for more than 5% of requests over the last 5 minutes (sustained 5m).'
+
+  # HighHTTPErrorRate stays SILENT when 5xx share is below 5%.
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_request_duration_seconds_count{job="caddy",code="200"}'
+        values: '0+600x15'
+      - series: 'caddy_http_request_duration_seconds_count{job="caddy",code="500"}'
+        values: '0+6x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: HighHTTPErrorRate
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S05-04 — HighHTTPLatency (revived parked caddy_http_* alert).
+  # p99 request latency > 500ms must fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.1"}'
+        values: '0+0x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.5"}'
+        values: '0+0x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="1.0"}'
+        values: '0+100x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="+Inf"}'
+        values: '0+100x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: HighHTTPLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: caddy
+              owner: platform-team
+            exp_annotations:
+              summary: 'Caddy p99 HTTP latency above 500ms'
+              description: 'Caddy origin p99 request latency has exceeded 500ms over the last 5 minutes (sustained 5m).'
+
+  # HighHTTPLatency stays SILENT when p99 is under 500ms.
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.1"}'
+        values: '0+100x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.5"}'
+        values: '0+100x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="1.0"}'
+        values: '0+100x15'
+      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="+Inf"}'
+        values: '0+100x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: HighHTTPLatency
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # REQ-CADDY-S05-04 — HighRequestRate (revived parked caddy_http_* alert).
+  # Request rate > 100 rps sustained for 2m must fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_requests_total{job="caddy"}'
+        values: '0+9000x15'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: HighRequestRate
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: HighRequestRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: caddy
+              owner: platform-team
+            exp_annotations:
+              summary: 'Caddy request rate above 100 rps'
+              description: 'Caddy origin is serving more than 100 requests per second (5m rate), sustained for 2 minutes. Verify capacity / possible traffic spike.'
+
+  # HighRequestRate stays SILENT below 100 rps.
+  - interval: 1m
+    input_series:
+      - series: 'caddy_http_requests_total{job="caddy"}'
+        values: '0+3000x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighRequestRate
+        exp_alerts: []
