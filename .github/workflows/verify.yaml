@@ -40,6 +40,15 @@ jobs:
           CONFTEST_VERSION="0.56.0"
           curl -sSL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
             | sudo tar -xz -C /usr/local/bin conftest
+      # terramate powers the E1g codegen-drift check in tests/smoke/e1g-offline.sh.
+      # Without it that sub-check skips, so a stale-but-valid `_terramate_generated_*.tf`
+      # (e.g. a globals label edit not regenerated) would pass CI. Pin it (SEC-4:
+      # Renovate-trackable version) so drift is enforced, not silently no-op'd.
+      - name: Install terramate
+        run: |
+          TERRAMATE_VERSION="0.17.1"
+          curl -sSL "https://github.com/terramate-io/terramate/releases/download/v${TERRAMATE_VERSION}/terramate_${TERRAMATE_VERSION}_linux_x86_64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin terramate
       # ripgrep (rg) is required by the E1e offline meta gates (tests/meta/*.sh),
       # including the SEC security gate. The runner has no rg by default, so pin
       # it here (SEC-4: Renovate-trackable version, not apt's floating package).

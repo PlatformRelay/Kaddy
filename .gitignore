@@ -21,6 +21,9 @@ kubeconfig
 # --- OpenTofu / Terraform ---
 .terraform/
 .terraform.lock.hcl
+# E1g: commit the gridscale stack lock files for reproducible provider pinning
+# (multi-platform hashes) so CI/offline runs resolve the SAME provider build.
+!stacks/gridscale/**/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars

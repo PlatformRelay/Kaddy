@@ -1,0 +1,37 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.12.3",
+  "resource_changes": [
+    {
+      "address": "gridscale_k8s.platform",
+      "type": "gridscale_k8s",
+      "name": "platform",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "name": "kaddy-gsk",
+          "release": "1.30",
+          "node_pool": [
+            {
+              "name": "pool-0",
+              "node_count": 1,
+              "cores": 2,
+              "memory": 4,
+              "storage": 30,
+              "storage_type": "storage_insane"
+            }
+          ],
+          "labels": [
+            "owner=platform-team",
+            "service=gsk",
+            "part-of=kaddy",
+            "managed-by=terramate",
+            "track=stable",
+            "data-classification=internal",
+            "business-criticality=business-operational"
+          ]
+        }
+      }
+    }
+  ]
+}

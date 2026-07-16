@@ -84,6 +84,7 @@ tasks:
       - bash tests/meta/doc10-roadmap-status.yaml
       - bash tests/meta/batch2-smoke-wired.yaml
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
+      - bash tests/smoke/e1g-offline.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)
@@ -318,6 +319,63 @@ tasks:
     desc: E1e — live smoke bundle (needs a running kaddy-dev cluster; task cluster:up first)
     cmds:
       - bash tests/smoke/e1e-exit.sh
+
+  test:smoke:e1g:
+    desc: E1g — OFFLINE gate for gridscale day-0 IaC (terramate codegen + fmt + validate + tofu test + conftest; no cluster/API/creds)
+    cmds:
+      - bash tests/smoke/e1g-offline.sh
+
+  e1g:generate:
+    desc: E1g — regenerate Terramate codegen (provider/backend/labels) into every stack (offline, deterministic)
+    cmds:
+      - |
+        set -eu
+        if ! command -v terramate >/dev/null 2>&1; then
+          echo "terramate not installed — install to regenerate codegen (see docs/runbooks/gridscale-day0.md)"; exit 1
+        fi
+        terramate generate
+
+  e1g:up:
+    desc: "E1g — LIVE gridscale day-0 provisioning (COSTS MONEY; needs real creds). Bootstraps object-storage anchor, then network → k8s → lbaas."
+    # Auth mapping (KEY-FACT): the provider wants GRIDSCALE_UUID/_TOKEN but .envrc
+    # exports GRIDSCALE_USER_UUID/_API_KEY. Map to the TF_VAR_* the codegen'd
+    # provider reads. These are the ONLY place credentials touch the stacks.
+    env:
+      TF_VAR_gridscale_uuid: '{{.GRIDSCALE_USER_UUID}}'
+      TF_VAR_gridscale_token: '{{.GRIDSCALE_API_KEY}}'
+      TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "~/.terraform.d/plugin-cache"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        : "${GRIDSCALE_USER_UUID:?set GRIDSCALE_USER_UUID (direnv .envrc) before a live apply}"
+        : "${GRIDSCALE_API_KEY:?set GRIDSCALE_API_KEY (direnv .envrc) before a live apply}"
+        echo "LIVE gridscale provisioning — this COSTS MONEY. Ctrl-C within 5s to abort."
+        sleep 5
+        # 1) Bootstrap the state anchor with LOCAL state.
+        ( cd stacks/gridscale/object-storage && tofu init -input=false && tofu apply -auto-approve )
+        # Downstream stacks (network → k8s → lbaas) init against the S3 backend
+        # created above; supply bucket/endpoint/creds via -backend-config here.
+        # See docs/runbooks/gridscale-day0.md for the exact backend-config + the
+        # output→input wiring (network IPs → lbaas, GSK kubeconfig → ArgoCD).
+        echo "object-storage anchor up. Provision network/k8s/lbaas per the runbook (backend-config wiring)."
+
+  e1g:down:
+    desc: "E1g — LIVE ruthless teardown (destroy lbaas → k8s → network → object-storage). Run after EVERY live test (cost discipline)."
+    env:
+      TF_VAR_gridscale_uuid: '{{.GRIDSCALE_USER_UUID}}'
+      TF_VAR_gridscale_token: '{{.GRIDSCALE_API_KEY}}'
+      TF_PLUGIN_CACHE_DIR: '{{.TF_PLUGIN_CACHE_DIR | default "~/.terraform.d/plugin-cache"}}'
+    cmds:
+      - |
+        set -euo pipefail
+        : "${GRIDSCALE_USER_UUID:?set GRIDSCALE_USER_UUID before teardown}"
+        : "${GRIDSCALE_API_KEY:?set GRIDSCALE_API_KEY before teardown}"
+        # Reverse dependency order. object-storage last (it holds remote state).
+        for s in lbaas k8s network; do
+          ( cd "stacks/gridscale/${s}" && tofu destroy -auto-approve ) || true
+        done
+        ( cd stacks/gridscale/object-storage && tofu destroy -auto-approve ) || true
+        echo "teardown complete — verify in the gridscale panel that nothing lingers."
 
   bootstrap:argocd:
     desc: E1 — install pinned ArgoCD + bootstrap Gateway overlay (idempotent)

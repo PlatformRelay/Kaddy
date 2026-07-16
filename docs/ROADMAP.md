@@ -107,11 +107,13 @@ provides Cilium Gateway + default StorageClass
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1g-S01 | Terramate root + gridscale provider (v2) + object-storage state backend | ⬜ |
-| E1g-S02 | Network + firewall + IP stack | ⬜ |
-| E1g-S03 | GSK cluster (`gridscale_k8s`) + node pools | ⬜ |
-| E1g-S04 | LBaaS entry point in front of Gateway | ⬜ |
+| E1g-S01 | Terramate root + gridscale provider (`~> 2.2`) + object-storage state backend | 🟨 offline-authored (live-proof pending) |
+| E1g-S02 | Network + firewall + IP stack | 🟨 offline-authored (live-proof pending) |
+| E1g-S03 | GSK cluster (`gridscale_k8s`) + node pool | 🟨 offline-authored (live-proof pending) |
+| E1g-S04 | LBaaS entry point in front of Gateway | 🟨 offline-authored (live-proof pending) |
 | E1g-S05 | Retrieve kubeconfig + re-point ArgoCD bootstrap | ⬜ |
+
+🟨 = IaC authored + proven by the OFFLINE gate (`task test:smoke:e1g`: terramate codegen, `tofu fmt`/`validate`/`test` with mocked provider, conftest plan policy). Live provisioning (`task e1g:up`) is a later serialized step. Runbook: [docs/runbooks/gridscale-day0.md](runbooks/gridscale-day0.md).
 
 **Exit criteria (epic):** Same GitOps apps sync on GSK; LBaaS public URL works; Dex issuer URL updated for public domain.
 
@@ -127,7 +129,7 @@ provides Cilium Gateway + default StorageClass
 | E1b-S01 | `modules/labels` with outputs + naming helper | ✅ |
 | E1b-S02 | `tofu test` fixtures for labels and names | ✅ |
 | E1b-S03 | conftest policy — mandatory keys on plans | ✅ |
-| E1b-S04 | Terramate codegen injects labels into all stacks | ⬜ (deferred to E1g — D-021/S04 descope) |
+| E1b-S04 | Terramate codegen injects labels into all stacks | 🟨 offline-authored in E1g (codegen `_terramate_generated_labels.tf` in every gridscale stack) |
 | E1b-S05 | Kyverno require-labels ClusterPolicy | ✅ |
 
 ### E1b-S02 — tofu test fixtures
