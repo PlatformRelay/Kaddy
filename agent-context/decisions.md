@@ -378,3 +378,18 @@ Drop the "Start Docker" operator task. Live E1e gate prerequisite = podman machi
 before `task cluster:up`.
 **Counterpoints (kept):** Docker Desktop remains a supported alternate in docs for other machines;
 this entry records *this* operator environment so agents stop asking for Docker here.
+
+## D-036 — Argo F-01 GitOps unblock: Option A
+
+**Date:** 2026-07-16  
+**Context:** Argo `policies` could not sync its mulligan NetworkPolicies because AppProject `platform`
+did not permit `mulligan`; the workloads sync also contained a caddy-origin duplicate `containerPort:
+8080`.  
+**Decision:** **Option A — two scoped GitOps fixes.** Coordinator executed without waiting: permit
+`mulligan` in the platform AppProject and retain only the `http:8080` port. Rebased onto current main
+(`a9a5f79`, E9-S03 intact), landed PR #13 @ `9f18ebf`, hard-refreshed + synced `root`/`policies`/
+`workloads` on `kind-kaddy-dev`.  
+**Outcome:** apps Synced+Healthy; mulligan NetPols=2 (+1 CNP); caddy-mvp NetPols=5 (+2 CNP).  
+**Counterpoints (agent, kept):** CI Chainsaw `security-mulligan-netpol` still observed an unauthorized
+cross-ns curl succeeding after policy apply — separate from the GitOps destination/port blockers;
+tracked as residual live-enforcement debt, not a merge stop for the scoped fix.

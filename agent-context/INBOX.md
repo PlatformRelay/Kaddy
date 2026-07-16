@@ -4,70 +4,73 @@ Items waiting on the operator. Answered decisions move to `decisions.md`.
 
 ## Decisions
 
-### D-034 — Land leftover E9 operator S01/S02 onto main? (CRD / public API)
+### D-036 — Affirm coordinator choice (A) — Argo F-01 unblocks
 
-**Context:** Rate-limited `/agent-loop-auto` left a complete branch
-`lane/e9-operator-s01` @ `7fa7e2c` in `.worktrees/e9-operator` (kubebuilder scaffold + CRD types +
-`caddyadmin` client + reconcilers; S01+S02 ticked in that branch's `tasks.md`). Gates were green in
-the worker session; **not** on `origin/main`. Auto-merge rules forbid silent land of **public API /
-CRD** changes even when APPROVE.
+**Status:** EXECUTED 2026-07-16 (awaiting affirmation). See `decisions.md`.
+**Done:** PR #13 @ `9f18ebf` — AppProject `mulligan` + drop duplicate Rollout port; Argo
+`policies`/`workloads`/`root` Synced; netpols present in mulligan + caddy-mvp.
 
-**Options:**
-- **(A) Land now** — rebase onto current main, re-run operator envtest + repo `task verify`,
-  tech-review, ff-push to `main`. Accepts new CRDs (`Caddy`/`CaddySite`) as v0.x surface.
-- **(B) Hold until E9-S03** — keep branch; land only with observability bundle + Taskfile wiring.
-- **(C) Park / delete branch** — E9 remains optional post E1–E8; discard until explicitly activated.
+**Options (for affirmation):**
+- **(A) Recommended / chosen** — two small GitOps fixes → land → re-sync
+- **(B)** Broaden AppProject to all namespaces
+- **(C)** Leave OutOfSync; document debt only
 
-**Recommendation: (B).** Rationale: S01/S02 without S03 + root Taskfile wiring leaves a half-wired
-operator module on main; holding until the exit gate (`envtest` + `task test`) is honest. (A) is fine
-if the interview wants the CRD story visible ASAP.
+**Answer / instructions:** _operator affirms or overrides_
 
-**Answer / instructions:** _(operator fills — ask via AskQuestion)_
+### D-034 — ANSWERED 2026-07-16 → decisions.md — Land E9 S01/S02 onto main
 
----
+**Status:** ANSWERED — **(A) land now**. **DONE:** PR #12 @ `44aaf84`. E9-S03 followed (PR #15).
 
 ### D-026 — ANSWERED 2026-07-15 → decisions.md — Marshal `caddy_*` alerts direction
 
-**Status:** ANSWERED 2026-07-15 — operator chose **(A) park**. Recorded in decisions.md (D-026).
+**Status:** ANSWERED — **(A) park**.
 
 ### D-025 — ANSWERED 2026-07-15 → decisions.md
 
-Pivot phase-1 substrate to **local kind + Cilium** (P0 `e1e-kind-local-cluster`); amends D-017.
-**Operator runtime (updated 2026-07-16):** this workstation has **Podman only** (no Docker Desktop /
-colima). E1e already supports podman (`KIND_EXPERIMENTAL_PROVIDER=podman`); **rootful** podman is
-required for Cilium. See D-035.
+kind + Cilium substrate; Podman-only workstation (D-035).
 
 ### D-024 — ANSWERED 2026-07-15 → decisions.md
 
-Do **not** hold. See decisions.md.
+Do **not** hold.
 
 ---
 
 ## Operator tasks
 
-- [ ] **Re-sync Argo apps `policies` + `workloads`** — E11-S02 (2026-07-16) found both **OutOfSync**;
-      mulligan + caddy-mvp have **zero** in-cluster NetworkPolicies despite manifests on `main`
-      (F-01 still P1). Also refresh `root` so `caddy-mvp-monitoring` is discovered.
-- [x] **Enable GitHub Pages (`build_type=workflow`)** — DONE 2026-07-16. Verified live:
-      `https://platformrelay.github.io/Kaddy/` HTTP 200 (scorecard-pages run 29511538700).
-- [x] **Container runtime** — workstation is **Podman-only** (no Docker). Recorded as D-035; start
-      rootful podman machine before `task cluster:up` when a live E1e gate is needed.
-- [x] **`direnv allow`** — DONE 2026-07-16 (operator).
-- [x] **Merge open PRs/MRs** — none open as of 2026-07-16 evening (`gh pr list` empty).
-- [ ] **D-034** — answer via AskQuestion (land A / hold B / park C) before any E9 land.
-- [ ] Review design-phase commit(s) on `main` before starting `/agent-loop` (optional; largely
-      superseded by later lands — confirm or waive).
-- [ ] Review review-authored artifacts: TF-09/10/11 specs, `verify.yaml`, `agent-context/GUIDELINES.md`
-      (optional independent pass — confirm or waive).
-- [x] ~~Build driving-range cluster (phase 0) before kaddy E1~~ — superseded by D-025
-- [x] Decide D-021 / D-022 / D-023 / D-014 / D-013 / local-first / Dex OAuth / lab access — see decisions.md
+- [x] **Re-sync Argo apps `policies` + `workloads`** — DONE 2026-07-16 via D-036 land + sync.
+      `policies`/`workloads`/`root` Synced+Healthy; mulligan NetPol×2 (+CNP); caddy-mvp NetPol×5 (+CNP).
+- [ ] **release-0.1.1** — changelog / tag / publish when you want packaging (do not auto-start).
+- [ ] **Affirm D-036 (A)** — or override.
+- [x] Enable GitHub Pages — DONE.
+- [x] Container runtime Podman-only (D-035).
+- [x] `direnv allow`.
+- [x] D-034 land E9 — DONE (PR #12 + S03 PR #15).
+- [x] Design-phase + review-artifact confirmations.
 
 ## Reviews / PRs
 
-_(none open — PRs #8/#10/#11 merged 2026-07-16)_
+- [x] PR #12 E9-S01/S02 — https://github.com/PlatformRelay/Kaddy/pull/12 @ `44aaf84`
+- [x] PR #15 E9-S03 — https://github.com/PlatformRelay/Kaddy/pull/15 @ `a9a5f79`
+- [x] PR #14 E12 ROADMAP sync — https://github.com/PlatformRelay/Kaddy/pull/14 @ `a9fb35a`
+- [x] PR #13 D-036 F-01 — https://github.com/PlatformRelay/Kaddy/pull/13 @ `9f18ebf`
+
+
+## CI watch (2026-07-16) — tip `9f18ebf` (no fix landed)
+
+**Verdict:** No product fix opened. Residual reds are advisory / known flake — do not thrash.
+
+| Check | Run | Conclusion | Notes |
+| --- | --- | --- | --- |
+| verify | [29525813258](https://github.com/PlatformRelay/Kaddy/actions/runs/29525813258) | **success** | tip `9f18ebf` |
+| trivy / image-digests | 29525813201 / 29525813208 | **success** | tip |
+| chainsaw (D-036 twin) | [29525798337](https://github.com/PlatformRelay/Kaddy/actions/runs/29525798337) | **success** | same SHA `9f18ebf` |
+| chainsaw (AppProject assert push) | [29525813203](https://github.com/PlatformRelay/Kaddy/actions/runs/29525813203) | **failure** | `security-mulligan-netpol` / `direct-cross-ns-curl-denied`: expected curl deny, got HTML 200 from `mulligan-stable` |
+| chainsaw (E9-S03) | [29525700311](https://github.com/PlatformRelay/Kaddy/actions/runs/29525700311) | **success** | `a9a5f79` |
+| spec-coverage-strict (in verify wf) | job on 29525813258 | **failure** (advisory) | `MISSING file: tests/chainsaw/caddy-mvp/vm-variant/chainsaw-test.yaml` (REQ-CADDY-S01-02) — pre-existing; non-blocking |
+
+**Why no fix PR:** Same-SHA twin chainsaw **passed**; failure matches known live netpol-enforcement flake / possible concurrent-run interference on shared kind cluster (two tip chainsaws overlapped). Not a clear regression from E9 / D-036 / E12 docs lands. Track under existing “Chainsaw netpol enforcement probe polish”; consider serializing chainsaw concurrency if flakes persist.
 
 ## Audits
 
-- **AUDIT 2026-07-15** — baseline NEEDS-WORK / AT-RISK → remediation + D-026 park. See archive.
-- **AUDIT 2026-07-16** mid-session + **final** (`HEALTH-AUDIT-2026-07-16-final.md`) — RELEASE-READY for
-  v0.1.0 trajectory; residual operator items above + D-034.
+- Residual: release/phase-2; optional live Chainsaw netpol enforcement probe polish; E12b art
+  (operator/manual); deferred Loki-ruler / Grafana OAuth→E10.
