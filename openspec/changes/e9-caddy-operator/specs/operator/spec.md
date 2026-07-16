@@ -80,7 +80,7 @@ arrays, PUT inserts, PATCH replaces)
 ---
 
 ## REQ-E9-EXIT: Gate before merge
-**Test:** `internal/controller/e9-exit_test.go`
-**Priority:** must  
+**Test:** `operator/internal/controller/e9-exit_test.go`
+**Priority:** must
 
 **Verify:** `task test` includes operator envtest package; coverage ≥ 80% on `internal/controller`
