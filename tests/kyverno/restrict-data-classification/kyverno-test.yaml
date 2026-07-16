@@ -26,3 +26,16 @@ results:
     resources:
       - default/missing-label-pod
     result: fail
+  - policy: restrict-data-classification
+    rule: validate-data-classification-value
+    kind: Pod
+    resources:
+      - argo-rollouts/upstream-rollouts-pod
+      - gateway/clubhouse-redir-4711
+    result: skip
+  - policy: restrict-data-classification
+    rule: validate-data-classification-value
+    kind: Pod
+    resources:
+      - gateway/rogue-unlabeled-pod
+    result: fail

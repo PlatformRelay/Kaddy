@@ -46,3 +46,44 @@ spec:
   containers:
     - name: app
       image: registry.k8s.io/coredns/coredns:v1.11.1
+---
+# E1c cutover excludes (narrow, documented in the policy): the vendored
+# upstream Argo Rollouts controller pod carries no kaddy keys...
+apiVersion: v1
+kind: Pod
+metadata:
+  name: upstream-rollouts-pod
+  namespace: argo-rollouts
+  labels:
+    app.kubernetes.io/name: argo-rollouts
+spec:
+  containers:
+    - name: app
+      image: quay.io/argoproj/argo-rollouts:v1.8.3
+---
+# ...the E4 smoke probes are name+namespace-scoped excludes...
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clubhouse-smoke-12345
+  namespace: gateway
+  labels:
+    run: clubhouse-smoke-12345
+spec:
+  containers:
+    - name: probe
+      image: curlimages/curl:8.11.0
+---
+# ...and any OTHER unlabeled pod in the gateway namespace stays DENIED
+# (proves the probe exclude is name-scoped, not namespace-wide).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rogue-unlabeled-pod
+  namespace: gateway
+  labels:
+    app.kubernetes.io/name: rogue
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine

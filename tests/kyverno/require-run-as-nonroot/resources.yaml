@@ -55,3 +55,44 @@ spec:
   containers:
     - name: app
       image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+# E1c cutover excludes (narrow, documented in the policy): the Alloy
+# DaemonSet tails /var/log as root (name+namespace-scoped skip)...
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alloy-rk6cf
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alloy
+spec:
+  containers:
+    - name: alloy
+      image: grafana/alloy:v1.10.0
+---
+# ...the ephemeral e1e-smoke fixture namespace is skipped...
+apiVersion: v1
+kind: Pod
+metadata:
+  name: echo-5bc498b866-aaaaa
+  namespace: e1e-smoke
+  labels:
+    app: echo
+spec:
+  containers:
+    - name: echo
+      image: hashicorp/http-echo:1.0.0
+---
+# ...and any OTHER root-running monitoring pod stays DENIED (proves the
+# alloy exclude is name-scoped, not namespace-wide).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rogue-root-pod
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: rogue
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine

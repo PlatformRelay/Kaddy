@@ -22,3 +22,16 @@ results:
       - default/bad-pod-unset
       - default/bad-pod-explicit-root
     result: fail
+  - policy: require-run-as-nonroot
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - monitoring/alloy-rk6cf
+      - e1e-smoke/echo-5bc498b866-aaaaa
+    result: skip
+  - policy: require-run-as-nonroot
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - monitoring/rogue-root-pod
+    result: fail

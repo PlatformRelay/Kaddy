@@ -27,3 +27,16 @@ results:
     resources:
       - kube-system/system-pod
     result: skip
+  - policy: require-kaddy-labels
+    rule: require-mandatory-adr0301-labels
+    kind: Pod
+    resources:
+      - argo-rollouts/upstream-rollouts-pod
+      - gateway/clubhouse-smoke-12345
+    result: skip
+  - policy: require-kaddy-labels
+    rule: require-mandatory-adr0301-labels
+    kind: Pod
+    resources:
+      - gateway/rogue-unlabeled-pod
+    result: fail

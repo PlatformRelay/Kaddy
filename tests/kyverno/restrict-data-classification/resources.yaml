@@ -54,3 +54,42 @@ spec:
   containers:
     - name: app
       image: nginxinc/nginx-unprivileged:1.29.0-alpine
+---
+# E1c cutover excludes (mirror require-kaddy-labels; narrow, documented in
+# the policy): upstream rollouts controller + name-scoped E4 smoke probe
+# skip; any other label-less gateway pod still fails.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: upstream-rollouts-pod
+  namespace: argo-rollouts
+  labels:
+    app.kubernetes.io/name: argo-rollouts
+spec:
+  containers:
+    - name: app
+      image: quay.io/argoproj/argo-rollouts:v1.8.3
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clubhouse-redir-4711
+  namespace: gateway
+  labels:
+    run: clubhouse-redir-4711
+spec:
+  containers:
+    - name: probe
+      image: curlimages/curl:8.11.0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rogue-unlabeled-pod
+  namespace: gateway
+  labels:
+    app.kubernetes.io/name: rogue
+spec:
+  containers:
+    - name: app
+      image: nginxinc/nginx-unprivileged:1.29.0-alpine
