@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# SEC-5 (audit-remediation WS3): every GitHub Action ref in EVERY workflow is
+# pinned to a full 40-char commit SHA (human-readable version as a trailing
+# comment, Renovate-compatible). Extends the trivy-only assert in
+# tests/meta/e1c-s02-01-workflow.yaml repo-wide so a new or edited workflow
+# cannot reintroduce tag-pinned (mutable) action refs.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+shopt -s nullglob
+workflows=("${ROOT}/.github/workflows/"*.yaml "${ROOT}/.github/workflows/"*.yml)
+[[ ${#workflows[@]} -gt 0 ]] || fail "no workflows found under .github/workflows/"
+
+count=0
+for wf in "${workflows[@]}"; do
+  while IFS= read -r line; do
+    # Local reusable workflows/actions (uses: ./...) have no SHA to pin.
+    if echo "$line" | grep -qE 'uses:[[:space:]]*\./'; then
+      continue
+    fi
+    echo "$line" | grep -qE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)' \
+      || fail "unpinned or non-SHA action ref in ${wf#"${ROOT}"/}: ${line}"
+    count=$((count + 1))
+  done < <(grep -E '^[[:space:]]*-?[[:space:]]*uses:' "$wf" || true)
+done
+
+[[ ${count} -gt 0 ]] || fail "no 'uses:' action refs matched — assert is vacuous"
+
+echo "OK: SEC-5 — ${count} action refs SHA-pinned across all workflows"

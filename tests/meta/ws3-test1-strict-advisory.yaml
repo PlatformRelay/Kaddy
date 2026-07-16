@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# TEST-1 (audit-remediation WS3 — ADVISORY, NOT blocking): the CI verify
+# workflow must carry a STRICT_TEST_FILES=1 spec-coverage job wired as
+# advisory (continue-on-error: true). Operator: "having a gate is difficult
+# at this point" — the strict check must run and report, but must not be a
+# required/blocking check until the spec Test: artifacts stabilize.
+# Offline meta test — asserts the wiring, not the strict result itself.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/verify.yaml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf"
+
+# Extract the spec-coverage-strict job block (job key at 2-space indent up to
+# the next job key at the same indent).
+job_block="$(awk '
+  /^  spec-coverage-strict:[[:space:]]*$/ { f=1; print; next }
+  f && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ { exit }
+  f { print }
+' "$wf")"
+
+[[ -n "$job_block" ]] \
+  || fail "verify.yaml has no 'spec-coverage-strict' job (TEST-1 advisory unwired)"
+
+# It runs the strict spec-coverage gate...
+grep -qE 'STRICT_TEST_FILES=1' <<<"$job_block" \
+  || fail "spec-coverage-strict job does not set STRICT_TEST_FILES=1 (TEST-1)"
+grep -qE 'verify-spec-coverage\.sh|task[[:space:]]+test:spec' <<<"$job_block" \
+  || fail "spec-coverage-strict job does not invoke the spec-coverage gate (TEST-1)"
+
+# ...and is ADVISORY: continue-on-error so a red strict run never blocks merge.
+grep -qE 'continue-on-error:[[:space:]]*true' <<<"$job_block" \
+  || fail "spec-coverage-strict job must be advisory (continue-on-error: true) — operator direction, NOT a blocking gate"
+
+echo "OK: TEST-1 — STRICT_TEST_FILES=1 spec coverage wired as advisory (non-blocking) in verify.yaml"
