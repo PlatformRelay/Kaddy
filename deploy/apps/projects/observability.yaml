@@ -6,10 +6,11 @@
 # Members: observability (nested app-of-apps) and monitoring (marshal
 # rules/dashboards/probes). The Helm grandchildren kube-prometheus-stack,
 # loki and alloy now declare `project: observability` (SEC-17 — the follow-up
-# noted here previously; blackbox-exporter was folded into the monitoring app
-# as manifests, so it is no longer a standalone Application). Helm chart repos
-# are pinned here — these are the ONLY non-Git sources any kaddy Application
-# may use.
+# noted here previously). blackbox-exporter
+# (deploy/monitoring/blackbox/blackbox-exporter.yaml) is STILL a standalone
+# Application on `project: default`; migrating it here is out of this lane's
+# 4-file boundary and remains a documented follow-up. Helm chart repos are
+# pinned here — these are the ONLY non-Git sources any kaddy Application may use.
 #
 # clusterResourceWhitelist is wider than the other projects because
 # kube-prometheus-stack legitimately installs CRDs, cluster RBAC and an
