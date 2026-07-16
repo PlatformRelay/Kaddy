@@ -49,7 +49,9 @@ key **`argoproj-labs/gatewayAPI`** shifting the tenant HTTPRoute `backendRefs[].
 `caddy-origin-stable`/`caddy-origin-canary` Services (steps 20% → 50%, E7 pattern) — and
 `nginx-proxy` as a Rollout with `blueGreen` strategy (`activeService`/`previewService`, mulligan-bg
 pattern); an `AnalysisTemplate` querying the live Prometheus for the canary's Caddy SLI (5xx share
-of `caddy_http_requests_total{track="canary"}`) gates promotion; the `workloads` Application gains
+of `caddy_http_request_duration_seconds_count{code=~"5..",track="canary"}` — Caddy's
+status-code-labelled series; `caddy_http_requests_total` carries no `code` label, and `track`
+reaches Prometheus only via the monitor's `podTargetLabels` projection) gates promotion; the `workloads` Application gains
 an `ignoreDifferences` entry (jqPathExpressions on `.spec.rules[].backendRefs[].weight`) for the
 tenant HTTPRoute so Argo CD does not fight the controller
 **When** a new revision rolls out and the analysis evaluates

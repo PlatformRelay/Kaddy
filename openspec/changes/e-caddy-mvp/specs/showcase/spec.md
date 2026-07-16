@@ -57,7 +57,7 @@ are scraped — turning "Caddy vs nginx" into a designed comparison, not two unr
 
 **Verify:**
 ```bash
-kubectl get deploy -n caddy-mvp nginx-proxy caddy-origin \
+kubectl get rollouts.argoproj.io -n caddy-mvp nginx-proxy caddy-origin \
   -o jsonpath='{.items[*].status.availableReplicas}' | grep -qE '1 1|[1-9] [1-9]'
 ```
 
