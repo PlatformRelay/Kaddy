@@ -1,8 +1,10 @@
 # ROADMAP — kaddy
 
-Build order for the gridscale platform-engineering exercise. **Phase 1 underway** — the local
-substrate (E1e), labels module (E1b), and marshal monitoring rules (E5) are landed and gated on `main`;
-remaining epics run via `/agent-loop`. Each epic links an OpenSpec change under `openspec/changes/`.
+Build order for the gridscale platform-engineering exercise. **Phase 1 underway** — the brief spine
+E1e → E1 → E3 → E4 is complete and demoable (9/9 GitOps apps Synced/Healthy, clubhouse over verified
+HTTPS through the Cilium edge); labels module (E1b), marshal monitoring rules (E5), gateway spike (E2),
+and Slidev deck (E12) also landed on `main`. Remaining epics run via `/agent-loop`. Each epic links an
+OpenSpec change under `openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 
@@ -69,16 +71,16 @@ assigned (not host-curled); HTTP smoke via loopback-bound `extraPortMappings`. E
 
 ---
 
-## E1 · Platform bootstrap (kind → ArgoCD)
+## E1 · Platform bootstrap (kind → ArgoCD) ✅
 
 **OpenSpec:** [e1-day0-bootstrap](../openspec/changes/e1-day0-bootstrap/)  
 **ADR:** [0102](adr/0102-talos-immutable-substrate.md) · **Depends:** [E1e](../openspec/changes/e1e-kind-local-cluster/) local cluster Ready
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E1-S01 | Document kubeconfig / Cilium Gateway / StorageClass handoff contract | ⬜ |
-| E1-S02 | Bootstrap ArgoCD (initial Application) on the kind cluster | ⬜ |
-| E1-S03 | Verify cluster baseline (nodes Ready, default SC, Cilium LB-IPAM pool) | ⬜ |
+| E1-S01 | Document kubeconfig / Cilium Gateway / StorageClass handoff contract | ✅ |
+| E1-S02 | Bootstrap ArgoCD (initial Application) on the kind cluster | ✅ |
+| E1-S03 | Verify cluster baseline (nodes Ready, default SC, Cilium LB-IPAM pool) | ✅ |
 
 ### E1-S01 — Handoff contract
 
@@ -168,44 +170,44 @@ provides Cilium Gateway + default StorageClass
 
 ---
 
-## E2 · Gateway spike (Cilium Gateway API)
+## E2 · Gateway spike (Cilium Gateway API) ✅ (S02 weight-mutation deferred to E7)
 
 **OpenSpec:** [e2-gateway-spike](../openspec/changes/e2-gateway-spike/)  
 **ADR:** [0104](adr/0104-caddy-gateway-api.md) · **Decision:** D-019
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E2-S01 | Assert Gateway API CRDs + Cilium `GatewayClass` + LB-IPAM pool (handoff from E1e local cluster) | ⬜ |
-| E2-S02 | GitOps `Gateway` + HTTPRoute path routing + weight-mutation spike | ⬜ |
-| E2-S03 | Document fallback level (L0/L1/L2) in decision log | ⬜ |
+| E2-S01 | Assert Gateway API CRDs + Cilium `GatewayClass` + LB-IPAM pool (handoff from E1e local cluster) | ✅ |
+| E2-S02 | GitOps `Gateway` + HTTPRoute path routing + weight-mutation spike | ⬜ (deferred to E7) |
+| E2-S03 | Document fallback level (L0/L1/L2) in decision log | ✅ |
 
 **Exit criteria:** Spike report in `docs/decisions/e2-gateway-spike.md`; E7 unblocked or fallback chosen.
 
 ---
 
-## E3 · GitOps platform core
+## E3 · GitOps platform core ✅ (S04 Argo Rollouts deferred to E7)
 
 **OpenSpec:** [e3-gitops-core](../openspec/changes/e3-gitops-core/)  
 **ADR:** [0103](adr/0103-argocd-gitops.md)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E3-S01 | App-of-apps root Application (incl. `identity`, `observability`, **KSOPS**) | ⬜ |
-| E3-S02 | Observability: kube-prometheus-stack **+ Loki + Grafana Alloy** ([ADR-0108](adr/0108-logging-loki.md)) | ⬜ |
-| E3-S03 | cert-manager + Let's Encrypt **staging & prod** ClusterIssuers (HTTP-01 via Gateway) | ⬜ |
-| E3-S04 | Argo Rollouts + Gateway API plugin | ⬜ |
+| E3-S01 | App-of-apps root Application (incl. `identity`, `observability`, **KSOPS**) | ✅ |
+| E3-S02 | Observability: kube-prometheus-stack **+ Loki + Grafana Alloy** ([ADR-0108](adr/0108-logging-loki.md)) | ✅ |
+| E3-S03 | cert-manager + Let's Encrypt **staging & prod** ClusterIssuers (HTTP-01 via Gateway) | ✅ |
+| E3-S04 | Argo Rollouts + Gateway API plugin | ⬜ (deferred to E7) |
 
 ---
 
-## E4 · Sample site (clubhouse) + TLS
+## E4 · Sample site (clubhouse) + TLS ✅
 
 **OpenSpec:** [e4-clubhouse-tls](../openspec/changes/e4-clubhouse-tls/)
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E4-S01 | Static web Deployment + Service | ⬜ |
-| E4-S02 | HTTPRoute `/` → clubhouse | ⬜ |
-| E4-S03 | TLS via cert-manager — staging validate, then **prod trusted cert** + auto-renew | ⬜ |
+| E4-S01 | Static web Deployment + Service | ✅ |
+| E4-S02 | HTTPRoute `/` → clubhouse | ✅ |
+| E4-S03 | TLS via cert-manager — staging validate, then **prod trusted cert** + auto-renew | ✅ |
 
 **Given** Gateway and cert-manager are ready  
 **When** user curls `https://<host>/`  
@@ -348,7 +350,7 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ---
 
-## E12 · Slidev showcase deck
+## E12 · Slidev showcase deck 🚧
 
 **OpenSpec:** [e12-slidev-deck](../openspec/changes/e12-slidev-deck/)
 
@@ -357,7 +359,7 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E12-S01 | Slidev scaffold + reproducible static build | ⬜ |
+| E12-S01 | Slidev scaffold + reproducible static build | 🚧 (scaffold + deck content + visual layer ✅ on main; failing-test + CI build pending) |
 | E12-S02 | Word-by-word speaker notes on every slide (5–10 min script) | ⬜ |
 | E12-S03 | Live iframes embed running platform surfaces (GIF fallback) | ⬜ |
 | E12-S04 | Narrative beats: pitch → arch → security → auto-gen money-shot → mulligan → marshal → scorecard | ⬜ |
@@ -408,9 +410,9 @@ bootstrapping. See driving-range [ROADMAP](../../driving-range/docs/ROADMAP.md) 
 **Phase 1 — kaddy on local kind ($0 cloud)**
 
 1. **E1e** (kind + Cilium substrate — ✅ landed)  
-2. E1 (kubeconfig handoff + ArgoCD) → E1b ∥ E1c  
-3. E2 (gateway spike)  
-4. E3 → E4 ∥ E5 → E6 → E7 → E8 (evidence from local cluster)
+2. **E1** (kubeconfig handoff + ArgoCD — ✅ landed) → E1b ∥ E1c  
+3. **E2** (gateway spike — ✅ landed; weight-mutation → E7)  
+4. **E3** → **E4** (✅ landed) ∥ E5 → E6 → **E7** → E8 (evidence from local cluster)
 
 **Phase 2 — gridscale lab (after E3–E7 green locally)**
 

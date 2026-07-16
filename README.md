@@ -70,9 +70,14 @@ task test           # L0 tofu test · L1 conftest + promtool · L2 Chainsaw
 
 ## Status
 
-**Phase 1 underway.** The local **kind + Cilium** substrate (E1e), the **labels** module (E1b), and
-the **marshal** monitoring rules (E5) are landed and gated on `main`; remaining epics run via
-`/agent-loop` per the [ROADMAP](docs/ROADMAP.md). Phase 2 (gridscale GSK) is deferred.
+**Brief spine complete and demoable.** The E1e → E1 → E3 → E4 sequence is verified live: 9/9 GitOps
+apps Synced/Healthy, clubhouse served over verified HTTPS through the Cilium Gateway, observability
+spine (Prometheus/Alertmanager/Grafana + Loki/Alloy) running via GitOps. The gateway spike (E2),
+labels module (E1b), marshal monitoring rules (E5), and Slidev showcase deck (E12) are also on `main`.
+A data-flow security review is at
+[docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md). Next:
+close the alert "fire" leg (E5 completion) and progressive delivery (E7). Phase 2 (gridscale GSK)
+is deferred. Full plan: [ROADMAP](docs/ROADMAP.md).
 
 ## Reference material
 

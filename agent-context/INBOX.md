@@ -66,3 +66,9 @@ _(none)_
   emits; (3) wire the good gates (STRICT_TEST_FILES, E1e meta, gitleaks) into CI.
   → `agent-context/archive/audits/HEALTH-AUDIT-2026-07-15.md` · register: `TECH-DEBT-REGISTER.md`
   → **Remediation plan:** `openspec/changes/audit-remediation-2026-07/` (WS1–WS5 + WONTFIX + ROADMAPPED). Minted platform MVP epic `e-caddy-mvp`; marshal decision D-026 **ANSWERED (A — park)**; WS1 unblocked.
+- **AUDIT 2026-07-16** — Mid-session checkpoint (replayable): **NEEDS-WORK — trajectory strongly
+  positive**. 22 fixed / 0 regressed / 24 open (P0×0 P1×5 P2×14 P3×5). Brief spine E1e→E1→E3→E4
+  verified live (9/9 apps Synced/Healthy; clubhouse over verified HTTPS through Cilium Gateway). Top
+  remediation: close the alert "fire" leg — sync `deploy/monitoring/` via app-of-apps + re-point
+  marshal alerts at the actually-served site (ARCH-8 + ARCH-2 + DIR-2).
+  → `agent-context/archive/audits/HEALTH-AUDIT-2026-07-16.md`

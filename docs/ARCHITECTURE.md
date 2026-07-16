@@ -93,7 +93,7 @@ See [ADR-0301](adr/0301-resource-labeling-convention.md).
 | Sample site | clubhouse | E4 |
 | Local kind substrate | kind + Cilium | E1e (landed) |
 | Deferred Talos spike | driving-range | optional maturity-contrast (D-025) |
-| Tenant Caddy (brief) | Backstage scaffold | E10 (optional) |
+| Tenant Caddy (brief) | Backstage scaffold | [e-caddy-mvp](../openspec/changes/e-caddy-mvp/) (ADR-0104) |
 
 **Platform ingress is Cilium Gateway API** — not Caddy. Caddy satisfies the hiring brief as a **tenant**
 product scaffolded via Backstage (ADR-0104, D-019).
