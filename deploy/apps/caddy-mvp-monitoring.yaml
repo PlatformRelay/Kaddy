@@ -27,6 +27,8 @@ spec:
     path: deploy/caddy-mvp/monitoring
     directory:
       recurse: true
+      # Plain promtool projection — not a K8s manifest (no apiVersion/kind).
+      exclude: '{**/marshal-caddy.rules.yaml,**/README.md}'
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
