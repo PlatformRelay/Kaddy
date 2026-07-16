@@ -12,7 +12,7 @@ tests=(
   e5-s02-01.sh   # probe_success == 1
   e5-s02-02.sh   # probe_http_status_code == 200
   e5-s05-01.sh   # kaddy-marshal dashboard served by Grafana
-  e5-s08-01.sh   # marshal alerts data-source-managed in Grafana
+  e5-s08-02.sh   # marshal alerts data-source-managed in Grafana
   e5-s04-01.sh   # Alertmanager receiver path
   e5-s07-01.sh   # clubhouse logs in Loki
   e5-s07-02.sh   # kaddy labels on log streams
