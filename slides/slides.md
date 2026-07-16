@@ -27,6 +27,11 @@ Narrative annotations (E12-S04): each section divider carries `sectionTime`
 (seconds budgeted for the section, summing to a 5–10 min walkthrough) and the
 seven spec beats carry `beat:` markers — pitch → architecture → security →
 portal-hero → mulligan → marshal → scorecard (tests/deck/narrative-beats.sh).
+
+Speaker notes (E12-S02): the LAST comment block on every slide is the
+verbatim voiceover — read it word for word; the whole script is budgeted for
+a 5–10 minute recording (tests/deck/speaker-notes-coverage.sh +
+tests/deck/script-wordcount.sh).
 -->
 
 <CoverArt
@@ -34,6 +39,11 @@ portal-hero → mulligan → marshal → scorecard (tests/deck/narrative-beats.s
   kicker="§ 00 · The first tee"
   title="kaddy — a caddie for your websites"
 />
+
+<!--
+Hi, I'm Konrad. This is kaddy — my answer to the gridscale platform
+engineering exercise.
+-->
 
 ---
 layout: cover
@@ -55,10 +65,12 @@ github.com/PlatformRelay/Kaddy
 </div>
 
 <!--
-Speaker: The brief says "install Caddy, serve a page, monitor it, alert on it."
-I could have written a bash script on a VM. Instead I built the platform that
-script would be one tenant of — and I did it spec-first, secured, and gated.
-That is the story this deck tells.
+The exercise says: install Caddy on a VM, serve a page, scrape it with
+Prometheus, and fire an alert. I could have solved that with a bash script in
+an afternoon. Instead, I built the platform that script would be one tenant
+of — spec-driven, security-first, and Kubernetes-native. Over the next nine
+minutes I'll show you what is actually running, what is deliberately still on
+the drawing board, and why that distinction is the whole point of how I work.
 -->
 
 ---
@@ -71,6 +83,11 @@ sectionTime: 35
   kicker="§ 01 · The one-line letter"
   title="The brief, reframed"
 />
+
+<!--
+First, let's read the brief again — carefully. There's a bigger question
+hiding in that one line.
+-->
 
 ---
 layout: statement
@@ -93,9 +110,12 @@ How do you run monitored, TLS-terminated websites as a repeatable, governed prod
 </div>
 
 <!--
-The exercise is a proxy for "can you build and operate a platform." So I treated
-the Caddy-on-a-VM task as ONE tenant of a Website-as-a-Service platform —
-"clubhouse" — rather than the whole deliverable.
+Taken literally, the brief is one afternoon of work: a VM, a Caddyfile, a
+scrape config, one alert rule. But that answers the letter of the exercise,
+not the question behind it. A platform team isn't hiring someone to install
+one web server. They're asking: how do you run monitored, TLS-terminated
+websites as a repeatable, governed product? So that is the question I chose
+to answer — with the original task kept fully intact inside it.
 -->
 
 ---
@@ -108,6 +128,10 @@ sectionTime: 45
   kicker="§ 02 · One hole, whole course"
   title="From task to platform"
 />
+
+<!--
+So kaddy treats the exercise as one hole on a much bigger course.
+-->
 
 ---
 layout: two-cols
@@ -143,8 +167,13 @@ platform edge, not as a bespoke script.
 </div>
 
 <!--
-Naming is not decoration: each name maps to a capability and a directory. It
-keeps incident conversations precise — "marshal is firing" beats "the alert thing."
+Concretely, the Caddy task becomes one tenant of a Website-as-a-Service
+platform. The sample site is called clubhouse, and it's reached through the
+platform edge like every other tenant. Observability, alerting, and
+progressive delivery are platform features every tenant inherits — not glue
+that gets rebuilt per site. And the naming isn't decoration: marshal is
+alerting, mulligan is rollback, scorecard is evidence. Each name maps to a
+directory and a capability, so incident conversations stay precise.
 -->
 
 ---
@@ -157,6 +186,11 @@ sectionTime: 45
   kicker="§ 03 · The honest scorecard"
   title="What is actually landed vs designed"
 />
+
+<!--
+Before the architecture, the credibility slide: what's real today, and what
+is still design.
+-->
 
 ---
 layout: statement
@@ -205,9 +239,14 @@ Phase 1 runs live on a $0 local cluster — and every "landed" claim has a gate 
 </div>
 
 <!--
-This is the single most important slide for credibility. Everything I claim as
-"running" I can defend; everything else I call designed. That honesty IS the
-senior signal.
+I'll be precise here, because a senior audience will check. Running and gated
+on main today: the kind-plus-Cilium substrate, ArgoCD with an app-of-apps —
+nine of nine applications synced and healthy — the full observability spine
+with Prometheus, Alertmanager, Grafana, Loki and Alloy, clubhouse served over
+verified HTTPS through the Cilium edge, promtool-tested alert rules, and Argo
+Rollouts shifting live traffic weights. Still designed, not running: the
+Alertmanager receiver, the Crossplane Website XRD, Dex, and the Backstage
+portal. Everything I claim, I can defend.
 -->
 
 ---
@@ -221,6 +260,10 @@ sectionTime: 50
   kicker="§ 04 · Two courses, one blueprint"
   title="Architecture — two phases, one set of manifests"
 />
+
+<!--
+Now the architecture — two phases, one blueprint.
+-->
 
 ---
 layout: default
@@ -269,9 +312,13 @@ Same GitOps manifests target both substrates. Phase 1 (**kind + Cilium**, landed
 </div>
 
 <!--
-Key point: portability. I did not write one thing for local and another for
-gridscale. The edge (Cilium Gateway API) matches so phase 2 is a re-sync, not a
-rewrite. Caddy is a tenant reached THROUGH the edge, never the edge itself.
+The design principle is portability. Everything is GitOps: the deploy
+directory is the single source of truth, and ArgoCD converges the cluster
+onto it. Phase one runs on a local kind cluster with Cilium — zero cloud
+spend. Phase two is gridscale GSK with LBaaS in front. Critically, both
+phases share the same manifests and the same edge shape — Cilium Gateway API
+— so the promotion to gridscale is a re-sync, not a rewrite. And Caddy is a
+tenant behind that edge, never the edge itself.
 -->
 
 ---
@@ -284,6 +331,10 @@ sectionTime: 35
   kicker="§ 05 · The practice green"
   title="Substrate — local kind + Cilium"
 />
+
+<!--
+A quick look at the substrate underneath — the practice green.
+-->
 
 ---
 layout: two-cols
@@ -324,9 +375,12 @@ documented, not hidden.
 </div>
 
 <!--
-D-025 is a good story to tell live: I tried the harder path (bare Talos), it cost
-hours without a cluster, so I pivoted to kind to keep momentum and parked Talos as
-an optional "look how deep I can go" spike. That is real engineering judgment.
+The local cluster is kind running Kubernetes 1.33 with Cilium 1.18 as the
+CNI — kube-proxy replacement, Gateway API, and LB-IPAM. No MetalLB, no
+host-network hacks, versions pinned, no secrets in git. And I'll own the
+detour: I started on a three-node Talos cluster, burned hours on libvirt
+yak-shaving, and made the documented call to park it and keep momentum on
+kind. That trade-off is written down in the decision log, not hidden.
 -->
 
 ---
@@ -339,6 +393,10 @@ sectionTime: 45
   kicker="§ 06 · The greenkeepers' scroll"
   title="GitOps — ArgoCD app-of-apps"
 />
+
+<!--
+Here's GitOps doing its job — the greenkeepers and their scroll.
+-->
 
 ---
 layout: default
@@ -391,9 +449,14 @@ Every `Application` carries the mandatory ADR-0301 label set (`owner`, `service`
 </div>
 
 <!--
-The root Application's committed targetRevision stays `main`; a lane proves itself
-by applying a runtime-overridden copy pointed at the branch. Committed truth is
-never the un-merged branch. That discipline keeps main always-deployable.
+This is live. A single root application watches deploy-slash-apps and
+discovers the children: gateway, observability, identity, platform core,
+workloads — nine of nine synced and healthy. Self-heal and prune are on, so
+drift gets raked back and deleted manifests de-register. One discipline I
+hold: the committed target revision is always main. A feature branch proves
+itself on a runtime override, but committed truth is never an unmerged
+branch. That keeps main permanently deployable — and what you see here is the
+actual ArgoCD UI.
 -->
 
 ---
@@ -407,6 +470,10 @@ sectionTime: 45
   kicker="§ 07 · The gatehouse inspection"
   title="Security & governance"
 />
+
+<!--
+Security next — the gatehouse, where every bag gets inspected.
+-->
 
 ---
 layout: default
@@ -463,10 +530,14 @@ Regulatory grounding (public texts only): **NIS2** Art. 21(2)(i) asset mgmt · *
 </div>
 
 <!--
-This is where I separate from a scripting answer. Secrets are encrypted in git and
-survive a rebuild. The SAME label policy is enforced by Rego at plan-time AND
-Kyverno at admission-time — defense in depth on governance. And the label set maps
-to real regulation, sanitized from public sources only.
+Three layers here. Secrets: SOPS with age — encrypted YAML committed to git
+and applied through KSOPS, so the cluster can be rebuilt from scratch without
+a secrets scramble. Policy as code: the same seven-label governance set is
+enforced twice — Rego gates OpenTofu plans in CI, and Kyverno enforces it
+again at admission. That's defense in depth on governance itself. Supply
+chain: gitleaks runs in CI, every install is pinned, no floating tags. And
+the trajectory is auditable — a data-flow security review is committed, and
+replayable audit runs are specced as E-eleven.
 -->
 
 ---
@@ -480,6 +551,10 @@ sectionTime: 40
   kicker="§ 08 · The caddie's order desk"
   title="Self-service portal — auto-generated from the XRD"
 />
+
+<!--
+Now the money shot — self-service, where the form writes itself.
+-->
 
 ---
 layout: two-cols
@@ -510,7 +585,13 @@ Crossplane (E6) *is* the platform API; Backstage is the experience layer on top.
 </div>
 
 <!--
-Placeholder note — replaced by the verbatim voiceover script in E12-S02.
+This is the platform's north star, and I want to be upfront: it is designed,
+not deployed yet. The idea: nobody hand-writes the portal form.
+Kubernetes-ingestor reads the Crossplane Website XRD and auto-generates the
+Backstage scaffolder form from it. Change the API, and the form updates
+itself. Submitting doesn't touch the cluster directly — it opens a GitOps
+pull request, ArgoCD applies it, Crossplane reconciles it. The platform API
+stays the single source of truth, end to end.
 -->
 
 ---
@@ -524,6 +605,10 @@ sectionTime: 50
   kicker="§ 09 · Mulligan's second chance"
   title="Caddy-MVP tenant & mulligan"
 />
+
+<!--
+Which brings us to mulligan — the retriever that fetches bad releases back.
+-->
 
 ---
 layout: two-cols
@@ -572,10 +657,14 @@ abort→rollback proven; `hack/demo/mulligan.sh` choreographs the two-act demo.
 </div>
 
 <!--
-Why the edge/tenant split matters: ADR-0104 explicitly rejects Caddy-as-gateway.
-This is the retcon that keeps the architecture honest — the E5 caddy_* alerts were
-parked into the VM-variant slice because the Cilium edge never emits a caddy scrape
-target. I caught that in my own audit and fixed the story.
+Two things on this slide. First, the Caddy tenant itself comes in two
+scaffoldable variants: a minimal VM flavour — which is literally the brief:
+serve, scrape, fire — and a richer Kubernetes flavour with certificates and
+progressive delivery. Second: mulligan is landed. Argo Rollouts mutates
+Gateway API HTTPRoute weights, and I've proven it live — traffic stepping
+from one hundred percent to eighty-twenty, fifty-fifty, then full cutover,
+with abort and rollback demonstrated. A Prometheus analysis template gates
+promotion, so a bad canary walks itself back automatically.
 -->
 
 ---
@@ -589,6 +678,10 @@ sectionTime: 45
   kicker="§ 10 · The marshal's tower"
   title="Observability spine — marshal"
 />
+
+<!--
+Watching over all of it: marshal, up in the tower.
+-->
 
 ---
 layout: default
@@ -644,9 +737,13 @@ An alert can fire end-to-end — and its rule is unit-tested.
 </div>
 
 <!--
-The differentiator: I don't just write alert rules, I TEST them with promtool in
-CI. "Alert on server down" is a claim you can regress. That is the part most
-candidates skip, and it directly answers the brief's "alerting correctness."
+The observability spine is running via GitOps: kube-prometheus-stack, Loki
+and Alloy — metrics and logs in one Grafana pane. Marshal's alert rules cover
+instance down, error rate, latency and request rate, plus blackbox probes for
+uptime. The differentiator: every alert rule has a promtool unit test in CI.
+"Alert on server down" isn't a claim, it's a regression test. What's honestly
+still open is the receiver leg — Alertmanager routing to a webhook — plus
+dashboards-as-code. That is the current E-five work.
 -->
 
 ---
@@ -660,6 +757,10 @@ sectionTime: 40
   kicker="§ 11 · The five-hole walkthrough"
   title="Demo flow"
 />
+
+<!--
+Let's walk the demo — five holes, and the scorecard writes itself.
+-->
 
 ---
 layout: default
@@ -694,9 +795,13 @@ Beats 1–3 and 5 run live on the local cluster today (`hack/demo/mulligan.sh` d
 </div>
 
 <!--
-I keep the demo honest: I'll say which beats run live now (GitOps tree, promtool
-tests) vs which are the designed choreography. The scorecard turns the demo into a
-durable artifact — that's the evidence the brief asks for, upgraded.
+The demo is five beats. One: the ArgoCD tree, live. Two: curl clubhouse over
+TLS through the Cilium gateway, live. Three: Grafana — one pane for metrics
+and logs, live. Four: drive load with k6 until marshal fires; the rule itself
+is already regression-tested, the receiver is the open leg. Five: a bad
+canary auto-rolls back, live. And the point of scorecard is that this whole
+run becomes a reproducible HTML evidence report — proof you can re-run, not
+screenshots.
 -->
 
 ---
@@ -709,6 +814,10 @@ sectionTime: 30
   kicker="§ 12 · The back nine at dawn"
   title="Roadmap & honest status"
 />
+
+<!--
+What's left on the course? The back nine, at dawn.
+-->
 
 ---
 layout: default
@@ -758,9 +867,12 @@ Every epic is an **OpenSpec change** with `Verify:` + `Test:` per requirement, d
 </div>
 
 <!--
-Legend: ✅ landed & gated on main; 🧭 designed = ADR + OpenSpec spec + manifests
-committed, not yet running. Phase 2 is deliberately deferred to keep cloud spend at
-zero until the platform is proven locally.
+The status table is deliberately honest. Substrate, GitOps core, clubhouse
+with verified TLS, labels and policy, and mulligan are landed. Marshal's
+receiver leg is in flight. Crossplane and the portal are designed. Phase two
+— gridscale GSK, LBaaS, the Upjet provider — stays deferred until the local
+platform is fully green, which keeps cloud spend at zero. Every epic is an
+OpenSpec change with tests per requirement; the backlog is the spec.
 -->
 
 ---
@@ -773,6 +885,10 @@ sectionTime: 30
   kicker="§ 13 · The signed scorecard"
   title="Why this answers the exercise"
 />
+
+<!--
+So — does this answer the exercise? Here's the signed card.
+-->
 
 ---
 layout: statement
@@ -794,6 +910,16 @@ layout: statement
 A platform team can adopt this. That was the point.
 </div>
 
+<!--
+Serve, scrape, alert: satisfied, live, through a real platform edge, with the
+alert rules unit-tested in CI. Infrastructure as code and automation: GitOps
+end to end, with encrypted secrets in git. Documentation: ADRs, OpenSpec
+specs, reviewer paths. Evidence: reproducible reports rather than
+screenshots. And beyond the brief: live progressive delivery, enforced
+governance, centralized logs. The claim I will stand behind: a platform team
+could adopt this repo tomorrow. That was the point.
+-->
+
 ---
 layout: none
 sectionTime: 15
@@ -804,6 +930,10 @@ sectionTime: 15
   kicker="§ 14 · The nineteenth hole"
   title="Thank you"
 />
+
+<!--
+That's the round. Thank you — let's head to the nineteenth hole.
+-->
 
 ---
 layout: center
@@ -827,7 +957,9 @@ Questions?
 </div>
 
 <!--
-Close: point them at the traceability matrix for the 5-minute reviewer path and
-the ADR index for the deep dive. The repo is structured so a reviewer can verify
-every claim in this deck.
+If you want to verify any claim from this walkthrough, the repo is structured
+for it: the traceability matrix gives you the five-minute path from each
+brief requirement to its epic, and the ADR index takes you into the deep
+dive. Everything in this deck is checkable. Thanks for watching — I'm happy
+to take questions.
 -->
