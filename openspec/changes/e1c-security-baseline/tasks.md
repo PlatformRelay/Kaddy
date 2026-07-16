@@ -53,8 +53,8 @@
 
 ## Other E1c stories (unstarted)
 
-- [ ] Trivy CI job (REQ-E1c-S02-*)
-- [ ] Digest verify script (REQ-E1c-S03-01)
+- [x] Trivy CI job (REQ-E1c-S02-*) — `.github/workflows/trivy.yaml` (CRITICAL fails)
+- [x] Digest verify script (REQ-E1c-S03-01) — `hack/verify-image-digests.sh` + wired into verify
 - [x] ExternalSecret pattern (REQ-E1c-S04-*)
 - [ ] `.sops.yaml` + encrypted `deploy/secrets/identity/dex-github.enc.yaml`
       (REQ-E1c-S05-*) — partially landed via identity epic
