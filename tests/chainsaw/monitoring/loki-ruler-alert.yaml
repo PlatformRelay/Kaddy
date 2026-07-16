@@ -1,0 +1,27 @@
+# REQ-E5-S07-03 (should) — Loki-ruler log-based alert on served-site 5xx spikes
+# reaching the same Alertmanager as the Prometheus alerts.
+#
+# skip: true — DEFERRED: the lab Loki single-binary runs with the ruler
+# component unconfigured (deploy/observability/loki.yaml carries no ruler
+# storage/rule_path/alertmanager_url), and enabling it means resizing the
+# observability values, which is outside the E5 fire-leg lane's boundary
+# (kps values: sidecar/alerting flags only). The Prometheus-side fire leg is
+# fully proven live by hack/demo/marshal-fire.sh (REQ-E5-S03-05). Un-skip when
+# a lane enables the Loki ruler and ships a 5xx LogQL rule.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: monitoring-loki-ruler-alert
+  annotations:
+    kaddy.io/req: REQ-E5-S07-03
+spec:
+  description: Loki-sourced 5xx alert reaches Alertmanager (deferred — ruler off)
+  skip: true
+  namespace: monitoring
+  steps:
+    - name: placeholder-until-ruler-enabled
+      try:
+        - script:
+            content: |
+              echo "Loki ruler not enabled in the lab single-binary — deferred"
+              exit 1

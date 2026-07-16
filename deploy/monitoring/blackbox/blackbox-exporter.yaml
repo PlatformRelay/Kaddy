@@ -1,0 +1,101 @@
+# REQ-E5-S02-03 — blackbox exporter (Helm) so the clubhouse Probe has a prober.
+#
+# Nested Application (synced by the `monitoring` child — same pattern as the
+# observability child nesting kube-prometheus-stack/Loki/Alloy). Declares
+# metadata.namespace: argocd explicitly so the parent's default destination
+# namespace (monitoring) does not apply to the Application CR itself.
+#
+# TLS TRUST (the real-TLS probe, ARCH-2): the http_2xx_tls_kaddy module verifies
+# the clubhouse certificate chain against the in-cluster kaddy-local-ca. The CA
+# cert is distributed DECLARATIVELY via the kaddy-ca-trust Certificate (see
+# ca-trust-certificate.yaml): cert-manager writes the issuing CA's ca.crt into
+# the kaddy-ca-trust Secret in ns monitoring, which is mounted here. No manual
+# bootstrap step; the pod simply waits on the Secret until cert-manager issues.
+#
+# IN-CLUSTER TARGETING: clubhouse.kaddy.local does not resolve inside the
+# cluster (it is a host-side /etc/hosts name). The Probe therefore targets the
+# Gateway's stable Service DNS (cilium-gateway-clubhouse.gateway.svc) while this
+# module pins SNI + Host to clubhouse.kaddy.local — so the probe still exercises
+# the REAL edge path: TLS handshake with the clubhouse cert on the Envoy
+# listener, HTTPRoute hostname routing, and the app response.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: blackbox-exporter
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: monitoring
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: blackbox-exporter
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus-blackbox-exporter
+    # Chart 11.15.1 pins appVersion v0.28.0 (image quay.io/prometheus/blackbox-exporter:v0.28.0).
+    targetRevision: 11.15.1
+    helm:
+      releaseName: blackbox-exporter
+      valuesObject:
+        fullnameOverride: blackbox-exporter
+        podLabels:
+          owner: platform-team
+          service: monitoring
+          part-of: kaddy
+          managed-by: argocd
+          data-classification: internal
+          business-criticality: business-operational
+          track: stable
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        # CA trust for the kaddy-local-ca chain (see header). subPath mount:
+        # the CA is a 10y root, so no-live-update-on-subPath is acceptable.
+        extraSecretMounts:
+          - name: kaddy-ca-trust
+            mountPath: /etc/blackbox/ca/ca.crt
+            subPath: ca.crt
+            secretName: kaddy-ca-trust
+            readOnly: true
+        config:
+          modules:
+            # Default simple module kept for ad-hoc probes.
+            http_2xx:
+              prober: http
+              timeout: 10s
+              http:
+                preferred_ip_protocol: ip4
+            # The clubhouse module — REAL TLS verification against kaddy-local-ca
+            # with SNI/Host pinned to the public hostname (see header).
+            http_2xx_tls_kaddy:
+              prober: http
+              timeout: 10s
+              http:
+                method: GET
+                preferred_ip_protocol: ip4
+                fail_if_not_ssl: true
+                headers:
+                  Host: clubhouse.kaddy.local
+                tls_config:
+                  ca_file: /etc/blackbox/ca/ca.crt
+                  server_name: clubhouse.kaddy.local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

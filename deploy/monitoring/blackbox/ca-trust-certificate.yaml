@@ -1,0 +1,37 @@
+# REQ-E5-S02-03 — declarative CA-trust distribution for the blackbox prober.
+#
+# The kaddy-local-ca root lives in a Secret in ns cert-manager (E1e bootstrap);
+# blackbox runs in ns monitoring and cannot mount across namespaces. Instead of
+# an out-of-band "copy the CA" bootstrap step, this leaf Certificate is issued
+# BY kaddy-local-ca INTO ns monitoring: cert-manager writes the issuing CA's
+# certificate into the resulting Secret's `ca.crt` key, which is exactly the
+# trust anchor the blackbox http_2xx_tls_kaddy module mounts (subPath ca.crt).
+# The leaf keypair itself is unused — this is a GitOps-converging CA courier.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kaddy-ca-trust
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: monitoring
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: kaddy-ca-trust
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  secretName: kaddy-ca-trust
+  commonName: kaddy-ca-trust.monitoring.svc
+  duration: 2160h    # 90d — irrelevant to the trust use; ca.crt is refreshed on renewal
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: kaddy-local-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

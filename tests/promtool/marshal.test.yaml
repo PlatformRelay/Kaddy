@@ -1,14 +1,19 @@
-# promtool test rules — ACTIVE platform marshal HTTP alerting (E5)
+# promtool test rules — ACTIVE platform marshal alerting (E5, fire-leg re-point)
 # L1 unit tests for the PrometheusRule alerts in deploy/monitoring/rules/marshal-http.yaml.
 # Rule files are produced by hack/monitoring/extract-rules.sh (projects .spec out
 # of each PrometheusRule CR). Run the extract first, then:
 #   task test:promrules   OR   promtool test rules tests/promtool/marshal.test.yaml
 #
-# Each alert is proved to FIRE on its condition and to stay SILENT below threshold,
-# asserting the ADR-0301 alert labels (severity, service, owner).
-# The caddy_* target-down rule (marshal-caddy) is PARKED with the e-caddy-mvp epic
-# (D-026, ARCH-2/ARCH-3) and its tests live in tests/promtool/caddy-mvp-marshal.test.yaml.
-# Only the ACTIVE platform marshal-http rules are extracted/tested here.
+# ARCH-2 re-point (2026-07-16): the alerts now watch REAL platform signals —
+# the blackbox probe of the live clubhouse site through the Cilium Gateway
+# (probe_success / probe_duration_seconds / probe_ssl_earliest_cert_expiry) and
+# the Cilium Envoy edge listeners (envoy_http_downstream_rq_*). The old
+# caddy_http_* exprs could never fire (the Cilium/Envoy edge emits no
+# job="caddy" series — ADR-0104, D-019); those live on in the parked
+# e-caddy-mvp slice (tests/promtool/caddy-mvp-marshal.test.yaml).
+#
+# Each alert is proved to FIRE on its condition and to stay SILENT below
+# threshold, asserting the ADR-0301 alert labels (severity, service, owner).
 rule_files:
   - /tmp/marshal-http.rules.yaml
 
@@ -16,123 +21,195 @@ evaluation_interval: 1m
 
 tests:
   # -------------------------------------------------------------------------
-  # REQ-E5-S06-02 — HighHTTPErrorRate (marshal-http.yaml)
-  # 5xx ratio > 5% sustained over the `for:` window must fire.
+  # REQ-E5-S03-05 — ClubhouseDown fires when the probe reports failure.
   # -------------------------------------------------------------------------
   - interval: 1m
     input_series:
-      # Total request rate ~ constant. 5xx share climbs above 5% and stays there.
-      - series: 'caddy_http_requests_total{job="caddy",code="200"}'
-        values: '0+600x15'          # 600 req/min = 10 rps of 200s
-      - series: 'caddy_http_requests_total{job="caddy",code="500"}'
-        values: '0+60x15'           # 60 req/min = 1 rps of 500s -> ~9.1% error ratio
+      # Probe healthy for 5m, then the site goes down (probe_success -> 0).
+      - series: 'probe_success{job="blackbox",service="clubhouse"}'
+        values: '1 1 1 1 1 0 0 0 0 0 0 0'
     alert_rule_test:
-      # Silent early: not enough samples / `for:` not satisfied at 3m.
+      # Healthy window — silent.
+      - eval_time: 4m
+        alertname: ClubhouseDown
+        exp_alerts: []
+      # Down past the 1m `for:` window — fires.
+      - eval_time: 8m
+        alertname: ClubhouseDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: clubhouse
+              owner: platform-team
+              job: blackbox
+            exp_annotations:
+              summary: 'Clubhouse is DOWN — blackbox probe failing'
+              description: 'The blackbox HTTPS probe of clubhouse.kaddy.local through the Cilium Gateway has been failing for over 1 minute (probe_success == 0 or the series is absent).'
+
+  # REQ-E5-S03-05 — ClubhouseDown also fires when the probe series is ABSENT
+  # (scrape target gone / blackbox exporter dead) — the absent() leg.
+  - interval: 1m
+    input_series:
+      # An unrelated series so the test set is non-empty; probe_success never exists.
+      - series: 'up{job="blackbox"}'
+        values: '0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: ClubhouseDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              service: clubhouse
+              owner: platform-team
+              job: blackbox
+            exp_annotations:
+              summary: 'Clubhouse is DOWN — blackbox probe failing'
+              description: 'The blackbox HTTPS probe of clubhouse.kaddy.local through the Cilium Gateway has been failing for over 1 minute (probe_success == 0 or the series is absent).'
+
+  # ClubhouseDown stays SILENT while the probe succeeds.
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{job="blackbox",service="clubhouse"}'
+        values: '1x12'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ClubhouseDown
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # REQ-E5-S03-03 — ClubhouseProbeLatencyHigh (brief: latency).
+  # Probe duration > 500ms averaged over 5m, sustained 5m, must fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'probe_duration_seconds{job="blackbox",service="clubhouse"}'
+        values: '0.8x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: ClubhouseProbeLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: clubhouse
+              owner: platform-team
+              job: blackbox
+            exp_annotations:
+              summary: 'Clubhouse probe latency above 500ms'
+              description: 'The end-to-end blackbox probe of clubhouse through the Cilium Gateway has averaged over 500ms for 5 minutes (5m avg window).'
+
+  # ClubhouseProbeLatencyHigh stays SILENT at healthy latency.
+  - interval: 1m
+    input_series:
+      - series: 'probe_duration_seconds{job="blackbox",service="clubhouse"}'
+        values: '0.05x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: ClubhouseProbeLatencyHigh
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # REQ-E5-S03-06 — ClubhouseCertExpirySoon.
+  # Fires when the served TLS cert expires in under 21 days (cert-manager
+  # renews at 30d before expiry — 21d left means renewal has failed).
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # Cert expires 10 days from the epoch (test time starts at 0).
+      - series: 'probe_ssl_earliest_cert_expiry{job="blackbox",service="clubhouse"}'
+        values: '864000x20'
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: ClubhouseCertExpirySoon
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              service: clubhouse
+              owner: platform-team
+              job: blackbox
+            exp_annotations:
+              summary: 'Clubhouse TLS certificate expires in under 21 days'
+              description: 'The certificate served for clubhouse.kaddy.local expires in under 21 days. cert-manager renews 30d before expiry, so renewal has likely failed — check the clubhouse-tls Certificate.'
+
+  # ClubhouseCertExpirySoon stays SILENT with a comfortably fresh cert (~104d).
+  - interval: 1m
+    input_series:
+      - series: 'probe_ssl_earliest_cert_expiry{job="blackbox",service="clubhouse"}'
+        values: '9000000x20'
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: ClubhouseCertExpirySoon
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # REQ-E5-S03-02 / S06-02 — EdgeHTTPErrorRate (brief: response codes).
+  # Envoy edge 5xx class above 5% of listener traffic, sustained 5m, must fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix="listener-secure"}'
+        values: '0+600x15'          # 600 req/min = 10 rps total
+      - series: 'envoy_http_downstream_rq_xx{job="cilium-envoy",envoy_response_code_class="5",envoy_http_conn_manager_prefix="listener-secure"}'
+        values: '0+60x15'           # 60 req/min of 5xx -> 10% error ratio
+    alert_rule_test:
+      # `for:` not yet satisfied early on.
       - eval_time: 3m
-        alertname: HighHTTPErrorRate
+        alertname: EdgeHTTPErrorRate
         exp_alerts: []
-      # Fires: ratio ~9% > 5% sustained past the `for:` window.
       - eval_time: 12m
-        alertname: HighHTTPErrorRate
+        alertname: EdgeHTTPErrorRate
         exp_alerts:
           - exp_labels:
               severity: warning
-              service: caddy
+              service: gateway
               owner: platform-team
             exp_annotations:
-              summary: 'Caddy HTTP 5xx error rate above 5%'
-              description: 'Caddy is returning 5xx responses for more than 5% of requests over the last 5 minutes (sustained 5m).'
+              summary: 'Cilium Gateway edge 5xx error rate above 5%'
+              description: 'The Cilium/Envoy edge listeners are returning 5xx for more than 5% of requests over the last 5 minutes (sustained 5m).'
 
-  # HighHTTPErrorRate stays SILENT when 5xx share is below 5%.
+  # EdgeHTTPErrorRate stays SILENT below 5%.
   - interval: 1m
     input_series:
-      - series: 'caddy_http_requests_total{job="caddy",code="200"}'
-        values: '0+600x15'          # 10 rps of 200s
-      - series: 'caddy_http_requests_total{job="caddy",code="500"}'
-        values: '0+6x15'            # 0.1 rps of 500s -> ~1% error ratio (< 5%)
+      - series: 'envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix="listener-secure"}'
+        values: '0+600x15'
+      - series: 'envoy_http_downstream_rq_xx{job="cilium-envoy",envoy_response_code_class="5",envoy_http_conn_manager_prefix="listener-secure"}'
+        values: '0+6x15'            # ~1% error ratio (< 5%)
     alert_rule_test:
       - eval_time: 12m
-        alertname: HighHTTPErrorRate
+        alertname: EdgeHTTPErrorRate
         exp_alerts: []
 
   # -------------------------------------------------------------------------
-  # REQ-E5-S06-03 — HighHTTPLatency (marshal-http.yaml)
-  # p99 request latency > 500ms must fire. Classic histogram _bucket series.
-  # le buckets are cumulative & non-decreasing, including +Inf.
-  # -------------------------------------------------------------------------
-  - interval: 1m
-    input_series:
-      # All observations land in the (0.5, 1.0] bucket => p99 ~ between 0.5 and 1.0 => > 0.5s.
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.1"}'
-        values: '0+0x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.5"}'
-        values: '0+0x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="1.0"}'
-        values: '0+100x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="+Inf"}'
-        values: '0+100x15'
-    alert_rule_test:
-      - eval_time: 12m
-        alertname: HighHTTPLatency
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              service: caddy
-              owner: platform-team
-            exp_annotations:
-              summary: 'Caddy p99 HTTP latency above 500ms'
-              description: 'Caddy p99 request latency has exceeded 500ms over the last 5 minutes (sustained 5m).'
-
-  # HighHTTPLatency stays SILENT when p99 is comfortably under 500ms.
-  - interval: 1m
-    input_series:
-      # All observations in the (0.0, 0.1] bucket => p99 <= 0.1s < 0.5s.
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.1"}'
-        values: '0+100x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="0.5"}'
-        values: '0+100x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="1.0"}'
-        values: '0+100x15'
-      - series: 'caddy_http_request_duration_seconds_bucket{job="caddy",le="+Inf"}'
-        values: '0+100x15'
-    alert_rule_test:
-      - eval_time: 12m
-        alertname: HighHTTPLatency
-        exp_alerts: []
-
-  # -------------------------------------------------------------------------
-  # REQ-E5-S06-03 — HighRequestRate (marshal-http.yaml)
-  # Request rate > 100 rps sustained for 2m must fire.
+  # REQ-E5-S03-04 / S06-03 — EdgeRequestRateHigh (brief: request threshold).
+  # Edge request rate > 100 rps sustained for 2m must fire.
   # -------------------------------------------------------------------------
   - interval: 1m
     input_series:
       # 9000 req/min = 150 rps > 100 rps.
-      - series: 'caddy_http_requests_total{job="caddy",code="200"}'
+      - series: 'envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix="listener-secure"}'
         values: '0+9000x15'
     alert_rule_test:
       # Silent right at the start — `for: 2m` not yet satisfied.
       - eval_time: 1m
-        alertname: HighRequestRate
+        alertname: EdgeRequestRateHigh
         exp_alerts: []
-      # Fires: 150 rps sustained past 2m.
       - eval_time: 10m
-        alertname: HighRequestRate
+        alertname: EdgeRequestRateHigh
         exp_alerts:
           - exp_labels:
               severity: warning
-              service: caddy
+              service: gateway
               owner: platform-team
             exp_annotations:
-              summary: 'Caddy request rate above 100 rps'
-              description: 'Caddy is serving more than 100 requests per second (5m rate), sustained for 2 minutes. Verify capacity / possible traffic spike.'
+              summary: 'Cilium Gateway edge request rate above 100 rps'
+              description: 'The Cilium/Envoy edge listeners are serving more than 100 requests per second (5m rate), sustained for 2 minutes. Verify capacity / possible traffic spike.'
 
-  # HighRequestRate stays SILENT below 100 rps.
+  # EdgeRequestRateHigh stays SILENT below 100 rps.
   - interval: 1m
     input_series:
       # 3000 req/min = 50 rps < 100 rps.
-      - series: 'caddy_http_requests_total{job="caddy",code="200"}'
+      - series: 'envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix="listener-secure"}'
         values: '0+3000x15'
     alert_rule_test:
       - eval_time: 10m
-        alertname: HighRequestRate
+        alertname: EdgeRequestRateHigh
         exp_alerts: []

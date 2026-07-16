@@ -1,0 +1,49 @@
+# REQ-E5-S02-01 / S02-02 — blackbox Probe of the LIVE clubhouse site through the
+# Cilium Gateway, so probe_success == 1 and probe_http_status_code == 200 for a
+# healthy site (and ClubhouseDown fires when it is not — REQ-E5-S03-05).
+#
+# ARCH-2 re-point (2026-07-16): replaces the old caddy-gateway Probe whose
+# target was the placeholder https://kaddy.example.com/.
+#
+# Target: the Gateway's stable in-cluster Service DNS. clubhouse.kaddy.local is
+# a host-side name (does not resolve in-cluster); the http_2xx_tls_kaddy module
+# pins SNI + Host to clubhouse.kaddy.local and verifies the served certificate
+# against kaddy-local-ca, so this is a REAL end-to-end TLS check of the same
+# edge path a browser takes. See deploy/monitoring/blackbox/blackbox-exporter.yaml.
+#
+# interval 15s (not 30s): keeps alert time-to-fire low for the marshal fire demo
+# (hack/demo/marshal-fire.sh); one tiny HTTP request per 15s is negligible load.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: clubhouse
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: clubhouse-probe
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: monitoring
+spec:
+  jobName: blackbox
+  interval: 15s
+  module: http_2xx_tls_kaddy
+  prober:
+    url: blackbox-exporter.monitoring.svc:9115
+  targets:
+    staticConfig:
+      static:
+        - https://cilium-gateway-clubhouse.gateway.svc/
+      labels:
+        # Prometheus label names must match [a-zA-Z_][a-zA-Z0-9_]* — bare-key
+        # ADR-0301 names with dashes are not legal here, so the metric carries
+        # the underscore mirror (same convention as the Alloy log labels).
+        service: clubhouse
+        part_of: kaddy
+        site: clubhouse.kaddy.local

@@ -1,0 +1,68 @@
+# REQ-E5-S03-01 (reconciled) / REQ-E5-EXIT — the kaddy-authored marshal
+# monitoring CRs apply cleanly against the Prometheus-Operator CRDs and are
+# retrievable: PrometheusRule marshal-http (5 alerts), Probe clubhouse, and the
+# edge/rollouts ServiceMonitors.
+#
+# Self-contained: applies the manifests itself (relative paths), so it runs in
+# the ephemeral CI kind cluster (kube-prometheus-stack is installed by
+# .github/workflows/chainsaw.yaml for the monitoring suite) AND against the
+# live kaddy-dev cluster, where Argo CD has already applied the same files
+# (kubectl apply is idempotent and the content is identical to git, so no
+# drift is introduced; the monitoring child app's selfHeal is off).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: marshal-rules-present
+  annotations:
+    kaddy.io/req: REQ-E5-EXIT
+spec:
+  description: marshal PrometheusRule + Probe + ServiceMonitors apply and assert
+  # All objects carry explicit metadata.namespace monitoring — no test ns needed.
+  namespace: monitoring
+  steps:
+    - name: apply-marshal-monitoring-content
+      try:
+        - apply:
+            file: ../../../deploy/monitoring/rules/marshal-http.yaml
+        - apply:
+            file: ../../../deploy/monitoring/blackbox/clubhouse-probe.yaml
+        - apply:
+            file: ../../../deploy/monitoring/prometheus/cilium-envoy-servicemonitor.yaml
+        - apply:
+            file: ../../../deploy/monitoring/prometheus/argo-rollouts-servicemonitor.yaml
+    - name: assert-marshal-monitoring-content
+      try:
+        - assert:
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: PrometheusRule
+              metadata:
+                name: marshal-http
+                namespace: monitoring
+                labels:
+                  part-of: kaddy
+                  managed-by: argocd
+        - assert:
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: Probe
+              metadata:
+                name: clubhouse
+                namespace: monitoring
+              spec:
+                jobName: blackbox
+                module: http_2xx_tls_kaddy
+        - assert:
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                name: cilium-envoy
+                namespace: monitoring
+        - assert:
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                name: argo-rollouts
+                namespace: monitoring

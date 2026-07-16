@@ -1,10 +1,19 @@
-# Marshal HTTP alerts — REQ-E5-S03-02/03/04 + REQ-E5-S06-02/03
-# HighHTTPErrorRate, HighHTTPLatency, HighRequestRate.
+# Marshal alerts — REQ-E5-S03-02/03/04/05/06 + REQ-E5-S06-02/03
+# ClubhouseDown, ClubhouseProbeLatencyHigh, ClubhouseCertExpirySoon,
+# EdgeHTTPErrorRate, EdgeRequestRateHigh.
+#
+# ARCH-2 re-point (2026-07-16): every expr below watches a REAL platform signal —
+# the blackbox HTTPS probe of the live clubhouse site through the Cilium Gateway
+# (probe_*) and the Cilium/Envoy edge listeners (envoy_http_downstream_rq_*).
+# The previous caddy_http_* exprs could never fire on this platform (the
+# Cilium/Envoy edge emits no job="caddy" series — ADR-0104, D-019); they are
+# parked with the e-caddy-mvp VM-variant slice (deploy/caddy-mvp/monitoring/).
+#
 # metadata.labels carry the ADR-0301 canonical mandatory core in BARE-key form
 # (owner, service, part-of, managed-by, data-classification, business-criticality,
 # track) — the single enforced source of truth — followed by the documented
-# app.kubernetes.io/* mirror (an addition, not a competing canonical set).
-# Alert labels carry severity/service/owner for self-routing.
+# app.kubernetes.io/* mirror. Alert labels carry severity/service/owner for
+# self-routing.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -12,69 +21,119 @@ metadata:
   namespace: monitoring
   labels:
     owner: platform-team
-    service: caddy
+    service: monitoring
     part-of: kaddy
     managed-by: argocd
     data-classification: internal
     business-criticality: business-operational
     track: stable
-    app.kubernetes.io/name: caddy
+    app.kubernetes.io/name: marshal-http
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
-    app.kubernetes.io/component: gateway
+    app.kubernetes.io/component: monitoring
     prometheus: kaddy
     role: alert-rules
 spec:
   groups:
     - name: marshal.http
       rules:
-        # REQ-E5-S03-02 / S06-02 — 5xx error ratio above 5% over a 5m window.
-        - alert: HighHTTPErrorRate
+        # REQ-E5-S03-05 — the fire-leg keystone (DIR-2): the served site is down.
+        # Covers BOTH probe failure (probe_success == 0) and total signal loss
+        # (series absent: exporter dead / Probe unscraped) so the alert cannot be
+        # silenced by breaking the monitoring path itself.
+        # DEMO TRADE-OFF: `for: 1m` is deliberately LOW so the live fire demo
+        # (hack/demo/marshal-fire.sh) is watchable in minutes. Production would
+        # typically use 3–5m to ride out single flaky probes; with a 15s probe
+        # interval, 1m still needs 4 consecutive failures, so it is not
+        # single-sample-noisy. Documented in deploy/monitoring/rules/README.md.
+        - alert: ClubhouseDown
+          # NOTE: `min by (job, service)` keeps the same label set the absent()
+          # leg synthesizes from its equality matchers, so the alert identity is
+          # stable whichever leg fires (no flapping between two label sets).
           expr: >-
-            sum(rate(caddy_http_requests_total{job="caddy",code=~"5.."}[5m]))
+            min by (job, service) (probe_success{job="blackbox",service="clubhouse"}) == 0
+            or
+            absent(probe_success{job="blackbox",service="clubhouse"})
+          for: 1m
+          labels:
+            severity: critical
+            service: clubhouse
+            owner: platform-team
+          annotations:
+            summary: 'Clubhouse is DOWN — blackbox probe failing'
+            description: >-
+              The blackbox HTTPS probe of clubhouse.kaddy.local through the
+              Cilium Gateway has been failing for over 1 minute (probe_success
+              == 0 or the series is absent).
+
+        # REQ-E5-S03-03 / S06-03 — brief: latency. End-to-end probe duration
+        # (TLS handshake + edge + app) averaged over 5m above 500ms.
+        - alert: ClubhouseProbeLatencyHigh
+          expr: >-
+            avg_over_time(probe_duration_seconds{job="blackbox",service="clubhouse"}[5m]) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+            service: clubhouse
+            owner: platform-team
+          annotations:
+            summary: 'Clubhouse probe latency above 500ms'
+            description: >-
+              The end-to-end blackbox probe of clubhouse through the Cilium
+              Gateway has averaged over 500ms for 5 minutes (5m avg window).
+
+        # REQ-E5-S03-06 — TLS certificate runway. clubhouse-tls renews 30d
+        # before expiry (spec.renewBefore: 720h), so < 21d left means renewal
+        # has failed and a human must look. 1814400s = 21d.
+        - alert: ClubhouseCertExpirySoon
+          expr: >-
+            (probe_ssl_earliest_cert_expiry{job="blackbox",service="clubhouse"} - time()) < 1814400
+          for: 15m
+          labels:
+            severity: warning
+            service: clubhouse
+            owner: platform-team
+          annotations:
+            summary: 'Clubhouse TLS certificate expires in under 21 days'
+            description: >-
+              The certificate served for clubhouse.kaddy.local expires in under
+              21 days. cert-manager renews 30d before expiry, so renewal has
+              likely failed — check the clubhouse-tls Certificate.
+
+        # REQ-E5-S03-02 / S06-02 — brief: response codes. 5xx class above 5% of
+        # edge listener traffic over a 5m window. The listener-* conn-manager
+        # prefixes are the Gateway API listeners (listener-secure = HTTPS,
+        # listener-insecure = the HTTP->HTTPS redirect listener).
+        - alert: EdgeHTTPErrorRate
+          expr: >-
+            sum(rate(envoy_http_downstream_rq_xx{job="cilium-envoy",envoy_response_code_class="5",envoy_http_conn_manager_prefix=~"listener-.*"}[5m]))
             /
-            sum(rate(caddy_http_requests_total{job="caddy"}[5m]))
+            sum(rate(envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix=~"listener-.*"}[5m]))
             > 0.05
           for: 5m
           labels:
             severity: warning
-            service: caddy
+            service: gateway
             owner: platform-team
           annotations:
-            summary: 'Caddy HTTP 5xx error rate above 5%'
+            summary: 'Cilium Gateway edge 5xx error rate above 5%'
             description: >-
-              Caddy is returning 5xx responses for more than 5% of requests over
-              the last 5 minutes (sustained 5m).
+              The Cilium/Envoy edge listeners are returning 5xx for more than
+              5% of requests over the last 5 minutes (sustained 5m).
 
-        # REQ-E5-S03-03 / S06-03 — p99 request latency above 500ms.
-        - alert: HighHTTPLatency
+        # REQ-E5-S03-04 / S06-03 — brief: request threshold. Edge request rate
+        # above 100 rps (lab threshold), sustained 2m.
+        - alert: EdgeRequestRateHigh
           expr: >-
-            histogram_quantile(
-              0.99,
-              sum by (le) (rate(caddy_http_request_duration_seconds_bucket{job="caddy"}[5m]))
-            ) > 0.5
-          for: 5m
-          labels:
-            severity: warning
-            service: caddy
-            owner: platform-team
-          annotations:
-            summary: 'Caddy p99 HTTP latency above 500ms'
-            description: >-
-              Caddy p99 request latency has exceeded 500ms over the last 5
-              minutes (sustained 5m).
-
-        # REQ-E5-S03-04 / S06-03 — request rate above 100 rps.
-        - alert: HighRequestRate
-          expr: >-
-            sum(rate(caddy_http_requests_total{job="caddy"}[5m])) > 100
+            sum(rate(envoy_http_downstream_rq_total{job="cilium-envoy",envoy_http_conn_manager_prefix=~"listener-.*"}[5m])) > 100
           for: 2m
           labels:
             severity: warning
-            service: caddy
+            service: gateway
             owner: platform-team
           annotations:
-            summary: 'Caddy request rate above 100 rps'
+            summary: 'Cilium Gateway edge request rate above 100 rps'
             description: >-
-              Caddy is serving more than 100 requests per second (5m rate),
-              sustained for 2 minutes. Verify capacity / possible traffic spike.
+              The Cilium/Envoy edge listeners are serving more than 100 requests
+              per second (5m rate), sustained for 2 minutes. Verify capacity /
+              possible traffic spike.

@@ -408,3 +408,17 @@ tasks:
       KUBECONFIG: '{{.KUBECONFIG}}'
     cmds:
       - bash hack/demo/mulligan-abort.sh
+
+  demo:fire:
+    desc: E5 — marshal fire demo — controlled clubhouse outage -> ClubhouseDown fires in Alertmanager -> restore -> resolved
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash hack/demo/marshal-fire.sh
+
+  test:smoke:e5:
+    desc: E5 — live smoke bundle (GitOps-synced marshal monitoring, probe, Grafana, THE FIRE DEMO; needs a green cluster)
+    env:
+      KUBECONFIG: '{{.KUBECONFIG}}'
+    cmds:
+      - bash tests/smoke/e5-exit.sh

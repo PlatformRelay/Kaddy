@@ -1,0 +1,36 @@
+# REQ-E5-S01-02 (re-pointed) — scrape the Cilium Envoy edge proxy metrics.
+#
+# The platform edge is Cilium Gateway API (Envoy) — ADR-0104/D-019. Cilium ships
+# a headless kube-system/cilium-envoy Service exposing envoy-metrics :9964; this
+# ServiceMonitor makes envoy_http_downstream_rq_* available, which feed the
+# EdgeHTTPErrorRate / EdgeRequestRateHigh marshal alerts (REQ-E5-S03-02/04) and
+# the kaddy-marshal Grafana dashboard edge-traffic panels.
+# job label = Service name: cilium-envoy (referenced by the rule exprs).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cilium-envoy
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: gateway
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: cilium-envoy
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cilium-envoy
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  endpoints:
+    - port: envoy-metrics
+      path: /metrics
+      interval: 30s

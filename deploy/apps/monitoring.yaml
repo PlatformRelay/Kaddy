@@ -1,0 +1,56 @@
+# REQ-E5-S09-01 (ARCH-8): monitoring child Application.
+#
+# Syncs `deploy/monitoring/` — the kaddy-AUTHORED monitoring layer (marshal
+# PrometheusRules, blackbox Probe + exporter, ServiceMonitors, Grafana dashboard
+# ConfigMaps). Before this Application existed, deploy/monitoring/ was GitOps-
+# orphaned: no Application referenced it, so zero kaddy-authored rules were live
+# (audit finding ARCH-8, 2026-07-16).
+#
+# Split of responsibilities:
+#   deploy/observability/ -> the STACK (kube-prometheus-stack, Loki, Alloy Helm apps)
+#   deploy/monitoring/    -> kaddy CONTENT layered on that stack (rules/probes/dashboards)
+#
+# recurse: true — the content lives in per-concern subdirs (rules/, blackbox/,
+# prometheus/, dashboards/). recurse:true is non-default so Argo CD keeps it
+# (recurse:false gets normalised away -> perpetual OutOfSync; same rationale as
+# the workloads child).
+#
+# selfHeal OFF — consistent with the observability child (human in the loop for
+# drift on the monitoring plane); auto-sync create/update stays ON so merged
+# manifests roll out without manual `argocd app sync`.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: monitoring
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/monitoring
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    # Default namespace for manifests without an explicit one; every manifest in
+    # deploy/monitoring/ still declares its namespace (monitoring — or argocd for
+    # the nested blackbox-exporter Application, which wins over this default).
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
