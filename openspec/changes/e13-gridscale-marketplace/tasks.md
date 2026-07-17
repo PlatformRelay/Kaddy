@@ -14,8 +14,8 @@
 ## E13-S01 — Golden image build + export to object storage
 
 - [x] Add failing `tests/smoke/e13-s01-export.sh` (asserts a `.gz` snapshot exists at the `s3://` bucket path; SKIPs without creds)
-- [x] Packer build (`packer/caddy.pkr.hcl`, `nginx.pkr.hcl`): Caddy/nginx + sample page + `/metrics` endpoint
-- [~] Snapshot storage → export as `.gz` to the E1g object-storage bucket (runbook step; live-proof pending)
+- [x] Packer build (`packer/caddy.pkr.hcl`, `nginx.pkr.hcl`): Caddy/nginx + sample page + `/metrics` endpoint — **LIVE-PROVEN 2026-07-17** (caddy): `packer build` on gridscale built the Caddy golden image, enabled `caddy.service`, snapshotted → private template, then auto-destroyed all ephemeral resources (VM/IP/storage/snapshot/key); template deleted after capture; tenant clean. Evidence: `evidence/live/e13-golden-image-2026-07-17.md`.
+- [~] Snapshot storage → export as `.gz` to the E1g object-storage bucket (runbook step; live-proof pending — the packer build produces a template; the marketplace `.gz` export is the remaining sub-step)
 - [x] Fallback (time-box): manual `gridscale_server` → configure → snapshot (documented in the runbook)
 
 ## E13-S02 — Register + import the Marketplace application (Terraform)
