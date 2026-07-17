@@ -23,7 +23,7 @@
 
 kaddy is an internal developer platform for **monitored, TLS-terminated websites**. One self-service
 claim provisions a site behind Caddy with observability, alerting, and progressive delivery. The
-[gridscale Platform Engineer exercise](docs/HIRING_EXERCICSE.md) (install Caddy, monitor with
+[gridscale Platform Engineer exercise](docs/HIRING_EXERCISE.md) (install Caddy, monitor with
 Prometheus, alert on thresholds, optional nginx reverse proxy) is satisfied as **one tenant** of the
 platform — `clubhouse` — not as a one-off VM script.
 

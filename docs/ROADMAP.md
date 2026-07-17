@@ -25,7 +25,7 @@ Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 | --- | --- | --- | --- | --- |
 | **1 · Platform (local)** | **kind + Cilium** ([E1e](../openspec/changes/e1e-kind-local-cluster/), ✅ landed) — single-node; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Now — develop GitOps platform locally | kaddy **E1e** → E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
 | **2 · Lab (gridscale)** | GSK + LBaaS + Object Storage | Lab credits | After E3–E7 green locally | E1g → E6g → E8b |
-| **3 · Golden images (Nix)** | Nix-built VM images ([E14](../openspec/changes/e14-nix-golden-images/)) → gridscale Marketplace + multi-cloud targets | Lab credits (ephemeral) | **After Phase 2's live-proof cycle closes** (E6g/E13/E8b live) — forward-looking, **not next-up** | E14 |
+| **3 · Golden images (Nix)** | Nix-built VM images (**E14** — designed, see [ADR-0303](adr/0303-nix-golden-images.md); no change folder yet) → gridscale Marketplace + multi-cloud targets | Lab credits (ephemeral) | **After Phase 2's live-proof cycle closes** (E6g/E13/E8b live) — forward-looking, **not next-up** | E14 |
 
 **Gate to phase 2:** E3–E7 green on the local kind cluster → start E1g (gridscale day-0).
 
@@ -312,7 +312,7 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ## E14 · Nix golden images (phase 3 — forward-looking, gated behind Phase 2 live-proof)
 
-**OpenSpec:** [e14-nix-golden-images](../openspec/changes/e14-nix-golden-images/)  
+**OpenSpec:** `e14-nix-golden-images` — designed, not yet a change folder; see [ADR-0303](adr/0303-nix-golden-images.md).  
 **ADR:** [0303](adr/0303-nix-golden-images.md) · **Decision:** D-037 · **Gate:** Phase 2 live-proof cycle closed (E6g/E13/E8b live)  
 **GOVERNANCE:** supply-chain / image-provenance → **maintainer-LGTM-required** before merge.
 
@@ -480,7 +480,7 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 | E12c-S06 | GIF recording protocol wired (`data-surface-mode=fallback` slots; keep ≥ 3 live iframes) | ⬜ |
 | E12c-S07 | Kaddy README badges (CI/deck/license/docs; `readme-badges.sh`) | ⬜ |
 | E12c-S08 | provider-gridscale badge/release backfill (SEPARATE repo) | ⏸ HELD — outward-facing; needs explicit operator go-ahead |
-| E12c-S09 | Docs hygiene (HIRING_EXERCICSE→HIRING_EXERCISE rename; fix broken ROADMAP links; markdownlint clean) | ⬜ |
+| E12c-S09 | Docs hygiene (rename the misspelled hiring-exercise doc to `HIRING_EXERCISE.md`; fix broken ROADMAP E14 links; markdownlint clean) | ⬜ |
 
 ---
 
