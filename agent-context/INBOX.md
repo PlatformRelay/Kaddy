@@ -178,13 +178,15 @@ Architect lane (`/design-architecture`) produced a durable, gated design spec fo
 - **Change:** `openspec/changes/e12c-deck-docs-refresh/` (proposal + tasks + `specs/deck/spec.md` with REQ/Test/Verify) · **ADR-0112** (deck visual identity) · `slides/recording-guide.md` (GIF protocol) · `new-cover-prompts.md` (Mœbius S15+).
 - **Operator decisions baked in:** ~15-min main deck + gate-exempt appendix (raise `sectionTime`→[600,1000], words→[1400,2200]; appendix exempt via `<!-- APPENDIX -->` sentinel) · **hybrid** k8s-workshop styling (workshop `--kw-*` chrome+fonts, **golf-teal accent**, not k8s-blue).
 - **Storyline reframe:** "I'm a platform engineer, so I submit a platform — and shipped real value for gridscale." New MAIN sections: gridscale value-creation hero (provider-gridscale + 3 TF-provider bug MRs — LANDED), Crossplane-as-IaC intro, agentic-workflow (epic→plan→story→test). APPENDIX: NixOS path (DESIGNED — E14/ADR-0303, no flake.nix), repo-tree, quickstart+tools, solved-different-ways.
-- **⚠️ Outward-facing, needs go-ahead:** REQ-E12c-S08 fixes `provider-gridscale`'s failing badges in the SEPARATE repo — Scorecard→durable `api.securityscorecards.dev` score badge (transient 503s, config is fine); Release→backfill `gh release create v0.1.1/v0.1.0` + tag-triggered `release.yml` (tags exist, zero GitHub Releases). Do NOT fire without explicit operator go-ahead.
+- **✅ RESOLVED 2026-07-17 → D-039:** REQ-E12c-S08 (provider-gridscale badges). Operator gave go-ahead; on inspection **already fixed, no action needed** — Scorecard badge resolves (HTTP 302→SVG, score 6.6, last 3 Scorecard runs green); 4 GitHub Releases now exist (v0.1.0/v0.1.1/v0.2.0+alpha, backfilled). Redundant `gh release create` deliberately NOT re-fired.
 - **Honesty guardrail:** every new section tagged landed-vs-designed against §03; NixOS stays designed.
 Revert: delete `openspec/changes/e12c-deck-docs-refresh/`, `docs/adr/0112-*`, `slides/recording-guide.md`.
 
 ---
 
-## 🟡 DECIDED (awaiting approval) — deck/E6g non-blocking follow-ups (2026-07-17 loop2)
+## ✅ ANSWERED 2026-07-17 → D-039 — deck/E6g non-blocking follow-ups (loop2)
+**Operator revisited via `/operator-inbox`:** **F2** → CHANGE (wire-or-delete + tighten `theme-tokens.sh`, next-session deck lane). **F3** → RATIFIED as-shipped (folds into DOC-13). **E6g Network MR** → CHANGE (DROP the unattached private Network MR + relax the 4-kind gate to the proven 3-kind topology, next-session lane). Blocks kept below for context only.
+
 Merged E6g/E13-S02/deck with two accepted-partial notes (tech-review, non-blocking):
 - **F2 (deck):** `.kw-footer/.kw-chip/.kw-kicker` CSS defined but not wired to elements; `theme-tokens.sh`
   passes on presence, not application. Core identity (graphite bg, teal accent, Inter/JetBrains, progress
@@ -198,7 +200,9 @@ Merged E6g/E13-S02/deck with two accepted-partial notes (tech-review, non-blocki
 
 ---
 
-## 🟡 DECIDED (awaiting approval) — E8b app-layer live-verify blocked by network egress (2026-07-17 loop2)
+## ✅ ANSWERED 2026-07-17 → D-039 — E8b app-layer live-verify blocked by network egress (loop2)
+**Operator revisited via `/operator-inbox`:** jump VM **AUTHORIZED but cost-gated** — prefer the €0 unrestricted-network path (proves the identical app-layer); spin the gridscale jump VM only if no such network is available. Either path still faces the app-of-apps-on-GSK integration task (Cilium/Gateway vs GSK CNI). Awaiting operator confirm if they want the jump VM unconditional. Block kept below for context.
+
 Context: drove the E8b live bring-up. The GSK cluster + network + object-storage anchor provision
 cleanly (tofu exit 0, cluster active — substrate live-proven, same as E1g-S03). BUT the GSK API
 `:6443` is unreachable from this network: the corporate egress is an ALLOWLIST (`:443` to
@@ -215,7 +219,11 @@ egress-blocked here). If you want the app-layer proof, it needs a `:6443`-capabl
 
 ---
 
-## 🔴 DECIDED (awaiting approval) — E14/Phase-3 Nix golden images deferred to a dedicated session (2026-07-17 loop2)
+## 🔴 DECIDED — E14/Phase-3 Nix golden images deferred to a dedicated session (2026-07-17 loop2 · confirmed D-039)
+> **Operator confirmed 2026-07-17:** E14 is NOT blocked by the E8b egress issue — E8b app-layer is
+> environment-blocked, not a phase-2 defect, so the D-037 "phase-2 live before E14" gate is satisfied.
+> E14 may proceed once its own prereqs are met (nix/nixos-generate installed + supply-chain LGTM).
+
 Context: the phase-2 live-proof cycle is now substantially closed (E6g full VM + E13-S02 both
 LIVE-PROVEN; E8b substrate live-proven, app-layer egress-blocked here), which UN-GATES E14 per D-037.
 But E14 cannot be executed to the quality bar in this session because of two hard prerequisites that

@@ -4,6 +4,23 @@ Format: **Decision** · date · context · operator choice · agent counterpoint
 
 ---
 
+## D-039 — `/operator-inbox` session answers (2026-07-17)
+
+**Date:** 2026-07-17
+**Context:** Operator ran `/operator-inbox` on v0.4.0 tip (`4b2d85a`, clean). All prior INBOX items were already answered/decide-and-logged; this session ratifies/revisits the loop2 calls + answers three forward-direction questions.
+
+**Decisions:**
+1. **Next focus** → understand+unblock E8b app-layer, but **E14/Phase-3 is NOT blocked by it**. E8b app-layer is environment-blocked (corporate egress allowlist drops the GSK API `:6443`), not a phase-2 defect, so the "phase-2 live before E14" gate (D-037) is satisfied. E14 may proceed once its own prereqs are met (`nix`/`nixos-generate` installed + supply-chain LGTM for E14-S03).
+2. **E12c-S08 (provider-gridscale badges)** → operator said "go ahead," but **verified already RESOLVED — no action taken.** Scorecard badge resolves (HTTP 302→SVG, score 6.6, last 3 Scorecard runs green); 4 GitHub Releases now exist (v0.1.0/v0.1.1/v0.2.0+alpha, backfilled 2026-07-17). Redundant `gh release create` deliberately NOT fired.
+3. **E6g private Network MR** → **CHANGE (revisit): drop it.** Operator wants the strictly-minimal graph. Next-session lane: remove the unattached private `Network` managed-resource from `composition-website-gridscale.yaml` + relax the 4-kind composition gate to the proven 3-kind serving topology (Server + IPv4 + Firewall/single public NIC). *Counterpoint (kept):* the 4-kind gate demonstrated multi-kind composition breadth; dropping to 3 kinds narrows that demo — but the Network MR was genuinely unused (never attached to the Server), so dropping it is the more honest graph.
+4. **F2 orphaned `.kw-*` deck CSS** → **CHANGE (revisit): wire-or-delete.** Next-session deck lane: either wire `.kw-footer/.kw-chip/.kw-kicker` to real slide elements, or delete the dead rules — and tighten `theme-tokens.sh` to assert *application*, not just presence. Core identity (graphite bg, teal accent, Inter/JetBrains, progress bar) already applied.
+5. **F3 ROADMAP markdownlint (~174 warnings)** → **RATIFIED as-shipped.** Stays out of E12c scope; folds into the audit-backlog DOC-13 hygiene lane (dedicated markdownlint gate + fix). Pre-existing, not a regression.
+6. **E8b Option-A / jump VM** → **CHANGE (revisit): jump VM AUTHORIZED, but cost-gated.** Operator authorized provisioning a gridscale jump VM to reach `:6443` from inside the tenant. *Counterpoint (kept, operator informed):* the **unrestricted-network path costs €0 extra** and proves the identical app-layer, whereas the jump VM adds tenant compute + teardown; and neither path dodges the real risk that the app-of-apps has never synced on GSK (assumes Cilium+Gateway API; GSK runs its own CNI → first sync is an integration task). Recorded as **cost-gated: prefer an unrestricted network first; spin the jump VM only if none is available.** Awaiting operator confirm if they want it unconditional.
+
+**Status:** Items 3/4/6 tee up next-session lanes (E6g composition trim · deck F2 wire-or-delete · E8b app-layer live proof). Item 5 folds into DOC-13. Items 1/2 need no code.
+
+---
+
 ## D-001 — Cloud target: OVH over gridscale lab
 
 **Date:** 2026-07-15  
