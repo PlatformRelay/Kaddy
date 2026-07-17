@@ -9,7 +9,12 @@
 #   * declares an accent variable whose value is golf-teal, NOT k8s-blue
 #     `#326ce5` (the ADR-0112 override — a future edit can't silently drift);
 #   * wires Inter (sans) + JetBrains Mono (mono) fonts;
-#   * ships the footer + progress-bar + kicker/chip chrome.
+#   * ships the progress-bar chrome in the style layer, and the kicker +
+#     AI-footer chrome APPLIED to real elements by CoverArt.vue.
+#
+# This gate asserts APPLICATION, not mere presence: for kicker and footer it
+# requires BOTH a class definition AND an element that carries that class, so a
+# token that is defined-but-unapplied (or applied-but-undefined) FAILS.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -55,10 +60,28 @@ fi
 { grep -qi 'JetBrains Mono' "${DECK}" || grep -qi 'JetBrains Mono' "${STYLE}"; } \
   || fail "JetBrains Mono font not wired"
 
-# 5) Workshop chrome — footer + progress-bar + kicker/chip motifs.
-need 'progress'                      "progress-bar chrome"
-need 'footer|kw-footer'              "footer chrome"
-need 'kicker'                        "uppercase mono kicker chrome"
-need 'chip'                          "chip/card motif"
+# 5) Workshop chrome — assert APPLICATION, not presence.
+#
+#    Progress bar: Slidev injects the `.slidev-progress-bar` element itself, so
+#    there is no authored markup to point at — a style-layer definition IS the
+#    live wiring. This one check is asymmetric on purpose.
+need 'progress'                      "progress-bar chrome (style layer)"
 
-echo "OK: theme-tokens — --kw-* port present, graphite bg, golf-teal accent (not #326ce5), Inter+JetBrains Mono, workshop chrome"
+#    Kicker + AI footer: applied by CoverArt.vue's scoped <style>. For each,
+#    require BOTH a `.kd-*` class DEFINITION and an element that CARRIES that
+#    class in the components — so a defined-but-unapplied (or applied-but-
+#    undefined) token FAILS the gate.
+COMPONENTS="${SLIDES}/components"
+
+applied() {  # <class> <human-name>
+  local cls="$1" name="$2"
+  grep -rqE "\.${cls}\s*\{" "${COMPONENTS}" \
+    || fail "${name}: class .${cls} is not DEFINED in slides/components/"
+  grep -rqE "class=\"[^\"]*\b${cls}\b" "${COMPONENTS}" \
+    || fail "${name}: class .${cls} is defined but NOT APPLIED to any element"
+}
+
+applied 'kd-cover-kicker'  "uppercase kicker chrome"
+applied 'kd-ai-footer'     "AI-generated footer chrome"
+
+echo "OK: theme-tokens — --kw-* port present, graphite bg, golf-teal accent (not #326ce5), Inter+JetBrains Mono, progress-bar chrome + kicker/footer applied by CoverArt.vue"
