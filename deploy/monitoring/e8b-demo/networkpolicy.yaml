@@ -1,0 +1,47 @@
+# SEC-19 — allow the Cilium Gateway (ns `gateway`) to reach the e8b-demo
+# surfaces through the `monitoring` default-deny-ingress baseline.
+#
+# The demo Services live in `monitoring` (behind default-deny-ingress from the
+# E1c baseline, deploy/policies/network/monitoring.yaml). The clubhouse Gateway
+# in ns `gateway` routes /scorecard + /grafana to them via a cross-namespace
+# HTTPRoute (httproute.yaml + referencegrant.yaml). Without this carve-out the
+# HTTPRoute is admitted but the dataplane drops gateway->demo traffic, so a live
+# e8b demo would 502. Scoped tightly: only from ns `gateway`, only to the two
+# named demo workloads, only on their serving ports.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: e8b-demo-allow-gateway-ingress
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: e8b-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: e8b-demo-allow-gateway-ingress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E8b-S02
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - e8b-scorecard
+          - e8b-grafana-readonly
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: gateway
+      toPorts:
+        - ports:
+            - port: "8080" # e8b-scorecard (static nginx)
+              protocol: TCP
+            - port: "3000" # e8b-grafana-readonly
+              protocol: TCP

@@ -117,6 +117,20 @@ grep -qE 'ReplacePrefixMatch' "$R" \
 # Cross-namespace backendRef (gateway ns -> monitoring ns) needs a ReferenceGrant.
 grep -qE 'kind:[[:space:]]*ReferenceGrant' "${DEMO_DIR}/referencegrant.yaml" \
   || fail "referencegrant.yaml must define a ReferenceGrant (gateway->monitoring backendRefs)"
+# SEC-19: the ReferenceGrant is the control-plane half; the DATAPLANE half is a
+# CiliumNetworkPolicy carving gateway->demo traffic through `monitoring`'s
+# default-deny-ingress, else a live demo 502s at Cilium (referencegrant alone
+# does NOT open the dataplane).
+NP="${DEMO_DIR}/networkpolicy.yaml"
+need_file "${NP}"
+grep -qE 'kind:[[:space:]]*CiliumNetworkPolicy' "${NP}" || fail "networkpolicy.yaml must be a CiliumNetworkPolicy"
+grep -qE 'k8s:io.kubernetes.pod.namespace:[[:space:]]*gateway' "${NP}" \
+  || fail "netpol must allow ingress FROM the gateway namespace"
+grep -qE 'e8b-scorecard' "${NP}" || fail "netpol must select the scorecard workload"
+grep -qE 'e8b-grafana-readonly' "${NP}" || fail "netpol must select the grafana workload"
+grep -qE 'port:[[:space:]]*"8080"' "${NP}" || fail "netpol must allow the scorecard port (8080)"
+grep -qE 'port:[[:space:]]*"3000"' "${NP}" || fail "netpol must allow the grafana port (3000)"
+ok "SEC-19 dataplane carve-out present (CiliumNetworkPolicy: gateway -> demo :8080/:3000)"
 # Cloud-only LE cert: excluded-by-location + staging->prod (phase-2 edge TLS).
 C="${DEMO_DIR}/cloud-only/certificate-cloud-only.yaml"
 grep -qi 'letsencrypt-staging' "$C" || fail "certificate-cloud-only must reference letsencrypt-staging"
@@ -169,6 +183,7 @@ if command -v kubeconform >/dev/null 2>&1; then
     "${DEMO_DIR}/grafana-readonly.yaml" \
     "${DEMO_DIR}/httproute.yaml" \
     "${DEMO_DIR}/referencegrant.yaml" \
+    "${DEMO_DIR}/networkpolicy.yaml" \
     "${DEMO_DIR}/cloud-only/certificate-cloud-only.yaml" \
     "${APP}" "${PROJ}" >/dev/null \
     || fail "kubeconform rejected an e8b demo manifest"
