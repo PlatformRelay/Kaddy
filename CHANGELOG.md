@@ -3,6 +3,46 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.4.1] — 2026-07-17
+
+**Hardening, real CI gates, and a live `:6443` proof.** A remediation loop that burned
+down the D-039 next-session lanes and the audit backlog, then closed the one remaining
+environment block. Highlights: **SEC-14** pins explicit `securityContext` on the
+observability workloads (Grafana/Prometheus/Alertmanager/Loki; Alloy + node-exporter kept
+as documented host-access exceptions); **DOC-13** turns the markdownlint gate from inert to
+genuinely enforced in CI (pinned `markdownlint-cli2@0.23.1`, narrowed to shippable docs, 0
+issues across 160 files); a new **release-provenance** guard fails CI on a false "shipped in
+vX" claim (with a companion guard that keeps the CI checkout deep + tagged); the **E6g**
+Website composition drops a dead composed `Network` managed-resource (proven 3-kind serving
+topology); and the deck token gate + provenance guard were fixed to actually run where
+they're wired (three "inert gate" defects found by independent review). Finally, with the
+corporate VPN disconnected, the **GSK API `:6443` egress is now OPEN** — proven on an
+ephemeral cluster (`kubectl get nodes` → Ready) then torn down (tenant clean), un-blocking
+the E8b app-layer. Audit verdict: **READY** (0 P0/P1, 0 regressions).
+
+### Security
+- **SEC-14:** Explicit securityContext on observability workloads (Grafana/Prometheus/Alertmanager/Loki; Alloy + node-exporter documented host-access exceptions)
+
+### Fixes
+- **e1g:** Scrub leftover `.terraform` in the offline gate + teardown (ENV-1); reconcile the e6g evidence Network-MR claim (DOC-14)
+
+### Refactoring
+- **deck:** Delete orphaned `.kw-*` CSS; assert token *application* not mere presence (D-039 F2)
+- **e6g:** Drop the unattached composed Network MR; relax the composition gate to the proven 3-kind topology (D-039)
+
+### Tests
+- **meta:** Add a release-provenance ancestry guard — an epic's commits must be ancestors of the tag it claims to have shipped in
+- **meta:** Give the release-provenance guard teeth on CI (fetch full history + tags; wiring guard; fail-not-skip on CI)
+
+### CI & build
+- **doc13:** Enforce markdownlint over shippable docs (narrowed globs, line-length noise relaxed) and pin `markdownlint-cli2@0.23.1` (SEC-4)
+- **deck:** Wire `theme-tokens.sh` into the deck CI composite + guard the wiring so it can't silently un-wire (DECK-1)
+
+### Documentation
+- **e8b:** Live-prove GSK `:6443` egress OPEN with the VPN disconnected (ephemeral cluster, torn down, tenant clean)
+- **e6g:** Drop the stale composed-Network claim in the openspec tasks (review F1)
+- **inbox / coord:** Log the D-039 operator answers, the loop3 lanes, and decision D-040
+
 ## [0.4.0] — 2026-07-17
 
 **Phase-2 live extensions + deck refresh.** The gridscale delivery is now proven live end-to-end on
