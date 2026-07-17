@@ -454,3 +454,29 @@ is endorsement-of-record, not a gate — revisiting any would mean rework. Opera
 - kaddy-portal repo: PUBLIC (operator-authorized end-of-session; flipped from the initial safe-default private).
 - Next-session priority: finish phase-2 live extensions, THEN E14/Phase-3.
 - This session delivered: v0.3.0 + v0.3.1, CI green, audit READY, all phase-2 offline + E10, 4 live proofs (E1g GSK, E13 build, E6g provider→network, E13 deploy→serve).
+
+## D-2026-07-17-loop2 — Phase-2 live extensions PROVEN (E6g full + E13-S02) + reviews
+
+**Date:** 2026-07-17 (loop continuation) · **Status:** DONE + merged to main.
+
+- **E6g-S03/S04 full Website composition VM — LIVE-PROVEN.** Website XR (variant=gridscale) →
+  Crossplane composition → real gridscale nginx VM serving /legacy + /healthz + /metrics on a real
+  public IP (185.241.34.52, de/fra2), then destroyed; tenant API-audited clean. Three real composition
+  defects found + fixed: (1) v1→v2 `spec.crossplane.compositionSelector` (both committed Website XRs;
+  the in-cluster claim was the tech-review P1 F1); (2) public IPv4 needs the gridscale Public Network
+  attached — Server takes a SINGLE public NIC; **dual-NIC (public+private) was live-shown to break
+  serving** (the composed private Network stays in the graph, not the Server's default route); (3) nginx
+  cloud-init dropped the stock `default_server` site so nginx starts. **Finding: cloud-init user_data on
+  gridscale stock Ubuntu WORKS** — the earlier "datasource" hypothesis was wrong; the real blocker was
+  the duplicate `listen 80 default_server`. Gate `test:smoke:e6g` tightened to reject any v1 top-level
+  selector. Tech-review: REQUEST CHANGES → APPROVE after F1+F4 fixes.
+- **E13-S02 Marketplace register+import — LIVE-PROVEN (both engines).** `gridscale_marketplace_application`
+  (register) + `_import` (private tenant) applied live for caddy + nginx; gate `e13-s02-register.sh` OK
+  (id+unique_hash+import_id). No compute — metadata only; object-storage bucket + `.gz` + dedicated S3
+  key created for the proof and destroyed after; tenant marketplace audited clean. **Finding: register
+  accepts the `.gz` path + returns unique_hash without a full boot cycle** — the register/import mechanism
+  is decoupled from S01-build/S03-deploy.
+- **E12c deck+docs refresh (S01–S09, S08 HELD) — merged.** Tech-review REQUEST CHANGES on F1 (MR-claim
+  wording). **F1 CLEARED by independent network verification:** upstream PRs #509/#510/#511 genuinely
+  exist, are OPEN, operator-authored on `gridscale/terraform-provider-gridscale`; go-ahead recorded in
+  provider-gridscale D-021. The deck wording ("filed, open, awaiting review, not merged") is accurate.

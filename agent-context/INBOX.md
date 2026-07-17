@@ -181,3 +181,17 @@ Architect lane (`/design-architecture`) produced a durable, gated design spec fo
 - **⚠️ Outward-facing, needs go-ahead:** REQ-E12c-S08 fixes `provider-gridscale`'s failing badges in the SEPARATE repo — Scorecard→durable `api.securityscorecards.dev` score badge (transient 503s, config is fine); Release→backfill `gh release create v0.1.1/v0.1.0` + tag-triggered `release.yml` (tags exist, zero GitHub Releases). Do NOT fire without explicit operator go-ahead.
 - **Honesty guardrail:** every new section tagged landed-vs-designed against §03; NixOS stays designed.
 Revert: delete `openspec/changes/e12c-deck-docs-refresh/`, `docs/adr/0112-*`, `slides/recording-guide.md`.
+
+---
+
+## 🟡 DECIDED (awaiting approval) — deck/E6g non-blocking follow-ups (2026-07-17 loop2)
+Merged E6g/E13-S02/deck with two accepted-partial notes (tech-review, non-blocking):
+- **F2 (deck):** `.kw-footer/.kw-chip/.kw-kicker` CSS defined but not wired to elements; `theme-tokens.sh`
+  passes on presence, not application. Core identity (graphite bg, teal accent, Inter/JetBrains, progress
+  bar) IS applied. Chose: ship + note. Revert/close: wire the chrome to slide elements OR drop the dead
+  rules + tighten `theme-tokens.sh` to assert usage.
+- **F3 (docs):** `docs/ROADMAP.md` carries ~174 pre-existing markdownlint warnings (identical on main,
+  not a regression). Chose: out of E12c scope; leave for a dedicated hygiene lane.
+- **E6g composition design:** the composed private `Network` MR is retained (satisfies the 4-kind gate +
+  documents a private/east-west tier) but is NOT attached to the Server (single public NIC is the proven
+  serving topology). If you prefer a strictly-minimal graph, drop the Network resource + relax the gate.
