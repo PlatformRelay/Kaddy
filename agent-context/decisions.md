@@ -480,3 +480,13 @@ is endorsement-of-record, not a gate — revisiting any would mean rework. Opera
   wording). **F1 CLEARED by independent network verification:** upstream PRs #509/#510/#511 genuinely
   exist, are OPEN, operator-authored on `gridscale/terraform-provider-gridscale`; go-ahead recorded in
   provider-gridscale D-021. The deck wording ("filed, open, awaiting review, not merged") is accurate.
+
+## D-2026-07-17-release2 — v0.4.0 cut (🔴 DECIDED, operator-authorized releases)
+
+**Date:** 2026-07-17 (loop2) · **Status:** RELEASED. v0.4.0 tagged + GitHub release published
+(https://github.com/PlatformRelay/Kaddy/releases/tag/v0.4.0). Milestone: phase-2 live extensions
+(E6g full Website composition VM, E13-S02 Marketplace register/import — both live-proven; E8b GSK
+substrate live-proven) + E12c deck+docs refresh + DOC-10 truth fix. Cut on CI-green main + audit
+verdict READY (0 P0/P1). git-cliff CHANGELOG. Rationale: natural milestone (phase-2 live cycle
+substantially closed), meaningful user-facing value accumulated, audit READY. Revert: releases are
+operator-only to delete — flag if the scope was wrong.

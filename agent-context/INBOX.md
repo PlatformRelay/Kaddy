@@ -212,3 +212,25 @@ substrate is genuinely proven, the block is environmental not a defect, and cost
 Revert/close: run E8b from a network (or gridscale jump VM) with `:6443` egress — the substrate
 + manifests + offline gate are all ready. **Operator: E8b is 2/3 proven (substrate live; app-layer
 egress-blocked here). If you want the app-layer proof, it needs a `:6443`-capable network.**
+
+---
+
+## 🔴 DECIDED (awaiting approval) — E14/Phase-3 Nix golden images deferred to a dedicated session (2026-07-17 loop2)
+Context: the phase-2 live-proof cycle is now substantially closed (E6g full VM + E13-S02 both
+LIVE-PROVEN; E8b substrate live-proven, app-layer egress-blocked here), which UN-GATES E14 per D-037.
+But E14 cannot be executed to the quality bar in this session because of two hard prerequisites that
+are OUTSIDE this environment's control:
+  1. **Nix tooling absent** — `nix` / `nixos-generate` are not installed. A flake.nix + NixOS module
+     can be authored but NOT built or validated locally (`nix flake check` would only skip-not-fail),
+     and the golden-image build (E14-S04 `nixos-generate → .gz`) can't run. Authoring unbuildable,
+     unvalidated Nix would be the opposite of "excellent repo."
+  2. **Supply-chain maintainer-LGTM (D-037)** — E14-S03 (reproducibility + SBOM + cosign sign) is
+     gated on operator LGTM before merge; the epic is admitted, the merge is not.
+Options: (A) author unvalidatable Nix now [rejected — quality]; (B) **defer E14 to a dedicated session
+with `nix` installed + operator supply-chain LGTM in the loop** [chosen]; (C) author only offline
+scaffolding + hold [marginal value without the ability to build/validate]. Chose **(B)**.
+**Operator asks to unblock E14:** (1) install `nix` (+ `nixos-generate`) on the build host; (2) grant
+supply-chain LGTM for E14-S03 when ready. The NixOS cloud-init boot-contract (E14-S01) is de-risked:
+this session live-proved cloud-init user_data DOES work on gridscale (E6g), so a NixOS image with
+`services.cloud-init` + the right datasource should boot+serve — and a NixOS VM serve-check on :80 is
+reachable from here (unlike the GSK API :6443). See ADR-0303 / ROADMAP E14.
