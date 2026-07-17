@@ -8,8 +8,11 @@ security baseline cutover (E1c), identity (E1d), the optional Caddy operator (E9
 audit (E11-S01), and Slidev deck (E12) also landed on `main`. Two releases are tagged and published:
 **v0.1.0** (serve → scrape → fire) and **v0.1.1** (self-service Websites, identity, CI parity). The
 Caddy-MVP tenant syncs live from git (the `e-caddy-mvp` epic; the platform AppProject was unblocked
-in D-036). Remaining work: phase-2 GSK (E6g/E13), the Backstage portal
-(E10, cuttable), and the E12 demo recording (E12b). Each epic links an OpenSpec change under
+in D-036). **Phase 2 (gridscale) landed as offline-authored IaC** — E1g day-0 stacks (GSK cluster
+**live-proven** 2026-07-17, then torn down), E6g Upjet `provider-gridscale`, E8b on-demand live-demo,
+E13 Marketplace template — plus the E10 Backstage portal's kaddy-side GitOps wiring (app source in the
+separate `PlatformRelay/kaddy-portal` repo). Remaining: the cost-gated live proofs (E6g/E13/E8b
+bring-up, running portal) and the E12 demo recording (E12b). Each epic links an OpenSpec change under
 `openspec/changes/`.
 
 Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
@@ -22,8 +25,11 @@ Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 | --- | --- | --- | --- | --- |
 | **1 · Platform (local)** | **kind + Cilium** ([E1e](../openspec/changes/e1e-kind-local-cluster/), ✅ landed) — single-node; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Now — develop GitOps platform locally | kaddy **E1e** → E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
 | **2 · Lab (gridscale)** | GSK + LBaaS + Object Storage | Lab credits | After E3–E7 green locally | E1g → E6g → E8b |
+| **3 · Golden images (Nix)** | Nix-built VM images ([E14](../openspec/changes/e14-nix-golden-images/)) → gridscale Marketplace + multi-cloud targets | Lab credits (ephemeral) | **After Phase 2's live-proof cycle closes** (E6g/E13/E8b live) — forward-looking, **not next-up** | E14 |
 
 **Gate to phase 2:** E3–E7 green on the local kind cluster → start E1g (gridscale day-0).
+
+**Gate to phase 3:** Phase 2's live-proof cycle closed (E1g-S03 ✅ LIVE-PROVEN; E6g/E13/E8b live still deferred) → then E14-S01 boot-contract spike. Phase 3 is forward-looking, **not** the next lane.
 
 The 3-node Talos [driving-range](../../driving-range/) is a **deferred optional maturity-contrast spike**
 (D-025), not a phase-1 blocker — see the section near the end of this file.

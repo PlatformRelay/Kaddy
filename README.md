@@ -100,9 +100,19 @@ Slidev showcase deck (E12), and the optional Caddy operator (E9, landed on `main
 also on `main`. Two releases are tagged and published: **v0.1.0** (serve → scrape → fire) and
 **v0.1.1**, which added Crossplane self-service (E6 `Website` XRD, claim → monitored site), Dex +
 GitHub identity (E1d), and CI substrate parity. A data-flow security review is at
-[docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md). Next:
-the Backstage self-service portal (E10, cuttable) and phase 2 (gridscale GSK) — both deferred until
-scheduled. Full plan: [ROADMAP](docs/ROADMAP.md).
+[docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md).
+
+**Phase 2 (gridscale) landed as offline-authored IaC** — Terramate/OpenTofu stacks for the GSK
+day-0 substrate (E1g), the Upjet `provider-gridscale` consumer (E6g), the on-demand live-demo env
+(E8b), and the gridscale Marketplace template (E13) — each gated offline (`tofu test`/conftest/
+kubeconform/promtool) with live provisioning ruthlessly cost-gated (create → verify → `tofu
+destroy`). **E1g's GSK cluster was live-proven** on real gridscale (`kubectl get nodes` Ready, then
+torn down, tenant left clean — see [evidence/live/e1g-gsk-2026-07-17.md](evidence/live/e1g-gsk-2026-07-17.md)).
+The **Backstage self-service portal** (E10, cuttable) landed its kaddy-side GitOps wiring
+(`deploy/portal`); the Backstage app source lives in the separate
+[PlatformRelay/kaddy-portal](https://github.com/PlatformRelay/kaddy-portal) repo. The remaining
+live proofs (E6g provider install, E13 image pipeline, E8b bring-up, the running portal) are
+cost-gated follow-ups. Full plan: [ROADMAP](docs/ROADMAP.md).
 
 ## Reference material
 
