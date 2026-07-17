@@ -476,7 +476,11 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 | E12c-S02 | gridscale value-creation hero + Crossplane-as-IaC (main arc; provider-gridscale + 3 TF-provider bug MRs — **landed**) | ⬜ |
 | E12c-S03 | Agentic-workflow beat (epic → plan → story → test, walked on `e5-monitoring-marshal`) | ⬜ |
 | E12c-S04 | Appendix (post-sentinel, gate-exempt): NixOS-path (**designed**) · repo-tree · quickstart+tools · solved-different-ways | ⬜ |
+| E12c-S05 | Hybrid k8s-workshop styling port (`--kw-*` palette, golf-teal accent, Inter/JetBrains Mono, chrome; `theme-tokens.sh`) | ⬜ |
+| E12c-S06 | GIF recording protocol wired (`data-surface-mode=fallback` slots; keep ≥ 3 live iframes) | ⬜ |
+| E12c-S07 | Kaddy README badges (CI/deck/license/docs; `readme-badges.sh`) | ⬜ |
 | E12c-S08 | provider-gridscale badge/release backfill (SEPARATE repo) | ⏸ HELD — outward-facing; needs explicit operator go-ahead |
+| E12c-S09 | Docs hygiene (HIRING_EXERCICSE→HIRING_EXERCISE rename; fix broken ROADMAP links; markdownlint clean) | ⬜ |
 
 ---
 
