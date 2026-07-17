@@ -415,6 +415,107 @@ Crossplane is the infrastructure-as-code of platform engineering.
 
 ---
 layout: none
+sectionTime: 55
+---
+
+<CoverArt
+  src="/covers/section-17-spec-driven-greenskeeping.png"
+  kicker="§ 04c · The spec-driven greenskeeping"
+  title="How it was built — epic → plan → story → test"
+/>
+
+<!--
+One more thing before the architecture, because it is the real differentiator:
+how this platform was built. Every change earns its place through the same
+OpenSpec loop — epic, plan, story, test — with guardrails wrapped around a
+non-deterministic core. Let me walk one real epic end to end.
+-->
+
+---
+layout: default
+---
+
+# How it was built — `epic → plan → story → test`
+
+<div class="text-sm opacity-70 -mt-2">§ 04c · one real epic, walked end to end: <code>e5-monitoring-marshal</code></div>
+
+<div class="grid grid-cols-4 gap-3 pt-4 text-left text-sm">
+
+<div class="p-3 rounded border border-teal-700">
+
+### 1 · Epic
+
+`openspec/changes/`
+**`e5-monitoring-marshal/`**
+
+The change **folder** is the epic — the unit of work, versioned in git.
+
+</div>
+
+<div class="p-3 rounded border border-teal-700">
+
+### 2 · Plan
+
+`proposal.md`
+
+Why + scope + non-goals + decisions. The **plan** the epic commits to.
+
+</div>
+
+<div class="p-3 rounded border border-teal-700">
+
+### 3 · Story
+
+`tasks.md` + `specs/monitoring/spec.md`
+
+TDD slices + a **REQ** block: Given/When/Then, a **`Level:`**, and a **`Test:`** + **`Verify:`** per requirement.
+
+</div>
+
+<div class="p-3 rounded border border-teal-700">
+
+### 4 · Test
+
+`tests/promtool/marshal.test.yaml`
+
+The concrete artifact the story named — a real **promtool `alert_rule_test`** that must go green.
+
+</div>
+
+</div>
+
+<div class="pt-3 text-left max-w-4xl mx-auto text-sm opacity-90">
+
+Example — **`REQ-E5-S01-01`** carries `Test: tests/promtool/caddy-mvp-marshal.test.yaml` and a
+runnable `Verify:` (`promtool test rules …`). Every REQ in this repo does — a **gate matrix**
+enforces it (`task test:spec`: 218 REQs, 218 `Verify` + `Test` blocks).
+
+</div>
+
+<div class="pt-2 text-center text-teal-400">
+Guardrails wrap a non-deterministic core. Autonomy is earned by green gates — a coordinator dispatches worker subagents, each isolated, each TDD-first, each reviewed. And every run is a replayable audit.
+</div>
+
+<!--
+Here is the real differentiator — how the platform was built. Every change runs
+through the same OpenSpec loop: epic, plan, story, test. Take one real epic,
+e5-monitoring-marshal. The change folder under openspec/changes is the epic —
+the unit of work, versioned in git. Inside it, proposal dot md is the plan: why,
+scope, non-goals, decisions. Tasks dot md plus the spec file are the story —
+test-driven slices and a requirement block with Given, When, Then, a level tag,
+and crucially a Test and a Verify line for every single requirement. REQ-E5-S01-01,
+for instance, names tests/promtool/marshal as its test and gives you a runnable
+promtool command to verify it. Then the concrete artifact exists and must go
+green. This is not aspirational: a gate matrix enforces it — task test:spec
+checks that all two hundred and eighteen requirements carry both a Verify and a
+Test block, and it passes. The philosophy I borrowed and made my own: guardrails
+wrap a non-deterministic core, autonomy is earned by green gates, a coordinator
+dispatches isolated worker subagents that are TDD-first and reviewed, and every
+run is a replayable audit. That is the how behind everything you have seen.
+-->
+
+---
+layout: none
 beat: architecture
 sectionTime: 50
 ---

@@ -238,6 +238,15 @@ whenever the wind nudges them — a gentle control-loop reconciling the course b
 the drawing. One master template card spawns several identical tidy holes.
 Retro-futurist, quietly magical "the drawing keeps the world in sync" mood.
 
+### S17 — How it was built — *The spec-driven greenskeeping* — `section-17-spec-driven-greenskeeping.png`
+
+A tidy four-station relay along a fairway: a big **Epic scroll** is trimmed into a
+**Plan card**, handed to a **Story flag**, which is planted only after a small
+**Test lantern** lights green beside it. The identical greenkeepers run the relay in
+disciplined order, each holding one glowing scroll; a lanky Marshal audits from the
+tower with brass binoculars, ticking a checklist. Calm, methodical "every change
+earns its place, tests light the way" energy. Keep busy action right-of-centre.
+
 ---
 
 ## Branding
