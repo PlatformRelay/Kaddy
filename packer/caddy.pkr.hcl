@@ -39,8 +39,15 @@ variable "gridscale_token" {
 
 variable "base_template" {
   type        = string
-  default     = "Ubuntu 24.04 LTS"
-  description = "gridscale public base template to build the golden image from."
+  default     = "b308d75e-b8fb-4c90-87dc-f909879ae08c" # Ubuntu 24.04 LTS template UUID (gridscale)
+  description = "gridscale public base-template UUID to build the golden image from (default: Ubuntu 24.04 LTS)."
+}
+
+variable "ssh_password" {
+  type        = string
+  default     = ""
+  description = "Root password set on the EPHEMERAL build VM so the SSH provisioner can connect (live build only — pass via -var or PKR_VAR_ssh_password; the VM is destroyed after the snapshot). gridscale requires a strong password."
+  sensitive   = true
 }
 
 source "gridscale" "caddy" {
@@ -55,6 +62,7 @@ source "gridscale" "caddy" {
   server_memory      = 1
   hostname           = "kaddy-caddy-golden"
   ssh_username       = "root"
+  ssh_password       = var.ssh_password
 }
 
 build {
