@@ -3,6 +3,30 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.3.0] — 2026-07-17
+
+### Features
+- **gridscale:** E1g day-0 IaC — Terramate stacks + offline gates
+- **gridscale:** E6g — consume Upjet provider-gridscale (offline)
+- **gridscale:** E8b — on-demand live demo env (offline)
+- **gridscale:** E13 — gridscale Marketplace template (offline)
+- **portal:** E10 Backstage portal — GitOps wiring (offline)
+
+### Fixes
+- **e13:** Correct gridscale packer builder args + strict validate gate
+- **e8b:** SEC-19 dataplane carve-out for the demo surfaces
+- **e13:** Packer build needs ssh_password + a template UUID
+
+### Tests
+- **e1g:** Live-prove GSK substrate on gridscale
+- **e13:** Live-prove the Caddy golden-image build on gridscale
+
+### Documentation
+- **inbox:** V0.2.0 released; phase-2 next (E1g→E6g→E8b)
+- **inbox:** Phase-2 live provisioning permitted but cost-sensitive (destroy after each test)
+- **inbox:** DOC-10 guard-gap follow-up (release-provenance assertion)
+- **status:** DOC-10 #6 — README/ROADMAP intro reflect phase-2 + E10 landed
+
 ## [0.2.0] — 2026-07-16
 
 ### Features
@@ -93,6 +117,7 @@ gitmoji-conventional commit history.
 - **e9:** Mark S01–S03 done on ROADMAP
 - **e9:** Point EXIT Test path at operator/ envtest file
 - Release-truth sweep — README/ROADMAP reflect v0.1.1 + E9 (DOC-10)
+- **release:** V0.2.0 changelog — E9 operator, Caddy-MVP tenant, audit hardening
 
 ### CI & build
 - **e8:** Run offline scorecard in verify workflow
