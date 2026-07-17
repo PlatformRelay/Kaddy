@@ -3,6 +3,12 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.3.1] — 2026-07-17
+
+### Tests
+- **e6g:** Live-prove provider-gridscale actuates real gridscale infra
+- **e13:** Live-prove deploy->serve->scrape on a real gridscale VM
+
 ## [0.3.0] — 2026-07-17
 
 ### Features
@@ -26,6 +32,9 @@ gitmoji-conventional commit history.
 - **inbox:** Phase-2 live provisioning permitted but cost-sensitive (destroy after each test)
 - **inbox:** DOC-10 guard-gap follow-up (release-provenance assertion)
 - **status:** DOC-10 #6 — README/ROADMAP intro reflect phase-2 + E10 landed
+
+### Chores
+- **release:** V0.3.0 — phase 2 (gridscale) + E10 portal
 
 ## [0.2.0] — 2026-07-16
 
