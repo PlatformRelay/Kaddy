@@ -1,15 +1,33 @@
+# REQ-E10-EXIT: the portal demo path (auto-gen money-shot) — fill the
+# auto-generated form -> PR -> merge -> reconcile, then live-edit the XRD and
+# refresh to show the form adapt (the portal is a projection of the platform
+# API, not a copy).
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
   name: portal-suite
   annotations:
     kaddy.io/req: REQ-E10-EXIT
+    # skip: true — the EXIT path drives a LIVE Backstage (auto-generated form ->
+    # PR -> merge -> reconcile) + a live XRD edit refresh. That is a live-cycle
+    # bring-up (the custom kaddy-backstage image build + a running portal),
+    # honestly DEFERRED — see docs/runbooks/portal-new-site.md. TEST-4 keeps
+    # this skip-gated: skip-not-fail offline. The underlying deploy/portal/
+    # manifests DO now land (E10-S01), but the RUNNING portal does not, so
+    # un-skipping would FAIL offline, violating the harness rule. Un-skip during
+    # the live bring-up and follow the runbook. The offline contract is proven
+    # by tests/smoke/e10-offline.sh (manifests + config + PR invariant +
+    # read-only RBAC) and the skip-gated backstage-ready / scaffolded-xr specs.
+    kaddy.io/status: live-cluster-only-backstage-bring-up-deferred
 spec:
-  description: E10 — Backstage portal + scaffolded WebsiteClaim (skip until portal deployed)
   skip: true
+  concurrent: false
+  description: E10 EXIT — auto-generated form -> PR -> reconcile + XRD-edit money-shot (live-deferred)
   steps:
-    - try:
+    - name: portal-exit-placeholder
+      try:
         - script:
             content: |
-              echo "portal suite placeholder — enable when deploy/portal/ is synced (E10)"
+              echo "E10 EXIT path is a LIVE bring-up — see docs/runbooks/portal-new-site.md."
+              echo "Offline contract proven by tests/smoke/e10-offline.sh."
               exit 0

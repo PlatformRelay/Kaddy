@@ -1,0 +1,162 @@
+# REQ-E10-S01/S02/S04/S05 — Backstage app-config for the kaddy portal / IDP.
+#
+# NOT a Kubernetes manifest — this is Backstage's own config, mounted into the
+# backstage pod (via the Helm chart's `appConfig`/a ConfigMap). It is therefore
+# NOT fed to kubeconform; tests/portal/*.sh assert its shape instead.
+#
+# THE INVARIANTS this file must hold:
+#   - auth: OIDC -> Dex only, NO guest access (ADR-0107). platform-* groups map
+#     to Backstage permissions.
+#   - write path: kubernetes-ingestor auto-generates ONE scaffolder template per
+#     `Website` XRD from its OpenAPI schema (no hand-written template) and opens
+#     a PULL REQUEST to deploy/workloads/ — never a direct commit / cluster
+#     mutation (D-028, REQ-E10-S02-02).
+#   - read path: crossplane-resources + kubernetes + argocd plugins render live
+#     status via a READ-ONLY credential (D-029).
+#   - techdocs renders docs/ (mkdocs).
+#
+# Secrets ($…): env-expanded at runtime from KSOPS-rendered Secrets, NEVER in
+# git (ADR-0110 — mirrors deploy/identity/dex). No client secret is committed.
+app:
+  title: kaddy Portal
+  baseUrl: https://portal.kaddy.local:30443
+
+organization:
+  name: PlatformRelay
+
+backend:
+  baseUrl: https://portal.kaddy.local:30443
+  listen:
+    port: 7007
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+  cors:
+    origin: https://portal.kaddy.local:30443
+  database:
+    client: better-sqlite3
+    connection: ':memory:'
+  auth:
+    keys:
+      - secret: ${BACKEND_AUTH_SECRET}
+
+# --- auth: Dex OIDC ONLY, no guest (ADR-0107) --------------------------------
+auth:
+  environment: production
+  # No `guest` provider — the portal requires an OIDC login. Unauthenticated
+  # requests to protected routes redirect to Dex -> GitHub (REQ-E10-S01-02).
+  providers:
+    oidc:
+      production:
+        metadataUrl: https://dex.kaddy.local:30443/.well-known/openid-configuration
+        clientId: backstage
+        clientSecret: ${OIDC_CLIENT_SECRET}
+        prompt: auto
+        signIn:
+          resolvers:
+            # Map the Dex `email` claim to a catalog User. platform-* GitHub-org
+            # groups (Dex emits org:team group claims) drive Backstage permissions.
+            - resolver: emailMatchingUserEntityProfileEmail
+  # Explicit sign-in page — no anonymous/guest access to scaffolder actions.
+  signInPage: oidc
+
+# --- write path: kubernetes-ingestor (auto-generate scaffolder from the XRD) --
+# ADR-0111 / D-028: the scaffolder template is a PROJECTION of the Website XRD's
+# OpenAPI schema, generated at runtime — add a field to the XRD, refresh, the
+# form has it. publishPhase opens a PR (never a push / cluster mutation).
+kubernetesIngestor:
+  components:
+    enabled: true
+    taskRunner:
+      frequency: 10
+      timeout: 600
+  crossplane:
+    enabled: true
+    xrds:
+      enabled: true
+      # ONE generated scaffolder template per Website XRD, from its schema.
+      convertDefaultValuesToPlaceholders: true
+      publishPhase:
+        # The E10 invariant (REQ-E10-S02-02): the portal authors Git via a PULL
+        # REQUEST and NEVER mutates the cluster. In the TeraSky ingestor the PR
+        # behaviour is selected by `target` — a git forge (github/gitlab/
+        # bitbucket) makes the generated scaffolder OPEN A PR; the only non-PR
+        # value is `YAML` (a download link, no git write at all). We pin the
+        # forge to github and set a PR branchPrefix so every scaffold lands on a
+        # NEW branch -> a pull request against targetBranch, never a direct push.
+        allowedTargets: ['github.com']
+        target: github
+        git:
+          repoUrl: github.com?owner=PlatformRelay&repo=Kaddy
+          # targetBranch = the PR BASE branch. The scaffold is committed to a
+          # NEW branch (branchPrefix) and a PR is opened against this base — it
+          # is NOT a push to main.
+          targetBranch: main
+          branchPrefix: kaddy-portal/website-
+        # Users cannot retarget the repo — every PR lands in PlatformRelay/Kaddy.
+        allowRepoSelection: false
+        # Path control (where the scaffolded XR file lands) is on the XRD via
+        # terasky.backstage.io/target-path (deploy/workloads/{namespace}/website/)
+        # — that is the documented mechanism, asserted by ingestor-config.sh.
+    claims:
+      # Live Website XRs -> Software Catalog entities, no per-site catalog-info.
+      ingestAllClaims: true
+
+# --- read path: crossplane graph + kubernetes health + argocd status ---------
+crossplane:
+  # crossplane-resources plugin: XR -> composite -> managed-resource graph,
+  # per-resource YAML + events (v1 AND v2 XRs). Read-only against the cluster.
+  enablePermissions: false
+
+kubernetes:
+  serviceLocatorMethod:
+    type: multiTenant
+  clusterLocatorMethods:
+    - type: config
+      clusters:
+        - name: kaddy-local
+          url: https://kubernetes.default.svc
+          authProvider: serviceAccount
+          # The read-only SA token (deploy/portal/backstage/rbac/read-only-rbac.yaml).
+          serviceAccountToken: ${PORTAL_READONLY_SA_TOKEN}
+          skipTLSVerify: false
+          caData: ${KUBE_CA_DATA}
+
+argocd:
+  # ArgoCD community plugin: sync/health/deploy history on the entity page.
+  # Read-only ArgoCD account token (never in git — KSOPS-rendered Secret).
+  appLocatorMethods:
+    - type: config
+      instances:
+        - name: kaddy
+          url: https://argocd-server.argocd.svc
+          token: ${ARGOCD_READONLY_TOKEN}
+
+# --- catalog: static platform components + auto-ingested XRs ------------------
+catalog:
+  import:
+    entityFilename: catalog-info.yaml
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template]
+  locations:
+    # Static entities for the 4 platform components (clubhouse/marshal/
+    # mulligan/scorecard). Live Website XRs arrive via ingestAllClaims above.
+    - type: file
+      target: ../../catalog/catalog-info.yaml
+      rules:
+        - allow: [Component, System, API, Resource, Location]
+
+# --- techdocs: render docs/ (mkdocs already configured) ----------------------
+techdocs:
+  builder: local
+  generator:
+    runIn: local
+  publisher:
+    type: local
+
+# --- integrations: PR target for the ingestor publishPhase -------------------
+integrations:
+  github:
+    - host: github.com
+      # GitHub App / token for opening the scaffolder PRs — KSOPS Secret, never
+      # committed. Read/write is scoped to opening PRs, not merging.
+      token: ${GITHUB_PORTAL_TOKEN}

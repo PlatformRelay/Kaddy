@@ -1,0 +1,28 @@
+# REQ-E10-S02-01: the kubernetes-ingestor registers a scaffolder Template for
+# websites.platform.kaddy.io, auto-generated from the XRD OpenAPI schema.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-xrd-template-generated
+  annotations:
+    kaddy.io/req: REQ-E10-S02-01
+    # skip: true — needs a running Backstage with the kubernetes-ingestor task
+    # runner reconciled against the live Website XRD. Live-cycle (deferred).
+    kaddy.io/status: live-cluster-only-backstage-ingestor-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: scaffolder Template auto-generated from the Website XRD schema
+  steps:
+    - name: scaffolder-lists-website-template
+      try:
+        - script:
+            timeout: 120s
+            content: |
+              set -euo pipefail
+              # The Backstage scaffolder API lists a template whose parameters
+              # derive from the Website XRD (image/port/path/replicas/variant).
+              curl -sfk https://portal.kaddy.local:30443/api/scaffolder/v2/templates \
+                | grep -q 'websites.platform.kaddy.io' \
+                || { echo "no auto-generated Website scaffolder template found" >&2; exit 1; }
+              echo "auto-generated Website scaffolder template registered"

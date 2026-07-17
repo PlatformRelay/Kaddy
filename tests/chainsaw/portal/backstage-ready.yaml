@@ -1,0 +1,43 @@
+# REQ-E10-S01-01: Backstage Deployment Available in the `portal` namespace.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-backstage-ready
+  annotations:
+    kaddy.io/req: REQ-E10-S01-01
+    # skip: true — needs the live cluster with the portal App synced AND the
+    # custom kaddy-backstage image built/published (a live-cycle step, deferred
+    # and honestly flagged in docs/runbooks/portal-new-site.md). The CI chainsaw
+    # kind cluster runs no argocd/backstage. Un-skip during a live bring-up.
+    kaddy.io/status: live-cluster-only-backstage-image-build-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: Backstage Deployment available + pod Ready in the portal namespace
+  steps:
+    - name: backstage-deployment-available
+      try:
+        - assert:
+            timeout: 300s
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: portal
+                name: backstage
+              status:
+                availableReplicas: 1
+                readyReplicas: 1
+    - name: backstage-pod-running
+      try:
+        - assert:
+            timeout: 60s
+            resource:
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                namespace: portal
+                labels:
+                  app.kubernetes.io/name: backstage
+              status:
+                phase: Running

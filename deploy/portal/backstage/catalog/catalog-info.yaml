@@ -1,0 +1,86 @@
+# REQ-E10-S05-01 — static Software Catalog entities for the 4 kaddy platform
+# components. Live `Website` XRs are NOT listed here — the kubernetes-ingestor
+# `ingestAllClaims` auto-ingests them as entities (no per-site catalog-info).
+#
+# NOT a Kubernetes manifest — a Backstage catalog descriptor (kind: Component),
+# referenced from app-config.yaml catalog.locations. NOT fed to kubeconform.
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: kaddy-platform
+  description: The kaddy internal developer platform (GitOps · Crossplane · Gateway API).
+  annotations:
+    backstage.io/techdocs-ref: dir:../../../..
+spec:
+  owner: platform-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: clubhouse
+  description: The shared platform Gateway (Cilium Gateway API) fronting every kaddy site.
+  tags: [gateway, platform]
+  annotations:
+    backstage.io/kubernetes-id: clubhouse
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: kaddy-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: marshal
+  description: Alerting rules + Alertmanager routing for the kaddy VM/site fleet.
+  tags: [observability, alerting, platform]
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: kaddy-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mulligan
+  description: Progressive-delivery surface (Argo Rollouts blue/green + canary via Gateway API).
+  tags: [rollouts, progressive-delivery, platform]
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: kaddy-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: scorecard
+  description: The evidence/scorecard surface (k6 + Prometheus + Grafana capture harness).
+  tags: [evidence, observability, platform]
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: kaddy-platform
+---
+# The Website platform API surfaced as a catalog API entity — the scaffolder
+# template (auto-generated from this XRD) references it.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: website-api
+  description: The Crossplane `Website` XRD (v2 namespaced XR) — kaddy's self-service site API.
+  tags: [crossplane, platform-api]
+spec:
+  type: openapi
+  lifecycle: production
+  owner: platform-team
+  system: kaddy-platform
+  definition: |
+    # Projection of deploy/crossplane/xrd-website.yaml — the portal reads the
+    # live XRD schema; this stub keeps the catalog reference resolvable offline.
+    openapi: 3.0.0
+    info: { title: Website, version: v1alpha1 }
+    paths: {}

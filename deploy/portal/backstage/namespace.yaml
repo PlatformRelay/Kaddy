@@ -1,0 +1,27 @@
+# REQ-E10-S01-01 — the `portal` namespace for Backstage (the kaddy IDP).
+#
+# Kyverno-labeled (ADR-0301) so the admission set that guards every kaddy
+# namespace admits the Backstage workload. The default-deny NetworkPolicy +
+# read-only RBAC live under rbac/ (D-029 — the read path is a named trade,
+# scoped to the smallest surface that still renders the money-shot graph).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+    # Selectable peer label for the netpols in rbac/networkpolicy.yaml and for
+    # cross-namespace allows (argocd -> portal read path).
+    kubernetes.io/metadata.name: portal
+  annotations:
+    kaddy.io/adr: "0109"
+    kaddy.io/req: REQ-E10-S01-01

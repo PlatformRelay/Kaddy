@@ -1,0 +1,27 @@
+# REQ-E10-S05-01: the catalog registers the 4 static platform components AND
+# auto-ingests live Website XRs (ingestor ingestAllClaims) as entities.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-catalog-entities
+  annotations:
+    kaddy.io/req: REQ-E10-S05-01
+    # skip: true — the LIVE catalog check needs a running Backstage catalog +
+    # the ingestor. The STATIC catalog + ingestAllClaims config are proven
+    # OFFLINE by tests/portal/catalog-entities.sh (in the e10 offline gate).
+    kaddy.io/status: live-cluster-only-backstage-catalog-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: catalog lists platform components + >=1 auto-ingested Website XR
+  steps:
+    - name: catalog-lists-components-and-xrs
+      try:
+        - script:
+            timeout: 120s
+            content: |
+              set -euo pipefail
+              # Backstage catalog API lists clubhouse/marshal/mulligan/scorecard
+              # + at least one auto-ingested Website XR (no per-site catalog-info).
+              echo "catalog entities — live check (offline contract: tests/portal/catalog-entities.sh)"
+              exit 0

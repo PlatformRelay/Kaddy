@@ -1,0 +1,62 @@
+# REQ-E10-S01-01 — restricted AppProject for the Backstage portal (kaddy IDP).
+#
+# WHY A DEDICATED PROJECT: the portal spans ONE namespace (`portal`) but needs a
+# cluster-scoped read-path ClusterRole + ClusterRoleBinding (D-029 — the
+# read-path plugins read live XR/workload state cluster-wide; Website XRs live in
+# many per-site namespaces, so the read role can't be namespace-scoped). No
+# existing project whitelists the portal namespace, and adding a ClusterRole/
+# Binding to a shared project would widen its blast radius — a new closed-list
+# project is the least-clobbering fit.
+#
+# READ-ONLY by construction: the whitelisted ClusterRole is the read-only role
+# in deploy/portal/backstage/rbac/read-only-rbac.yaml (get/list/watch only,
+# asserted by tests/portal/read-path-rbac.sh). The AppProject only permits
+# ArgoCD to SYNC these cluster-scoped kinds; it does not grant the workload any
+# extra power.
+#
+# WIRED like every other project: root recurses deploy/apps/ (projects/ included)
+# and `task bootstrap:e3` applies projects/ first so a child referencing this
+# project can be created.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: portal
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S01-01
+spec:
+  description: >-
+    kaddy Backstage portal / IDP (E10). Self-service write path authors PRs to
+    deploy/workloads/ (no cluster creds); read path renders live status via a
+    read-only cluster credential (D-029). Source of truth is this repo only.
+  sourceRepos:
+    - https://github.com/PlatformRelay/Kaddy.git
+    # The Backstage Helm chart (live-deferred grandchild; pinned in
+    # deploy/apps/portal.yaml targetRevision). Closed list — one repo, one chart.
+    - https://backstage.github.io/charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: portal
+    # The Helm grandchild Application CR (if wired) lands in argocd.
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    # The read-path RBAC is cluster-scoped (D-029) — still a closed list.
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding

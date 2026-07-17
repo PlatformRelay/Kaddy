@@ -29,6 +29,14 @@ metadata:
     kaddy.io/req: REQ-E6-S02-01
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     argocd.argoproj.io/sync-wave: "1"
+    # E10 (REQ-E10-S02-01/-02, ADR-0111, D-028): the Backstage kubernetes-ingestor
+    # auto-generates a scaffolder template from THIS XRD's OpenAPI schema and
+    # opens a PR placing the rendered `Website` XR here — under deploy/workloads/,
+    # where ArgoCD watches — with a kustomization.yaml so the new site syncs. The
+    # ingestor publishPhase (deploy/portal/backstage/app-config.yaml) is a PR
+    # target, so this path is written via a pull request, never a direct commit.
+    terasky.backstage.io/target-path: "deploy/workloads/{namespace}/website/"
+    terasky.backstage.io/create-kustomization-file: "true"
 spec:
   scope: Namespaced
   group: platform.kaddy.io

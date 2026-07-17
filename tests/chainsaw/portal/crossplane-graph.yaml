@@ -1,0 +1,26 @@
+# REQ-E10-S04-02: the crossplane-resources plugin renders the XR -> composite
+# -> managed-resource graph (per-resource YAML + events) on the entity page.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-crossplane-graph
+  annotations:
+    kaddy.io/req: REQ-E10-S04-02
+    # skip: true — needs a running Backstage with the crossplane-resources
+    # plugin + a live Website XR + the read-only SA. Live-cycle (deferred).
+    kaddy.io/status: live-cluster-only-backstage-readpath-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: crossplane-resources graph renders for a live Website XR entity
+  steps:
+    - name: entity-returns-composed-tree
+      try:
+        - script:
+            timeout: 120s
+            content: |
+              set -euo pipefail
+              # The portal entity API returns the composed-resource tree for the
+              # Website XR (XR -> composite -> managed). Read-only path (D-029).
+              echo "crossplane-resources graph render — live read-path check (deferred)"
+              exit 0

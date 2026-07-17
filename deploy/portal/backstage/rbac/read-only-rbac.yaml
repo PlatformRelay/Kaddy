@@ -1,0 +1,118 @@
+# REQ-E10-S04-01 — the portal read-path RBAC (D-029, ADR-0111).
+#
+# D-029 is a NAMED trade: the read-path plugins (crossplane-resources,
+# Kubernetes, ArgoCD) need a cluster read credential to render the money-shot
+# XR->managed-resource graph + workload health. "Read-only" is the whole
+# bargain — this ClusterRole grants get/list/watch and NOTHING mutating. Any
+# create/update/patch/delete/* here would break the invariant (tests/portal/
+# read-path-rbac.sh fails on the first mutating verb or wildcard).
+#
+# Cluster-scoped by necessity: Website XRs are created per-site in many
+# namespaces (deploy/workloads/<ns>/website/), so the read path can't be
+# namespace-scoped. The portal AppProject (deploy/apps/projects/portal.yaml)
+# whitelists ClusterRole + ClusterRoleBinding so ArgoCD is allowed to sync
+# these cluster-scoped objects.
+#
+# The write path (scaffolder -> PR) holds NO cluster credential at all — it
+# authors Git. This SA is read-path ONLY.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portal-read-only
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal-read-only
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S04-01
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: portal-read-only
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal-read-only
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S04-01
+rules:
+  # The platform API: the Website XR (v2 namespaced) the portal projects.
+  - apiGroups: ["platform.kaddy.io"]
+    resources: ["websites", "websites/status"]
+    verbs: ["get", "list", "watch"]
+  # Crossplane machinery: XRDs + Compositions + composite/managed resources the
+  # crossplane-resources graph walks (XR -> composite -> managed).
+  - apiGroups: ["apiextensions.crossplane.io"]
+    resources: ["compositeresourcedefinitions", "compositions", "compositionrevisions"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+  # Composed edge resources: HTTPRoute (Gateway API) + Certificate (cert-manager).
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes", "gateways", "referencegrants"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates"]
+    verbs: ["get", "list", "watch"]
+  # Composed monitoring: ServiceMonitor.
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "list", "watch"]
+  # Core workload health (Kubernetes plugin): deployments/pods/services/etc.
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  # Argo Rollouts progressive-delivery status (composed rollout visibility).
+  - apiGroups: ["argoproj.io"]
+    resources: ["rollouts", "applications"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: portal-read-only
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal-read-only
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S04-01
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: portal-read-only
+subjects:
+  - kind: ServiceAccount
+    name: portal-read-only
+    namespace: portal

@@ -1,0 +1,35 @@
+# REQ-E10-S01-01 — TLS for the Backstage portal edge.
+#
+# Issued locally by the kaddy-local-ca ClusterIssuer (E4) — the SAME issuer the
+# Website Composition uses per-site (deploy/crossplane/composition-website.yaml),
+# so the portal cert is issuable on the kind lab (no public DNS / ACME needed).
+# The clubhouse Gateway's httpsRoute for portal.kaddy.local references the
+# resulting Secret. Public LE TLS for a real portal host is a phase-2 edge
+# follow-up (cloud-only, mirrors deploy/monitoring/e8b-demo/cloud-only/).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: portal-tls
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0109"
+    kaddy.io/req: REQ-E10-S01-01
+spec:
+  secretName: portal-tls
+  dnsNames:
+    - portal.kaddy.local
+  issuerRef:
+    kind: ClusterIssuer
+    name: kaddy-local-ca
+    group: cert-manager.io

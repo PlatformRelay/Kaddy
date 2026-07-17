@@ -1,0 +1,237 @@
+# REQ-E10-S04-01 — `portal` namespace network posture (D-029, ADR-0106/0111).
+#
+# The read path is a NAMED trade (D-029): read-only creds are accepted for the
+# demo money-shot, so the network surface must be the smallest that still lets
+# the read-path plugins render. Default-deny + explicit allows only:
+#   1. DNS egress to CoreDNS :53 (every pod resolves).
+#   2. Egress to the kube-apiserver :6443 — the Kubernetes + crossplane-resources
+#      read-path plugins read live XR/workload state through it.
+#   3. Egress to argocd-server (namespace argocd) :8080/:443 — the ArgoCD
+#      community plugin reads sync/health/history.
+#   4. Egress to Dex :5556 (namespace identity) — OIDC discovery + token
+#      exchange (ADR-0107). Port-scoped, identity ns only — NOT a world allow.
+#   5. Ingress: the clubhouse Gateway (Envoy) -> backstage :7007 (CNP; the
+#      Envoy proxy carries the reserved `ingress` identity, not selectable by a
+#      K8s NetworkPolicy peer — pattern: identity/allow-gateway-to-dex).
+#
+# TODO(live, F2): values.yaml enables metrics.serviceMonitor, so at the live
+# bring-up add an ingress allow for Prometheus (ns monitoring) -> backstage
+# :7007/metrics, else the scrape is denied by the default-deny below. Not added
+# now because the chart isn't rendered offline (no metrics port to assert).
+#
+# LANE NOTE (🟡 DECIDED): repo convention places netpols under
+# deploy/policies/network/ (manual-sync policies app). E10 owns DISJOINT paths,
+# so the portal netpol rides under deploy/portal/rbac/ per design.md §Layout and
+# is synced by the portal App. Logged in agent-context/INBOX.md; a later lane may
+# relocate it into the policies app for uniformity.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: default-deny-all
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E10-S04-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-dns-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E10-S04-01
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Read path -> kube-apiserver :6443. The apiserver has no in-cluster pod to
+# select, so this is a port-scoped world allow on :6443 ONLY (the API server
+# endpoint sits outside the pod network — same constraint every in-cluster
+# controller hits). Read-only RBAC (rbac/read-only-rbac.yaml) is what bounds
+# WHAT this reaches; this netpol bounds WHERE.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-egress
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-apiserver-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S04-01
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backstage
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 6443
+---
+# Read path -> argocd-server (ArgoCD community plugin: sync/health/history).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-argocd-egress
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-argocd-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S04-01
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backstage
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: argocd-server
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 443
+---
+# Auth -> Dex issuer :5556 (OIDC discovery + token exchange, ADR-0107).
+# identity ns + port-scoped — NOT a world allow.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dex-egress
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-dex-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E10-S01-02
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backstage
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: identity
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: dex
+      ports:
+        - protocol: TCP
+          port: 5556
+---
+# Cilium-specific: admit clubhouse Gateway (Envoy) traffic to backstage :7007.
+# The Envoy proxy carries the reserved `ingress` entity identity — not
+# selectable by a K8s NetworkPolicy peer, so this must be a CNP (pattern:
+# identity/allow-gateway-to-dex).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-gateway-to-backstage
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-gateway-to-backstage
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S01-01
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: backstage
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "7007"
+              protocol: TCP

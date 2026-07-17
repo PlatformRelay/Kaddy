@@ -1,0 +1,26 @@
+# REQ-E10-S01-02: an unauthenticated request to a protected portal route
+# redirects to Dex (no guest access to scaffolder actions, ADR-0107).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-unauth-redirect
+  annotations:
+    kaddy.io/req: REQ-E10-S01-02
+    # skip: true — needs a running Backstage fronted by the clubhouse Gateway +
+    # Dex OIDC (ADR-0107). Live-cycle bring-up (deferred). Un-skip during the
+    # live portal bring-up per docs/runbooks/portal-new-site.md.
+    kaddy.io/status: live-cluster-only-backstage-bring-up-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: unauthenticated -> 302 redirect to Dex (no guest access)
+  steps:
+    - name: unauth-redirects-to-dex
+      try:
+        - script:
+            timeout: 60s
+            content: |
+              set -euo pipefail
+              code="$(curl -sk -o /dev/null -w '%{http_code}' https://portal.kaddy.local:30443/)"
+              [ "$code" = "302" ] || { echo "expected 302 redirect, got $code" >&2; exit 1; }
+              echo "unauthenticated request redirected (302) to Dex"

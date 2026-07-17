@@ -88,6 +88,7 @@ tasks:
       - bash tests/smoke/e6g-offline.sh
       - bash tests/smoke/e8b-offline.sh
       - bash tests/smoke/e13-offline.sh
+      - bash tests/smoke/e10-offline.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)
@@ -421,6 +422,11 @@ tasks:
         # destroying the gridscale substrate reclaims everything. No standing env.
         task e1g:down
         echo "E8b demo torn down (gridscale substrate destroyed via e1g:down)."
+
+  test:smoke:e10:
+    desc: E10 — OFFLINE gate for the Backstage portal / IDP (manifests + kubeconform + shellcheck + ingestor-config PR-invariant + read-only RBAC; no cluster/Backstage). The live bring-up is deferred + skip-gated.
+    cmds:
+      - bash tests/smoke/e10-offline.sh
 
   test:smoke:e13:
     desc: E13 — OFFLINE gate for the gridscale Marketplace template (terramate codegen + fmt + validate + tofu test + packer fmt/validate + promtool; no API/creds/build)

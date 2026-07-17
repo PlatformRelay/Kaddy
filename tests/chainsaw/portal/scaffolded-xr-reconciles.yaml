@@ -1,0 +1,94 @@
+# REQ-E10-S03-01: a `Website` XR produced by the auto-generated scaffolder
+# (via the PR skeleton) reconciles end-to-end — composed HTTPRoute + Deployment
+# + ServiceMonitor + Certificate become Ready; the site returns 200.
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-scaffolded-xr-reconciles
+  annotations:
+    kaddy.io/req: REQ-E10-S03-01
+    # skip: true — needs the live cluster with Crossplane + the Website
+    # Composition (E6) synced. The REAL form->PR->merge->XR path is a live-cycle
+    # step; this spec proves the DOWNSTREAM half (apply the scaffolded XR shape,
+    # assert the composed resources reconcile) once a cluster is present. The CI
+    # chainsaw kind cluster runs no Crossplane. Un-skip during a live bring-up.
+    kaddy.io/status: live-cluster-only-requires-crossplane-website-composition
+spec:
+  skip: true
+  concurrent: false
+  description: >-
+    scaffolded v2 namespaced Website XR reconciles -> HTTPRoute + Deployment +
+    ServiceMonitor + Certificate Ready; site returns 200
+  steps:
+    - name: apply-scaffolded-website-xr
+      try:
+        # This is the SHAPE the auto-generated scaffolder renders into a PR under
+        # deploy/workloads/<ns>/website/ (schema = deploy/crossplane/xrd-website.yaml
+        # — image/port/path/replicas/variant; NOT the design-doc illustrative
+        # hostname/engine/source). A v2 NAMESPACED XR (D-027), not a v1 Claim.
+        - apply:
+            resource:
+              apiVersion: platform.kaddy.io/v1alpha1
+              kind: Website
+              metadata:
+                name: portal-scaffold-demo
+                namespace: ($namespace)
+                labels:
+                  owner: platform-team
+                  service: portal-scaffold-demo
+                  part-of: kaddy
+                  managed-by: argocd
+                  data-classification: public
+                  business-criticality: business-operational
+                  track: stable
+                  app.kubernetes.io/name: portal-scaffold-demo
+                spec:
+                  path: /portal-scaffold-demo
+                  image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
+                  port: 8080
+                  replicas: 1
+    - name: composed-resources-ready
+      try:
+        # XR reports Ready once the Composition reconciles the managed resources.
+        - assert:
+            timeout: 300s
+            resource:
+              apiVersion: platform.kaddy.io/v1alpha1
+              kind: Website
+              metadata:
+                name: portal-scaffold-demo
+                namespace: ($namespace)
+              status:
+                (conditions[?type == 'Ready'] | [0].status): "True"
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                namespace: ($namespace)
+              status:
+                (availableReplicas > `0`): true
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: gateway.networking.k8s.io/v1
+              kind: HTTPRoute
+              metadata:
+                namespace: ($namespace)
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: cert-manager.io/v1
+              kind: Certificate
+              metadata:
+                namespace: ($namespace)
+              status:
+                (conditions[?type == 'Ready'] | [0].status): "True"
+        - assert:
+            timeout: 120s
+            resource:
+              apiVersion: monitoring.coreos.com/v1
+              kind: ServiceMonitor
+              metadata:
+                namespace: ($namespace)

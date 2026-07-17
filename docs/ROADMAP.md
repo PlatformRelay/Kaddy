@@ -419,12 +419,18 @@ reconciles. Read-path plugins (Crossplane graph, ArgoCD, K8s) render live status
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E10-S01 | Backstage via GitOps + OIDC (Dex) | ⬜ |
-| E10-S02 | Auto-generated scaffolder (kubernetes-ingestor) → `Website` XR PR | ⬜ |
-| E10-S03 | Scaffolded XR reconciles end-to-end (Chainsaw) | ⬜ |
-| E10-S04 | Read-path plugins (Crossplane graph + ArgoCD + K8s), read-only RBAC | ⬜ |
-| E10-S05 | Software Catalog (+ auto-ingested XRs) + TechDocs | ⬜ |
-| E10-S06 | Runbook + demo (auto-gen money-shot) | ⬜ |
+| E10-S01 | Backstage via GitOps + OIDC (Dex) | 🟨 offline-authored (live-proof pending) |
+| E10-S02 | Auto-generated scaffolder (kubernetes-ingestor) → `Website` XR PR | 🟨 offline-authored (live-proof pending) |
+| E10-S03 | Scaffolded XR reconciles end-to-end (Chainsaw) | 🟨 offline-authored; chainsaw skip-gated (live-proof pending) |
+| E10-S04 | Read-path plugins (Crossplane graph + ArgoCD + K8s), read-only RBAC | 🟨 offline-authored (live-proof pending) |
+| E10-S05 | Software Catalog (+ auto-ingested XRs) + TechDocs | 🟨 offline-authored (live-proof pending) |
+| E10-S06 | Runbook + demo (auto-gen money-shot) | 🟨 offline-authored (live-proof pending) |
+
+🟨 = manifests + config + skip-gated tests authored + proven by the OFFLINE gate
+(`task test:smoke:e10`: manifest/kubeconform + shellcheck + ingestor-config PR
+invariant + read-only RBAC asserts). The **running Backstage** (custom image
+build + form→PR→XR reconcile) is a later live-cycle step; chainsaw specs
+skip-not-fail offline. Runbook: [docs/runbooks/portal-new-site.md](runbooks/portal-new-site.md).
 
 **Scope guard (ADR-0109):** orchestrator-first — E6 already delivers the *capability*; the portal is
 *experience* and only starts if E1–E8 land early. SaaS (Port/Humanitec) rejected for the lab.

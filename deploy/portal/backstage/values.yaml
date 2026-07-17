@@ -1,0 +1,75 @@
+# REQ-E10-S01-01 — Helm values for the Backstage chart (kaddy portal).
+#
+# NOT a Kubernetes manifest — Helm values for the backstage chart. deploy/apps/
+# portal.yaml currently DIRECTORY-syncs deploy/portal (chart install is
+# live-deferred); at the live cycle it becomes a Helm source with
+# helm.valueFiles pointing here. NOT fed to kubeconform.
+#
+# Image is PINNED (SEC-4, Renovate-trackable — see plugin-versions.md and the
+# chart targetRevision in deploy/apps/portal.yaml). The image is a CUSTOM
+# Backstage build baking in the pinned TeraSky/community plugins (a stock
+# backstage image cannot load them at runtime — plugins are compiled in). The
+# APP SOURCE + Dockerfile that build this image live in the SEPARATE repo
+# github.com/PlatformRelay/kaddy-portal (private); kaddy deploys exactly the
+# image its CI builds + pushes. Publishing the image is a live-cycle step
+# (deferred, honestly flagged in the runbook + plugin-versions.md).
+backstage:
+  image:
+    registry: ghcr.io
+    repository: platformrelay/kaddy-portal
+    # Pinned tag — NO :latest (SEC-4). Renovate tracks ghcr.io/platformrelay/
+    # kaddy-portal in renovate.json (customManagers / helm-values manager).
+    # TODO(live): pin to the exact tag/digest built + pushed by
+    # github.com/PlatformRelay/kaddy-portal CI once the first image ships (E10
+    # live-deferred). 0.1.0 is the placeholder pin the new repo will publish.
+    tag: 0.1.0
+    pullPolicy: IfNotPresent
+
+  # app-config.yaml (this directory) is mounted as extra app-config; secrets are
+  # env-injected from KSOPS-rendered Secrets (never in git).
+  extraAppConfig:
+    - filename: app-config.portal.yaml
+      configMapRef: backstage-app-config
+
+  command: ['node', 'packages/backend']
+
+  extraEnvVarsSecrets:
+    - backstage-oidc
+    - backstage-github
+    - backstage-readonly-tokens
+
+  # Pod security posture (Kyverno Enforce set: nonroot, no-privesc, seccomp).
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: ['ALL']
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: '1'
+      memory: 1Gi
+
+# The read-path ServiceAccount is defined in rbac/read-only-rbac.yaml (bound to
+# the read-only ClusterRole), NOT auto-created by the chart — pin it here so the
+# backstage pod runs as it.
+serviceAccount:
+  create: false
+  name: portal-read-only
+
+# In-memory sqlite for the lab (single replica; a real deployment uses Postgres).
+postgresql:
+  enabled: false
+
+# ServiceMonitor for the portal (kaddy observability stack scrapes /metrics).
+metrics:
+  serviceMonitor:
+    enabled: true

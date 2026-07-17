@@ -1,0 +1,27 @@
+# REQ-E10-S02-03: adding a field to the Website XRD makes it appear in the
+# generated scaffolder form with no template edit (the projection invariant).
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: portal-xrd-field-propagates
+  annotations:
+    kaddy.io/req: REQ-E10-S02-03
+    # skip: true — the money-shot: needs a running Backstage + ingestor task
+    # runner + a live XRD patch. Live-cycle (deferred) — see the runbook.
+    kaddy.io/status: live-cluster-only-backstage-ingestor-deferred
+spec:
+  skip: true
+  concurrent: false
+  description: XRD field patch -> new scaffolder form parameter (no template edit)
+  steps:
+    - name: patched-xrd-field-appears-in-form
+      try:
+        - script:
+            timeout: 180s
+            content: |
+              set -euo pipefail
+              # (live) patch the XRD schema, wait for the ingestor to reconcile,
+              # then poll the scaffolder API for the new parameter. Documented
+              # here; the live rehearsal is the E12 money-shot.
+              echo "live XRD-field-propagation rehearsal — see docs/runbooks/portal-new-site.md"
+              exit 0

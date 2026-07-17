@@ -1,0 +1,64 @@
+# REQ-E10-S01-01 — GitOps child Application for the Backstage portal (kaddy IDP).
+#
+# Syncs deploy/portal/ (recurse ON): the `portal` namespace, default-deny netpol
+# + read-only RBAC, and the portal TLS Certificate. Uses the dedicated `portal`
+# AppProject (deploy/apps/projects/portal.yaml) whose closed destination list is
+# {portal, argocd} and whose clusterResourceWhitelist admits the read-path
+# ClusterRole/ClusterRoleBinding (D-029).
+#
+# LIVE-DEFERRED (honest): the Backstage workload ITSELF (the pinned
+# backstage.github.io/charts chart + the custom kaddy-portal image, built from
+# the separate repo github.com/PlatformRelay/kaddy-portal, baking in the pinned
+# TeraSky/community plugins, see deploy/portal/backstage/values.yaml +
+# plugin-versions.md) is a live-cycle bring-up, NOT wired into this offline lane.
+# This App lands the namespace/RBAC/netpol/cert SKELETON so ArgoCD can adopt the
+# portal the moment the image is built and the chart grandchild is added. The
+# app-config.yaml + values.yaml here are Backstage config, not k8s manifests —
+# they are mounted into the pod when the workload is deployed live.
+#
+# recurse ON but the Helm chart is NOT rendered by this directory-sync (it is a
+# separate grandchild when wired live); app-config.yaml / values.yaml /
+# plugin-versions.md are non-manifest config files ArgoCD's directory generator
+# ignores (no apiVersion/kind).
+#
+# selfHeal OFF — mirrors the identity/e8b posture; a human stays in the loop for
+# drift on an auth-fronting surface.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backstage
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: backstage
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0109"
+    kaddy.io/req: REQ-E10-S01-01
+spec:
+  project: portal
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/portal
+    directory:
+      recurse: true
+      # Only render real k8s manifests; skip the Backstage config files (they
+      # have no apiVersion/kind and are mounted into the pod at deploy time).
+      exclude: '{**/app-config.yaml,**/values.yaml,**/plugin-versions.md,**/catalog/catalog-info.yaml}'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: portal
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
