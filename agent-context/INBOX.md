@@ -195,3 +195,20 @@ Merged E6g/E13-S02/deck with two accepted-partial notes (tech-review, non-blocki
 - **E6g composition design:** the composed private `Network` MR is retained (satisfies the 4-kind gate +
   documents a private/east-west tier) but is NOT attached to the Server (single public NIC is the proven
   serving topology). If you prefer a strictly-minimal graph, drop the Network resource + relax the gate.
+
+---
+
+## 🟡 DECIDED (awaiting approval) — E8b app-layer live-verify blocked by network egress (2026-07-17 loop2)
+Context: drove the E8b live bring-up. The GSK cluster + network + object-storage anchor provision
+cleanly (tofu exit 0, cluster active — substrate live-proven, same as E1g-S03). BUT the GSK API
+`:6443` is unreachable from this network: the corporate egress is an ALLOWLIST (`:443` to
+api.gridscale.io/github OK; arbitrary IPs/domains + `:6443` all dropped — characterised, see
+`evidence/live/e8b-gsk-substrate-2026-07-17.md`). So `bootstrap:argocd`/`bootstrap:e3` + the demo
+surfaces can't be verified from here. Options: (A) land the substrate proof + document the egress
+block + the jump-host path [chosen]; (B) provision a gridscale jump VM to run kubectl/ArgoCD against
+`:6443` from inside the tenant [more cost + the app-of-apps-on-GSK is an unproven integration —
+Cilium/Gateway vs GSK CNI]; (C) keep the cluster up [violates ruthless-teardown]. Chose **(A)**:
+substrate is genuinely proven, the block is environmental not a defect, and cost discipline wins.
+Revert/close: run E8b from a network (or gridscale jump VM) with `:6443` egress — the substrate
++ manifests + offline gate are all ready. **Operator: E8b is 2/3 proven (substrate live; app-layer
+egress-blocked here). If you want the app-layer proof, it needs a `:6443`-capable network.**
