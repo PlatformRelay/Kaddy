@@ -14,9 +14,11 @@ vars:
   # passed positionally (here + the CI step in .github/workflows/verify.yaml).
   # Keep the two lists in sync. Machine/scratch/vendored trees (.claude/,
   # references/, agent-context/, slides/) are excluded by NOT globbing them.
+  # Each glob is QUOTED so markdownlint-cli2's globby does the (recursive `**`)
+  # expansion — NOT the shell, whose non-recursive `**` would silently under-lint.
   MARKDOWNLINT_GLOBS: >-
-    docs/**/*.md openspec/**/*.md modules/**/*.md evidence/**/*.md
-    operator/**/*.md deploy/**/*.md *.md
+    "docs/**/*.md" "openspec/**/*.md" "modules/**/*.md" "evidence/**/*.md"
+    "operator/**/*.md" "deploy/**/*.md" "*.md"
   DENYLIST: hack/tooling/sanitize-denylist.txt
   # Pinned upstream ArgoCD version (E1 bootstrap). No floating tags — the
   # install manifest and every image it references are versioned to this tag.
