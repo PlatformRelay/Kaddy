@@ -4,6 +4,22 @@ Format: **Decision** · date · context · operator choice · agent counterpoint
 
 ---
 
+## D-040 — agent-loop-local sprint: 5 offline lanes + GSK `:6443` capstone (2026-07-17, loop3)
+
+**Date:** 2026-07-17
+**Context:** Operator re-invoked `/agent-loop-local` with push/merge/release + gridscale-deploy authority and the hypothesis "VPN disconnected → `:6443` maybe open". Drove the D-039 next-session lanes + audit-backlog to exhaustion, then the GSK capstone.
+
+**Decisions:**
+1. **Integration method → INLINE serialized (deviation from the skill's dispatched-Integrator).** Each lane: parallel worktree implementer → fresh coordinator-dispatched INDEPENDENT reviewer (independence preserved) → coordinator rebases onto main + re-runs the lane gate + `--ff-only` + push. *Why:* an unsupervised subagent doing cross-worktree git surgery on the SHARED checkout risks leaving it mid-rebase/detached and blocking the session, with no visibility into its shell. Mirrors the skill's sanctioned "friction → inline" fallback; the guardrail that matters (fresh independent review per lane) never bent. *Revert:* n/a (process choice).
+2. **5 lanes landed on main (all independently reviewed, all CI-green):** deck-F2 (delete orphaned `.kw-*` CSS + assert token application) · e6g-trim (drop dead composed Network MR; 4→3-kind gate; +review-F1 doc fix) · app-count-guard (new `release-provenance` DAG guard + `verify-fetch-depth` wiring guard) · SEC-14 (explicit securityContext on Grafana/Prometheus/Alertmanager/Loki; Alloy+nodeExporter documented host-access exceptions) · DOC-13 (markdownlint enforced over narrowed shippable-docs globs, pinned `@0.23.1` SEC-4, 160 files → 0). Closes D-039 items 3/4/5 + audit-backlog SEC-14/DOC-13/app-count-guard.
+3. **Three "inert gate" defects found by independent review + fixed:** deck `theme-tokens.sh` asserted presence not application; markdownlint gate uninstalled in CI + globs mis-nested (13k+ warnings never failed); release-provenance guard self-skipped on CI's shallow/tagless checkout. Pattern logged for the harness.
+4. **GSK `:6443` capstone → OPEN (operator hypothesis CONFIRMED).** Provisioned an ephemeral minimal GSK cluster (1 node, release 1.30; local state, generated S3 backend temp-moved + restored); `nc :6443` + `kubectl get nodes` (node Ready v1.30.14) both succeed from the VPN-off network — last session both timed out. Evidence: `evidence/live/e8b-6443-egress-open-2026-07-17.md`. Cluster torn down immediately (ruthless cost discipline); tenant API-audited clean.
+5. **E8b app-layer full sync → NOT executed under cost pressure; environment-UNblocked, remaining work is a scoped integration task (not a block/defect).** `bootstrap:argocd`/`bootstrap:e3` hard-guard to `kind-kaddy-dev` (need manual apply vs GSK) and the app-of-apps assumes Cilium + Gateway API whereas GSK ships its own CNI → the `(Cilium)NetworkPolicy`/`HTTPRoute` surfaces need GSK-CNI adaptation. That is a dedicated authoring session's forward work; the `:6443` proof removes the environment block that previously gated it. *Counterpoint (kept):* a live argocd-on-GSK bring-up would deepen the proof, but its result is predictable (argocd core up; Cilium/Gateway apps fail on missing CRDs) and not worth billed cluster time under the ruthless-teardown directive.
+
+**Status:** D-039 items 3/4/5 DONE. Audit-backlog SEC-14/DOC-13/app-count-guard DONE. `:6443` proven open. E8b app-layer + E14/Phase-3 Nix are the forward backlog (both un-gated; E14 still needs nix tooling + supply-chain LGTM per D-037).
+
+---
+
 ## D-039 — `/operator-inbox` session answers (2026-07-17)
 
 **Date:** 2026-07-17

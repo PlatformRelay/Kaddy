@@ -2,6 +2,32 @@
 
 Items waiting on the operator. Answered decisions move to `decisions.md`.
 
+## Loop3 (2026-07-17) — backlog exhausted + GSK `:6443` OPEN — summary for operator
+
+✅ **All D-039 next-session lanes + audit-backlog DONE, on `main`, CI green** (5 lanes,
+each fresh-independently-reviewed then ff-merged): deck-F2 (#4) · e6g-trim (#3) ·
+app-count-guard (DOC-10 follow-up) · SEC-14 · DOC-13. See `decisions.md` **D-040**.
+
+🎯 **GSK `:6443` is OPEN** with the VPN disconnected — your hypothesis confirmed.
+Ephemeral GSK cluster provisioned, `kubectl get nodes` → `node Ready v1.30.14`, torn
+down (tenant clean). Evidence `evidence/live/e8b-6443-egress-open-2026-07-17.md`.
+**E8b app-layer is now environment-UNblocked**; the remaining work (manual argocd apply
+vs the kind-guarded bootstrap + GSK-CNI adaptation of the Cilium/Gateway-API surfaces)
+is a scoped integration task for a dedicated session, not a block/defect.
+
+**Accepted non-blocking follow-ups logged this loop (P2/P3, decide-and-log):**
+- 🟡 **deck review F1** — `tests/deck/theme-tokens.sh` is not wired into any Taskfile
+  target or CI workflow (its new teeth don't run automatically). Fold into a deck-gate
+  wiring lane (chain it into `tests/deck/exit-recording-ready.sh`).
+- 🟡 **app-count review F1/F2** — `verify-fetch-depth.yaml` is file-scoped not job-scoped
+  (unreachable false-pass) ; provenance `in`-keyword lacks a word boundary (`within`
+  edge; not reachable). Optional precision hardening.
+- 🟡 **SEC-14 review N1** — node-exporter comment implies it "needs" a Kyverno carve-out;
+  it already renders `runAsNonRoot` and passes as-is. Comment-accuracy nit.
+- ✅ **DOC-13 D13-2 (tests/ + skills/ docs)** already folded in (now linted, 160 files/0).
+
+---
+
 ## Decisions
 
 ### D-037 — ANSWERED 2026-07-17 → decisions.md — E14 Nix golden images
