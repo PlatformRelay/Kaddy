@@ -854,14 +854,14 @@ layoutClass: gap-8
 
 <div data-surface="backstage" data-surface-mode="fallback" class="p-3 rounded border border-amber-700">
 <strong>Backstage scaffolder — fallback</strong><br/>
-Not running yet (E10 designed). Record-time stand-in: drop a GIF/screenshot at
-<code>slides/public/surfaces/backstage-scaffolder.gif</code> — shown here instead of a live iframe, per the spec's fallback clause.
+Not running yet (E10 designed). Record-time stand-in per <code>slides/recording-guide.md</code> (shot 1): drop the GIF at
+<code>slides/public/surfaces/backstage-xrd-edit.gif</code> and flip this slot to an <code>&lt;img&gt;</code> — shown instead of a live iframe, per the spec's fallback clause.
 </div>
 
 <div data-surface="crossplane-graph" data-surface-mode="fallback" class="p-3 rounded border border-amber-700 mt-3">
 <strong>Crossplane resource graph — fallback</strong><br/>
-Not running yet (E6/E10 designed). Record-time stand-in:
-<code>slides/public/surfaces/crossplane-graph.gif</code> — replaced by the live in-portal graph once E10 lands.
+Not running yet (E6/E10 designed). Record-time stand-in per <code>slides/recording-guide.md</code> (shot 6):
+<code>slides/public/surfaces/crossplane-graph-provision.gif</code> — flip this slot to an <code>&lt;img&gt;</code> once recorded; replaced by the live in-portal graph when E10 lands.
 </div>
 
 <div class="pt-3 opacity-80">
