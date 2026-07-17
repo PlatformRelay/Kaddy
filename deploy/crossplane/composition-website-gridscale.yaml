@@ -10,7 +10,8 @@
 # ['platform.kaddy.io/variant']=gridscale on the XR.
 #
 # The composed graph is the minimal bootable gridscale server (cost-sensitive):
-#   Network   an L2 private network for the VM NIC
+#   Network   an L2 private network provisioned alongside (private/east-west
+#             tier); the VM SERVES on the gridscale Public Network NIC (below)
 #   IPv4      one public IPv4 (the /legacy edge target in the live cycle)
 #   Storage   one small storage from an Ubuntu template (the boot disk)
 #   Server    1 core / 1 GiB nginx VM; cloud-init (userDataBase64) installs
@@ -234,15 +235,23 @@ spec:
                         matchControllerRef: true
                   ipv4Selector:
                     matchControllerRef: true
+                  # SINGLE public NIC (live-proven serving topology). The public
+                  # IPv4 only routes when the VM is on the gridscale Public Network;
+                  # a private NIC alone leaves all ports filtered (E6g/E13). Attaching
+                  # BOTH the public and the composed private NIC was live-shown to
+                  # break serving (dual default-route ambiguity → the public IPv4
+                  # stops routing), so the Server takes ONLY the public NIC. The
+                  # composed Network below is provisioned as part of the graph and is
+                  # available for a private/east-west tier; it is deliberately not the
+                  # Server's default route. objectUuid = tenant/location Public Network
+                  # UUID, injected at live time (runbook step 4).
                   network:
-                    - bootdevice: true
-                      objectUuidSelector:
-                        matchControllerRef: true
+                    - objectUuid: REPLACE_ME_PUBLIC_NETWORK_UUID
                   # cloud-init (#cloud-config) — installs nginx, serves the
                   # sample page + /metrics (nginx stub_status). base64 per the
                   # gridscale Server schema (userDataBase64). Kept minimal;
                   # mirrors the caddy-mvp nginx page/metrics contract.
-                  userDataBase64: I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQpwYWNrYWdlczoKICAtIG5naW54CndyaXRlX2ZpbGVzOgogIC0gcGF0aDogL2V0Yy9uZ2lueC9jb25mLmQvZGVmYXVsdC5jb25mCiAgICBjb250ZW50OiB8CiAgICAgIHNlcnZlciB7CiAgICAgICAgbGlzdGVuIDgwIGRlZmF1bHRfc2VydmVyOwogICAgICAgIGxvY2F0aW9uID0gL2hlYWx0aHogeyByZXR1cm4gMjAwICdvayc7IGFkZF9oZWFkZXIgQ29udGVudC1UeXBlIHRleHQvcGxhaW47IH0KICAgICAgICBsb2NhdGlvbiA9IC9tZXRyaWNzIHsgc3R1Yl9zdGF0dXM7IH0KICAgICAgICBsb2NhdGlvbiAvIHsgcm9vdCAvdmFyL3d3dy9rYWRkeTsgaW5kZXggaW5kZXguaHRtbDsgfQogICAgICB9CiAgLSBwYXRoOiAvdmFyL3d3dy9rYWRkeS9pbmRleC5odG1sCiAgICBjb250ZW50OiB8CiAgICAgIDwhZG9jdHlwZSBodG1sPjx0aXRsZT5rYWRkeSAvbGVnYWN5PC90aXRsZT4KICAgICAgPGgxPkhlbGxvIFdvcmxkIGZyb20gZ3JpZHNjYWxlPC9oMT4KICAgICAgPHA+a2FkZHkgbmdpbnggbGVnYWN5IFZNIOKAlCBFNmcgQ3Jvc3NwbGFuZSBwcm92aWRlci1ncmlkc2NhbGUuPC9wPgpydW5jbWQ6CiAgLSBta2RpciAtcCAvdmFyL3d3dy9rYWRkeQogIC0gc3lzdGVtY3RsIGVuYWJsZSAtLW5vdyBuZ2lueAo=
+                  userDataBase64: I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQpwYWNrYWdlczoKICAtIG5naW54CndyaXRlX2ZpbGVzOgogIC0gcGF0aDogL2V0Yy9uZ2lueC9jb25mLmQva2FkZHkuY29uZgogICAgY29udGVudDogfAogICAgICBzZXJ2ZXIgewogICAgICAgIGxpc3RlbiA4MCBkZWZhdWx0X3NlcnZlcjsKICAgICAgICBsb2NhdGlvbiA9IC9oZWFsdGh6IHsgcmV0dXJuIDIwMCAnb2snOyBhZGRfaGVhZGVyIENvbnRlbnQtVHlwZSB0ZXh0L3BsYWluOyB9CiAgICAgICAgbG9jYXRpb24gPSAvbWV0cmljcyB7IHN0dWJfc3RhdHVzOyB9CiAgICAgICAgbG9jYXRpb24gLyB7IHJvb3QgL3Zhci93d3cva2FkZHk7IGluZGV4IGluZGV4Lmh0bWw7IH0KICAgICAgfQogIC0gcGF0aDogL3Zhci93d3cva2FkZHkvaW5kZXguaHRtbAogICAgY29udGVudDogfAogICAgICA8IWRvY3R5cGUgaHRtbD48dGl0bGU+a2FkZHkgL2xlZ2FjeTwvdGl0bGU+CiAgICAgIDxoMT5IZWxsbyBXb3JsZCBmcm9tIGdyaWRzY2FsZTwvaDE+CiAgICAgIDxwPmthZGR5IG5naW54IGxlZ2FjeSBWTSDigJQgRTZnIENyb3NzcGxhbmUgcHJvdmlkZXItZ3JpZHNjYWxlLjwvcD4KcnVuY21kOgogIC0gbWtkaXIgLXAgL3Zhci93d3cva2FkZHkKICAtIHJtIC1mIC9ldGMvbmdpbngvc2l0ZXMtZW5hYmxlZC9kZWZhdWx0CiAgLSBuZ2lueCAtdCAmJiBzeXN0ZW1jdGwgcmVzdGFydCBuZ2lueAogIC0gc3lzdGVtY3RsIGVuYWJsZSBuZ2lueAo=
                 providerConfigRef:
                   kind: ClusterProviderConfig
                   name: default

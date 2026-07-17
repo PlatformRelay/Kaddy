@@ -91,14 +91,23 @@ Secret in `crossplane-system` serves all gridscale MRs regardless of namespace;
 a namespaced ProviderConfig would force the Secret into each XR's namespace) is
 already synced and points at `gridscale-creds`.
 
-## 4. Set the Ubuntu template UUID
+## 4. Set the Ubuntu template + Public Network UUIDs
 
-`composition-website-gridscale.yaml` carries a `REPLACE_ME_UBUNTU_TEMPLATE_UUID`
-placeholder for the Storage boot disk. Find your tenant's Ubuntu template and
-patch the Composition (or override per-claim in the live cycle):
+`composition-website-gridscale.yaml` carries two live-time placeholders:
+`REPLACE_ME_UBUNTU_TEMPLATE_UUID` (Storage boot disk) and
+`REPLACE_ME_PUBLIC_NETWORK_UUID` (the Server's public NIC — the public IPv4 only
+routes when the VM is on the gridscale **Public Network**; a private NIC alone
+leaves all ports filtered). Find both from your tenant and patch the Composition:
 
 ```bash
-gscloud template list        # copy the Ubuntu 22.04 template UUID
+# Ubuntu 22.04 template UUID
+curl -s -H "X-Auth-UserId: $GRIDSCALE_USER_UUID" -H "X-Auth-Token: $GRIDSCALE_API_KEY" \
+  https://api.gridscale.io/objects/templates \
+  | jq -r '.templates|to_entries[].value|select(.name|test("Ubuntu 22.04"))|.object_uuid'
+# Public Network UUID (public_net == true, e.g. de/fra2)
+curl -s -H "X-Auth-UserId: $GRIDSCALE_USER_UUID" -H "X-Auth-Token: $GRIDSCALE_API_KEY" \
+  https://api.gridscale.io/objects/networks \
+  | jq -r '.networks|to_entries[].value|select(.public_net==true)|.object_uuid'
 ```
 
 ## 5. Provision the VM + verify /legacy
@@ -106,6 +115,11 @@ gscloud template list        # copy the Ubuntu 22.04 template UUID
 The gridscale demo claim lives at `deploy/examples/gridscale-website/` (NOT under
 `deploy/workloads/`, which the workloads app auto-syncs with `recurse:true` —
 this keeps real, cost-incurring infra out of GitOps auto-provisioning).
+
+> **Crossplane v2 note (live-proven):** the `Website` XR is namespaced (D-027), so
+> composition selection is nested under `spec.crossplane.compositionSelector` — NOT
+> the v1 top-level `spec.compositionSelector` (strict decode rejects the v1 shape).
+> The committed example already uses the v2 shape.
 
 ```bash
 kubectl apply -f deploy/examples/gridscale-website/website-gridscale.yaml

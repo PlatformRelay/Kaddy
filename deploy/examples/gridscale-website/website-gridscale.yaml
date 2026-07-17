@@ -38,9 +38,13 @@ spec:
   # Portal intent + the routing selector (both gridscale — the selector is what
   # actually routes to composition-website-gridscale.yaml).
   variant: gridscale
-  compositionSelector:
-    matchLabels:
-      platform.kaddy.io/variant: gridscale
+  # Crossplane v2 nests composition selection under spec.crossplane (the XR is
+  # namespaced, D-027). Top-level spec.compositionSelector is v1 and is rejected
+  # by strict decode on v2 CRDs (live-proven E6g).
+  crossplane:
+    compositionSelector:
+      matchLabels:
+        platform.kaddy.io/variant: gridscale
   # image/port/replicas are in-cluster concepts; on the VM path the site is the
   # cloud-init nginx. path is the /legacy edge route (LBaaS in the live cycle).
   path: /legacy
