@@ -4,7 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 R="$ROOT/docs/ROADMAP.md"
 fail() { echo "FAIL: $*" >&2; exit 1; }
-grep -qF '15/15' "$R" || fail "ROADMAP intro must claim 15/15 GitOps apps"
+# DOC-10: the intro must truthfully claim the phase-1 app-of-apps is live-verified,
+# WITHOUT a brittle exact fraction (the app tree grows; a hardcoded count goes stale
+# and cannot be re-confirmed offline). Assert the honest phrasing, not a number.
+grep -qE 'phase-1 GitOps app-of-apps Synced/Healthy' "$R" || fail "ROADMAP intro must claim the phase-1 GitOps app-of-apps is Synced/Healthy (no brittle count)"
+! grep -qE '[0-9]+/[0-9]+ GitOps apps' "$R" || fail "ROADMAP intro must NOT hardcode an N/N GitOps-apps count (stale-prone, unverifiable offline)"
 ! grep -qE '9/9 GitOps' "$R" || fail "ROADMAP still claims stale 9/9"
 grep -qE 'E1c · Security baseline ✅' "$R" || fail "E1c header must be ✅"
 grep -qE 'E1d · Identity.*✅' "$R" || fail "E1d header must be ✅"
