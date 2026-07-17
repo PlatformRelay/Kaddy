@@ -1,7 +1,8 @@
 # REQ-E6g-S03-01: a Website with variant=gridscale composes the gridscale VM
-# managed-resource graph (Network + IPv4 + Storage + Server) in its namespace,
-# each carrying the ADR-0301 labels propagated from the XR and a
-# providerConfigRef to the gridscale ClusterProviderConfig.
+# managed-resource graph (IPv4 + Storage + Server) in its namespace, each
+# carrying the ADR-0301 labels propagated from the XR and a providerConfigRef
+# to the gridscale ClusterProviderConfig. (D-039: the unattached private
+# Network MR was dropped — the VM serves on the gridscale Public Network.)
 #
 # skip: true — this asserts the COMPOSED gridscale MRs exist and are shaped
 # correctly, which needs the Crossplane ENGINE + the Website XRD/Composition +
@@ -22,8 +23,8 @@ metadata:
 spec:
   skip: true
   description: >-
-    Website(variant=gridscale) composes a labeled Network/IPv4/Storage/Server
-    graph via provider-gridscale, selected by compositionSelector.
+    Website(variant=gridscale) composes a labeled IPv4/Storage/Server graph
+    via provider-gridscale, selected by compositionSelector.
   timeouts:
     assert: 120s
   steps:
@@ -69,14 +70,6 @@ spec:
                 providerConfigRef:
                   kind: ClusterProviderConfig
                   name: default
-        - assert:
-            resource:
-              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
-              kind: Network
-              metadata:
-                name: chainsaw-legacy
-                labels:
-                  managed-by: crossplane
         - assert:
             resource:
               apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1

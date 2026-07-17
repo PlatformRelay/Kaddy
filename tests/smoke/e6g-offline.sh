@@ -11,9 +11,10 @@
 #      actually parses ({"uuid","token","api_url"} under one key) — NOT inert
 #      real values (values injected at live time).
 #   3. The gridscale Website Composition composes a Server (nginx VM) + the
-#      minimal Network / IPv4 / Storage MRs it boots from, behind a `variant`
-#      selector so the in-cluster Website path is untouched.
-#   4. The gridscale Server/Network/IPv4/Storage MRs validate against the
+#      minimal IPv4 / Storage MRs it boots from, behind a `variant` selector so
+#      the in-cluster Website path is untouched. (D-039: the unattached private
+#      Network MR was dropped — the VM serves on the gridscale Public Network.)
+#   4. The gridscale Server/IPv4/Storage MRs validate against the
 #      sibling provider's GENERATED CRD schemas via kubeconform (real schema —
 #      catches field-name drift before the live cycle). Skipped with a loud
 #      note if the sibling repo or kubeconform is absent.
@@ -97,7 +98,7 @@ grep -qE 'kind:[[:space:]]*Composition[[:space:]]*$' "${COMPO_GS}" \
 # untouched; selected by the XRD `variant` field via compositionSelector.
 grep -qE 'gridscale' "${COMPO_GS}" \
   || fail "gridscale Composition must matchLabel variant: gridscale (compositionSelector)"
-for kind in Server Network IPv4 Storage; do
+for kind in Server IPv4 Storage; do
   grep -qE "kind:[[:space:]]*${kind}[[:space:]]*$" "${COMPO_GS}" \
     || fail "gridscale Composition must compose a ${kind} managed resource (bootable nginx VM)"
 done
@@ -109,7 +110,7 @@ grep -qE 'cores:[[:space:]]*1' "${COMPO_GS}" \
 # Single source of truth: the page/metrics userData mirrors the caddy-mvp nginx.
 grep -qE 'userDataBase64|user-?data|cloud-config' "${COMPO_GS}" \
   || fail "Server must ship cloud-init userData serving the page + /metrics"
-ok "gridscale Composition composes Server + Network/IPv4/Storage (variant-gated, minimal VM)"
+ok "gridscale Composition composes Server + IPv4/Storage (variant-gated, minimal VM)"
 
 # --- 4) in-cluster Website path is untouched (existing composition intact) ---
 grep -qE 'name:[[:space:]]*website\.platform\.kaddy\.io' "${CP}/composition-website.yaml" \

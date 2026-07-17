@@ -9,9 +9,9 @@
 # safe). Selection: spec.compositionSelector.matchLabels
 # ['platform.kaddy.io/variant']=gridscale on the XR.
 #
-# The composed graph is the minimal bootable gridscale server (cost-sensitive):
-#   Network   an L2 private network provisioned alongside (private/east-west
-#             tier); the VM SERVES on the gridscale Public Network NIC (below)
+# The composed graph is the strictly-minimal bootable gridscale server
+# (cost-sensitive; D-039 dropped the unattached private Network MR — the VM
+# serves on the gridscale Public Network NIC, so a composed Network was dead):
 #   IPv4      one public IPv4 (the /legacy edge target in the live cycle)
 #   Storage   one small storage from an Ubuntu template (the boot disk)
 #   Server    1 core / 1 GiB nginx VM; cloud-init (userDataBase64) installs
@@ -87,48 +87,14 @@ spec:
               - type: FromCompositeFieldPath
                 fromFieldPath: metadata.labels['track']
                 toFieldPath: metadata.labels['track']
-          # Selector label so the Server can objectUuidSelector its Network /
-          # Storage / IPv4 siblings within this XR (matchLabels on a per-XR key).
+          # Selector label so the Server can objectUuidSelector its Storage /
+          # IPv4 siblings within this XR (matchLabels on a per-XR key).
           - name: composed-selector-label
             patches:
               - type: FromCompositeFieldPath
                 fromFieldPath: metadata.name
                 toFieldPath: metadata.labels['platform.kaddy.io/website']
         resources:
-          # ------------------------------------------------------- network
-          - name: network
-            base:
-              apiVersion: gridscale.gridscale.m.platformrelay.io/v1alpha1
-              kind: Network
-              metadata:
-                labels:
-                  managed-by: crossplane
-              spec:
-                forProvider:
-                  name: kaddy-website
-                providerConfigRef:
-                  kind: ClusterProviderConfig
-                  name: default
-            patches:
-              - type: PatchSet
-                patchSetName: xr-name
-              - type: PatchSet
-                patchSetName: adr0301-labels
-              - type: PatchSet
-                patchSetName: composed-selector-label
-              - type: FromCompositeFieldPath
-                fromFieldPath: metadata.name
-                toFieldPath: spec.forProvider.name
-                transforms:
-                  - type: string
-                    string:
-                      type: Format
-                      fmt: "%s-net"
-            readinessChecks:
-              - type: MatchCondition
-                matchCondition:
-                  type: Ready
-                  status: "True"
           # ---------------------------------------------------------- ipv4
           - name: ipv4
             base:
@@ -212,10 +178,12 @@ spec:
                   type: Ready
                   status: "True"
           # -------------------------------------------------------- server
-          # 1 core / 1 GiB nginx VM (cost guard). Boots the Storage disk,
-          # attaches the Network NIC + public IPv4 (all selected by the per-XR
-          # label). cloud-init (userDataBase64) installs nginx and serves the
-          # sample page + /metrics — the page/metrics contract mirrors
+          # 1 core / 1 GiB nginx VM (cost guard). Boots the Storage disk and
+          # attaches the public IPv4 via a SINGLE public NIC on the gridscale
+          # Public Network (no composed Network MR — the public IPv4 routes over
+          # the Public Network; a composed private NIC was live-shown to break
+          # serving, D-039). cloud-init (userDataBase64) installs nginx and serves
+          # the sample page + /metrics — the page/metrics contract mirrors
           # deploy/workloads/caddy-mvp/configmap-nginx.yaml (single source).
           - name: server
             base:
@@ -238,13 +206,13 @@ spec:
                   # SINGLE public NIC (live-proven serving topology). The public
                   # IPv4 only routes when the VM is on the gridscale Public Network;
                   # a private NIC alone leaves all ports filtered (E6g/E13). Attaching
-                  # BOTH the public and the composed private NIC was live-shown to
+                  # BOTH the public and a composed private NIC was live-shown to
                   # break serving (dual default-route ambiguity → the public IPv4
-                  # stops routing), so the Server takes ONLY the public NIC. The
-                  # composed Network below is provisioned as part of the graph and is
-                  # available for a private/east-west tier; it is deliberately not the
-                  # Server's default route. objectUuid = tenant/location Public Network
-                  # UUID, injected at live time (runbook step 4).
+                  # stops routing), so the Server takes ONLY the public NIC — and the
+                  # composition composes NO private Network MR at all (D-039: the
+                  # unattached Network was dead weight, dropped for the strictly
+                  # minimal 3-kind serving graph). objectUuid = tenant/location Public
+                  # Network UUID, injected at live time (runbook step 4).
                   network:
                     - objectUuid: REPLACE_ME_PUBLIC_NETWORK_UUID
                   # cloud-init (#cloud-config) — installs nginx, serves the

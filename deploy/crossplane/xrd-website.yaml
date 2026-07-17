@@ -63,7 +63,7 @@ spec:
                     Backstage scaffolder surfaces this as a choice). `in-cluster`
                     (default) is a hardened Deployment/Service in the XR's
                     namespace (E6); `gridscale` is a real gridscale nginx VM
-                    (Server + Network + IPv4 + Storage) via provider-gridscale
+                    (Server + IPv4 + Storage) via provider-gridscale
                     (E6g). NOTE: Crossplane routes to the matching Composition
                     via `spec.compositionSelector.matchLabels
                     ['platform.kaddy.io/variant']` — set that selector to the

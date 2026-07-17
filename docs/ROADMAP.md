@@ -275,7 +275,7 @@ provides Cilium Gateway + default StorageClass
 **Offline (this repo):** Provider + ClusterProviderConfig + creds Secret template
 (`deploy/crossplane/provider-gridscale.yaml`, `providerconfig-gridscale.yaml`) and
 a variant-selected 2nd Website Composition
-(`composition-website-gridscale.yaml`: Server + Network/IPv4/Storage nginx VM,
+(`composition-website-gridscale.yaml`: Server + IPv4/Storage nginx VM,
 cloud-init page + `/metrics`) — the in-cluster path is untouched. Gated by
 `task test:smoke:e6g` (structural + `kubeconform` vs the sibling's generated
 CRDs). **Live-proof pending** (D-016): the sibling xpkg is not yet built/pushed,

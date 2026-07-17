@@ -124,7 +124,7 @@ this keeps real, cost-incurring infra out of GitOps auto-provisioning).
 ```bash
 kubectl apply -f deploy/examples/gridscale-website/website-gridscale.yaml
 kubectl -n websites get website legacy -w        # Ready=True
-kubectl -n websites get server,network,ipv4,storage
+kubectl -n websites get server,ipv4,storage
 # nginx serves "Hello World from gridscale" + /metrics (stub_status).
 curl -s https://$HOST/legacy/                    # via LBaaS in the live cycle
 ```
@@ -133,7 +133,7 @@ curl -s https://$HOST/legacy/                    # via LBaaS in the live cycle
 
 ```bash
 kubectl delete -f deploy/examples/gridscale-website/website-gridscale.yaml
-kubectl -n websites get server,network,ipv4,storage   # gone
+kubectl -n websites get server,ipv4,storage   # gone
 ```
 
 ---
