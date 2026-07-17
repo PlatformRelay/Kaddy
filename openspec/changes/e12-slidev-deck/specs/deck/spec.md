@@ -51,13 +51,18 @@ tests/deck/speaker-notes-coverage.sh   # asserts note-block count == slide count
 **Priority:** should · **Story:** E12-S02 · **Level:** L1
 **Given** the presenter notes across all slides read aloud as one continuous voiceover
 **When** the total spoken word count is summed
-**Then** it falls in a range consistent with a 5–10 minute video at ~130–150 wpm (≈650–1500 words) —
+**Then** it falls in a range consistent with the recorded walkthrough at ~130–150 wpm —
 not so short it is thin, not so long it overruns the window
+
+> **Reconciled by E12c-S01 (2026-07-17):** the operator raised the target to a **~15-minute main
+> deck plus a gate-exempt appendix**. The MAIN spoken-word sum is now **[1400, 2200]** and only counts
+> slides **before** the `<!-- APPENDIX -->` sentinel; appendix slides carry notes but are exempt. See
+> `openspec/changes/e12c-deck-docs-refresh/specs/deck/spec.md` REQ-E12c-S01-01/02.
 **Test:** `tests/deck/script-wordcount.sh`
 **Verify:**
 
 ```bash
-tests/deck/script-wordcount.sh   # sums words inside all `<!-- ... -->` note blocks; asserts 650 <= total <= 1500
+tests/deck/script-wordcount.sh   # sums MAIN (pre-APPENDIX) note words; asserts 1400 <= total <= 2200 (E12c-S01)
 ```
 
 ---
@@ -89,7 +94,12 @@ tests/deck/iframe-surfaces.sh   # greps slides/slides.md for iframe embeds of: b
 **Then** all beats are present and ordered: pitch → architecture → security posture → the
 auto-generated portal hero moment (edit XRD → form updates, E10) → progressive delivery
 (mulligan, E7) → alerting (marshal, E5) → evidence (scorecard, E8) — each with a per-section time
-budget so the whole lands inside 5–10 minutes
+budget so the whole lands inside the recorded window
+
+> **Reconciled by E12c-S01 (2026-07-17):** the seven beats + `sectionTime` sum are now enforced over
+> the MAIN deck only (before the `<!-- APPENDIX -->` sentinel); the raised main `sectionTime` range is
+> **[600, 1000] s** (~11–15 min). Appendix sections carry neither canonical `beat:` nor `sectionTime:`
+> markers. See `openspec/changes/e12c-deck-docs-refresh/specs/deck/spec.md` REQ-E12c-S01-01/02.
 **Test:** `tests/deck/narrative-beats.sh`
 **Verify:**
 

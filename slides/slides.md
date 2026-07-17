@@ -1007,3 +1007,27 @@ brief requirement to its epic, and the ADR index takes you into the deep
 dive. Everything in this deck is checkable. Thanks for watching — I'm happy
 to take questions.
 -->
+
+---
+layout: none
+---
+
+<!-- APPENDIX -->
+<!--
+This is the gate-exempt appendix boundary (E12c-S01). Everything past this
+sentinel is depth material for Q&A — it does not count toward the main deck's
+~15-minute time or word budget. The main talk ended at "Thank you"; from here
+on, dip in only if a question sends us here.
+-->
+
+<CoverArt
+  src="/covers/placeholder-section.svg"
+  kicker="§ A · Appendix"
+  title="Appendix — depth for questions"
+/>
+
+<!--
+Appendix. If a question wants the NixOS path, the repo layout, a five-minute
+quickstart, or the three ways I solved the same brief, the slides are here —
+outside the recorded fifteen minutes, ready when you are.
+-->
