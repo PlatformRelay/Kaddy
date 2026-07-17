@@ -215,6 +215,29 @@ and far down the fairway a brand-new hole is already sketching itself into
 existence, flag rising. No haggling, no queue: the book always asks exactly the
 right questions. Delighted, effortless "wish becomes work order" magic.
 
+### S15 — Value already shipped for gridscale — *Mending the neighbour's fences* — `section-15-neighbours-fences.png`
+
+*(New cast: a **visiting neighbour groundskeeper** = gridscale, whose own course
+sits just over the dunes — Kaddy has already been over there fixing their fences.)*
+
+Over the dunes from the home links sits a **neighbouring course**; little Kaddy the
+flat-cap caddie has walked over with the enchanted golf bag and is cheerfully
+**hammering three loose fence-posts back into place** along its boundary, while the
+neighbour groundskeeper tips his cap in thanks. A freshly-planted signpost-sapling
+(a young "provider" tree) takes root at the gate, its roots forming tidy branching
+plumbing into the ground. Three small mended gaps glow warmly in the fence line.
+Neighbourly, generous "I fixed your stuff before you asked" energy. Keep the left
+third open sky.
+
+### S16 — Crossplane — the IaC of platform engineering — *The living blueprint* — `section-16-living-blueprint.png`
+
+Kaddy unrolls a large **living blueprint** on a drafting table out on the fairway;
+where a one-shot paper plan would stay flat, THIS blueprint's drawn objects **lift
+off the page as real tiny buildings and greens that keep re-levelling themselves**
+whenever the wind nudges them — a gentle control-loop reconciling the course back to
+the drawing. One master template card spawns several identical tidy holes.
+Retro-futurist, quietly magical "the drawing keeps the world in sync" mood.
+
 ---
 
 ## Branding

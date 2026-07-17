@@ -269,6 +269,152 @@ portal. Everything I claim, I can defend.
 
 ---
 layout: none
+sectionTime: 55
+---
+
+<CoverArt
+  src="/covers/section-15-neighbours-fences.png"
+  kicker="§ 04a · Mending the neighbour's fences"
+  title="Value already shipped for gridscale"
+/>
+
+<!--
+Before the architecture, the part that matters most to you: I did not just
+build a platform in a vacuum — I shipped real, external value for gridscale
+along the way. Let me show you what is already landed on your side of the fence.
+-->
+
+---
+layout: default
+---
+
+# Value already shipped for gridscale
+
+<div class="text-sm opacity-70 -mt-2">§ 04a · landed external value — not a slide-ware promise</div>
+
+<div class="grid grid-cols-2 gap-6 pt-4 text-left">
+
+<div class="p-4 rounded border border-green-600">
+
+### ✅ `provider-gridscale` — **landed**
+
+A **Crossplane provider for gridscale**, generated with **Upjet** from the
+`gridscale/gridscale` Terraform provider — **32 gridscale resources** as native
+Kubernetes CRDs (servers, k8s, loadbalancers, firewalls, object storage, PaaS…).
+
+Published to the **Upbound Marketplace**:
+`marketplace.upbound.io/providers/platformrelay/provider-gridscale`
+
+</div>
+
+<div class="p-4 rounded border border-green-600">
+
+### ✅ 3 bug-fix **MRs** upstream — **filed, open**
+
+Three fixes filed against the **gridscale Terraform provider**
+(`gridscale/terraform-provider-gridscale`), open and awaiting review:
+
+- **[#509](https://github.com/gridscale/terraform-provider-gridscale/pull/509)** — 5 credential fields missing `Sensitive: true` (secrets rendered plaintext) — **security**
+- **[#510](https://github.com/gridscale/terraform-provider-gridscale/pull/510)** — loadbalancer `status` should be `Computed`, not `Optional` (perpetual plan diff)
+- **[#511](https://github.com/gridscale/terraform-provider-gridscale/pull/511)** — object-storage Update calls the wrong Read func; `marketplace_app.type` from the wrong source
+
+</div>
+
+</div>
+
+<div class="pt-4 text-center text-teal-400">
+I found these while building the provider — and fixed them at the source, for everyone. That is what a platform engineer does with your product.
+</div>
+
+<!--
+This is the story I most want you to hear. While building the platform I
+generated a Crossplane provider for gridscale with Upjet — thirty-two of your
+resources exposed as native Kubernetes CRDs — and published it to the Upbound
+Marketplace under the platformrelay org. Along the way I hit three real bugs in
+your own Terraform provider and, rather than just working around them, I filed
+fixes upstream: one security bug where five credential fields were missing the
+sensitive flag and leaked into plaintext, one correctness bug where the
+loadbalancer status caused a perpetual plan diff, and one copy-paste CRUD bug in
+object storage. All three are open pull requests awaiting your review. I did not
+wait to be asked — I made your product better on my way through. To be precise:
+the provider is landed and on the Marketplace; the three upstream MRs are filed
+and open, not yet merged.
+-->
+
+---
+layout: none
+sectionTime: 50
+---
+
+<CoverArt
+  src="/covers/section-16-living-blueprint.png"
+  kicker="§ 04b · The living blueprint"
+  title="Crossplane — the IaC of platform engineering"
+/>
+
+<!--
+So why Crossplane, and not just Terraform? Because a platform is a living thing,
+and it needs infrastructure-as-code that keeps the world in sync — not a plan
+you run once and walk away from.
+-->
+
+---
+layout: default
+---
+
+# Crossplane — the IaC of platform engineering
+
+<div class="grid grid-cols-2 gap-6 pt-2 text-left text-lg">
+
+<div>
+
+### One-shot Terraform
+
+- You run `apply`; it converges **once**, then stops.
+- Drift is silent until the next plan.
+- The plan is a file, not an **API**.
+
+### Crossplane control plane
+
+- A **reconciling control loop** — the cluster continuously drives real
+  infrastructure back to the declared state, like the rest of GitOps.
+- **Composition**: many managed resources behind one opinionated abstraction.
+- **XRD-as-API**: your platform's own API surface, projected into the portal.
+
+</div>
+
+<div>
+
+The **`Website` XRD** is the whole point: a developer files one `Website` claim,
+and Crossplane composes the gridscale server, loadbalancer, TLS edge and
+monitoring behind it — the **same control-plane pattern** as everything else on
+the cluster, and the same API the **Backstage portal** auto-generates its form
+from (next section).
+
+**Control plane, not one-shot.** That is why Crossplane is a first-class IaC
+tool for platform engineering, and why `provider-gridscale` exists.
+
+</div>
+
+</div>
+
+<!--
+Here is why Crossplane, framed properly rather than hidden behind the portal
+slide. One-shot Terraform converges once and then stops — drift stays silent
+until the next plan, and the plan is a file, not an API. Crossplane is a
+reconciling control plane: the cluster continuously drives real infrastructure
+back to the declared state, exactly like the rest of GitOps. Two ideas carry it.
+Composition lets me hide many managed resources behind one opinionated
+abstraction. And the XRD — the composite resource definition — becomes my
+platform's own API. A developer files a single Website claim; Crossplane composes
+the gridscale server, the loadbalancer, the TLS edge and the monitoring behind
+it. That same XRD is the API the Backstage portal generates its form from, which
+is the hero moment two slides from now. Control plane, not one-shot — that is why
+Crossplane is the infrastructure-as-code of platform engineering.
+-->
+
+---
+layout: none
 beat: architecture
 sectionTime: 50
 ---
