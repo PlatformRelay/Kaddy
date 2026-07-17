@@ -25,6 +25,7 @@ Epic: E1 · ADR: [0104](../../../docs/adr/0104-caddy-gateway-api.md) · **Phase:
 **Test:** `tests/smoke/req-e1-s02-01-argocd-server-running.sh`
 
 **Verify:**
+
 ```bash
 kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
 ```
@@ -39,6 +40,7 @@ kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -
 **Test:** `tests/smoke/e1-s03-01.sh`
 
 **Verify:**
+
 ```bash
 kubectl get nodes -o json | jq -e '[.items[].status.conditions[] | select(.type=="Ready" and .status!="True")] | length == 0'
 kubectl get storageclass | grep -q default

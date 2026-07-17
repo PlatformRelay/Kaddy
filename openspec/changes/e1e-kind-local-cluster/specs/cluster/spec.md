@@ -47,6 +47,7 @@ Helm-values path, both benign and documented (no gate was weakened to accommodat
 **Test:** `tests/meta/e1e-kind-config.sh`
 
 **Verify:**
+
 ```bash
 rg -q 'disableDefaultCNI:\s*true' hack/cluster/kind/cluster.yaml
 rg -q 'kubeProxyMode:\s*"?none"?' hack/cluster/kind/cluster.yaml
@@ -66,6 +67,7 @@ rg -q 'listenAddress:\s*"127.0.0.1"' hack/cluster/kind/cluster.yaml && ! rg -q '
 **Test:** `tests/smoke/e1e-s01-02.sh`
 
 **Verify:**
+
 ```bash
 task cluster:up
 kubectl get nodes -o json | jq -e '[.items[].status.conditions[] | select(.type=="Ready" and .status!="True")] | length == 0'
@@ -83,6 +85,7 @@ kubectl get nodes -o json | jq -e '[.items[].status.conditions[] | select(.type=
 **Test:** `tests/smoke/e1e-s02-01.sh`
 
 **Verify:**
+
 ```bash
 kubectl -n kube-system rollout status ds/cilium --timeout=180s
 kubectl -n kube-system get ds kube-proxy 2>/dev/null && exit 1 || true
@@ -101,6 +104,7 @@ kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -qi 'KubeProxy
 **Test:** `tests/smoke/e1e-s02-02.sh`
 
 **Verify:**
+
 ```bash
 kubectl get crd gateways.gateway.networking.k8s.io
 kubectl get gatewayclass cilium -o json | jq -e '.status.conditions[] | select(.type=="Accepted") | .status == "True"'
@@ -118,6 +122,7 @@ kubectl get gatewayclass cilium -o json | jq -e '.status.conditions[] | select(.
 **Test:** `tests/smoke/e1e-s02-03.sh`
 
 **Verify:**
+
 ```bash
 kubectl get ciliumloadbalancerippool -o json | jq -e '.items | length > 0'
 kubectl get ciliuml2announcementpolicy -o json | jq -e '.items | length > 0'
@@ -135,6 +140,7 @@ kubectl get ciliuml2announcementpolicy -o json | jq -e '.items | length > 0'
 **Test:** `tests/smoke/e1e-s03-01.sh`
 
 **Verify:**
+
 ```bash
 kubectl -n cert-manager rollout status deploy/cert-manager-webhook --timeout=180s
 kubectl get clusterissuer kaddy-local-ca -o json | jq -e '.status.conditions[] | select(.type=="Ready") | .status == "True"'
@@ -152,6 +158,7 @@ kubectl get clusterissuer kaddy-local-ca -o json | jq -e '.status.conditions[] |
 **Test:** `tests/smoke/e1e-s03-02.sh`
 
 **Verify:**
+
 ```bash
 kubectl get storageclass -o json | jq -e '[.items[] | select(.metadata.annotations["storageclass.kubernetes.io/is-default-class"]=="true")] | length > 0'
 ```
@@ -168,6 +175,7 @@ kubectl get storageclass -o json | jq -e '[.items[] | select(.metadata.annotatio
 **Test:** `tests/smoke/e1e-s04-01.sh`
 
 **Verify:**
+
 ```bash
 bash tests/smoke/e1e-s04-01.sh
 ```
@@ -184,6 +192,7 @@ bash tests/smoke/e1e-s04-01.sh
 **Test:** `tests/meta/e1e-security.sh`
 
 **Verify:**
+
 ```bash
 test -f hack/cluster/versions.env
 ! rg -q ':latest' hack/cluster/

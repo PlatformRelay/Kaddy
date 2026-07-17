@@ -147,5 +147,5 @@ platform Gateway's `certificateRefs` Secret at `e8b-demo-tls-le-staging` first
 - `deploy/monitoring/e8b-demo/` — the read-only demo surfaces (GitOps).
 - `deploy/apps/e8b-demo.yaml` + `deploy/apps/projects/e8b-demo.yaml` — the child
   Application and its dedicated closed-list AppProject (destinations = monitoring
-  + gateway).
+  - gateway).
 - OpenSpec: `openspec/changes/e8b-live-demo/`

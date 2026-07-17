@@ -125,6 +125,7 @@ Epic: E7 · ADR: [0201](../../../docs/adr/0201-rollouts-blue-green-canary.md)
 ---
 
 ## REQ-E7-EXIT: Chainsaw rollouts suite green
+
 **Test:** `tests/chainsaw/rollouts`
 **Priority:** must  
 

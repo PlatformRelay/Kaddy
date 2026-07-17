@@ -2,7 +2,7 @@
 
 ## Stack layout
 
-```
+```text
 stacks/gridscale/network → stacks/gridscale/k8s → (state-bucket bootstrapped first)
 ```
 

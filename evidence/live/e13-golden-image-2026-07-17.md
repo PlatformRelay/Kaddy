@@ -4,7 +4,8 @@
 Ephemeral build VM → provision Caddy → snapshot → template, then ALL ephemeral resources auto-destroyed.
 
 ## Build result (from /tmp/e13-caddy-build.log)
-```
+
+```text
 ==> Created server 4c569265 (ephemeral build VM)
 ==> Enabled caddy.service (systemd) on the image
 ==> Created snapshot 459022a0 → template packer-1784247942 (76d0bb9f-92a5-41ab-852d-912f7d1988ba, private)
@@ -22,7 +23,7 @@ register + import (E13-S02), deploy-from-template + serve→scrape→fire (E13-S
 Rebuilt the Caddy golden template, then deployed a `gridscale_server` from it (1 core / 1 GiB, public
 IPv4 on the gridscale public network) via OpenTofu. The booted VM served over the real public IP:
 
-```
+```text
 GET http://<public-ip>/        → 200  <title>kaddy — gridscale Marketplace template</title>
 GET http://<public-ip>/healthz → 200  ok
 GET http://<public-ip>:2019/metrics → caddy_config_last_reload_successful 1  (Caddy Prometheus endpoint)

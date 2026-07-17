@@ -9,7 +9,7 @@ assert (L2) before the ServiceMonitor/PrometheusRule manifest.
 > (`deploy/caddy-mvp/monitoring/`, `tests/promtool/caddy-mvp-marshal.test.yaml`, REQ-CADDY-S01-03).
 > The Cilium/Envoy edge never emits `job="caddy"` (ADR-0104, D-019); operator-confirmed Option A —
 > park.
-
+>
 > **Fire-leg completion (ARCH-2/ARCH-8/DIR-2, 2026-07-16).** All active marshal REQs re-pointed
 > at the real served site (blackbox probe of clubhouse through the Cilium Gateway + Envoy edge
 > metrics); `deploy/monitoring/` GitOps-wired via the `monitoring` child Application; the fire

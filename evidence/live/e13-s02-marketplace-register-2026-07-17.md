@@ -3,6 +3,7 @@
 **Epic:** E13 · **REQ:** REQ-E13-S02-02 · **Substrate:** real gridscale tenant (de/fra2)
 
 ## What was proven (the gridscale-native "third way", ephemeral, tenant-clean-after)
+
 `gridscale_marketplace_application` (register) + `gridscale_marketplace_application_import`
 (private-tenant import) applied live via OpenTofu against the real gridscale API, for **both engines**:
 
@@ -20,6 +21,7 @@
   S01 build + S03 deploy, already live-proven separately).
 
 ## Cost discipline
+
 Register/import provisions **no compute** (metadata only). Object-storage bucket `kaddy-images` + the two
 `.gz` objects + the dedicated S3 access key were created for the proof and **destroyed after**. Both
 marketplace stacks `tofu destroy`'d; tenant marketplace audited clean afterward.

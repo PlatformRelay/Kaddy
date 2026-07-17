@@ -25,7 +25,7 @@ never mutates. Do not blur them (D-029).
 
 ## Layout
 
-```
+```text
 deploy/portal/backstage/
   app-config.yaml              # kubernetesIngestor + argocd + techdocs + oidc + kubernetes
   catalog/                     # ONLY static platform components (clubhouse/marshal/mulligan/scorecard)

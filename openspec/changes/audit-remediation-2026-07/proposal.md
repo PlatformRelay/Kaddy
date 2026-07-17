@@ -52,6 +52,7 @@ All 39 findings are assigned exactly once (verified). TEST-6 grouped with WS2 (s
 `testing.md` docs-drift class as DOC-4/DOC-5).
 
 ### WS1 · Caddy-MVP spine (P0)
+
 Operator direction: Caddy = the platform **MVP** (Website-as-a-Service tenant product), reached
 **through** the Cilium/Envoy edge, **not** the edge (ARCH-2: *"we won't use caddy as a gateway"*;
 ARCH-3: *"caddy will be the MVP of our platform, but for now we are building the preconditions to
@@ -63,12 +64,15 @@ disabled from active platform monitoring, promtool rigor preserved; platform-edg
 **decoupled** from Caddy. **ARCH-2 / ARCH-3 alert work is blocked on this decision.**
 
 ### WS2 · Substrate + status retcon (P1)
+
 Operator: *"retcon the adrs"*, *"reconcile docs with reality"*, *"fix"*. **A sibling docs lane is
 executing most of this now** — marked in-progress this session. Covers the D-025 substrate
 propagation, status-marker truth, and docs-drift hygiene.
 
 ### WS3 · CI + gate wiring (P1)
+
 Operator on TEST-2: *"we need code for ci"*. **Couplings encoded verbatim:**
+
 - **TEST-1** (`STRICT_TEST_FILES=1` gate) → planned **advisory/deferred**, NOT blocking
   (operator: *"having a gate is difficult at this point"*).
 - **ARCH-5** (`openspec:validate`→`spec:validate` rename) → **blocked on REQ-TF-11** (option (a),
@@ -79,6 +83,7 @@ Operator on TEST-2: *"we need code for ci"*. **Couplings encoded verbatim:**
 - Runs **after the live E1 lane merges** (it holds `Taskfile.yml`).
 
 ### WS4 · Test-artifact + hygiene (P2)
+
 - **TEST-3** (operator: *"make sure they are planned"*) → enumerate the missing smoke/meta tests
   as planned tasks (`tests/smoke/e1b-*.sh`, `e5-s01-01.sh`, …).
 - **TEST-4** (operator: *"we shouldn't skip them, add as task"*) → plan un-skipping the four
@@ -86,20 +91,24 @@ Operator on TEST-2: *"we need code for ci"*. **Couplings encoded verbatim:**
   because the underlying manifests are unbuilt.
 
 ### WS5 · Governance reconcile (P2)
+
 - **ARCH-4** (operator: *"try to reconcile"* the two label sets) → decide a canonical label form
   and align ADR-0301 + `modules/labels` + `policy/labels.rego` + monitoring manifests. A sibling
   lane may execute the monitoring-manifest part.
 
 ### WONTFIX
+
 - **ARCH-7** (boundary enforcement) — operator: *"how can we even do boundary enforcement here?
   Drop that."* WONTFIX with that rationale.
 - **DIR-4** (wasted-motion) — process/informational, no code action; covered by the retrospective.
 
 ### ROADMAPPED (not remediation debt)
+
 - **SEC-6** (NetworkPolicy, E1c), **SEC-7** (RBAC, E1d), **SEC-8** (Trivy/cosign, E1c) — unbuilt
   future epics, **not regressions**. Keep as roadmap items, not audit-remediation tasks.
 
 ### P3 / accept-with-note
+
 - **SEC-3** (latent secret vector — clean now), **SEC-5** (action SHA pinning — Renovate-mitigated),
   **SEC-9** (smoke fixture labels — ephemeral), **DIR-3** / **DIR-6** (over-scope / phase-bleed —
   reframed by the Caddy-MVP direction). Accept with note; revisit if they regress.

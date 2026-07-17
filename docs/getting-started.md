@@ -7,7 +7,7 @@ cluster. Follow top to bottom. Every command uses the **isolated** kubeconfig at
 Deeper substrate notes: [local-substrate-handoff.md](runbooks/local-substrate-handoff.md).
 Website claims: [website-self-service.md](runbooks/website-self-service.md).
 
-### Reviewer artifacts (honest status)
+## Reviewer artifacts (honest status)
 
 | Artifact | Status |
 | --- | --- |

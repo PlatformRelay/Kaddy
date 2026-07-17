@@ -2,7 +2,7 @@
 
 ## Layout
 
-```
+```text
 .sops.yaml
 deploy/secrets/identity/dex-github.enc.yaml   # SOPS-encrypted OAuth Secret (IaC)
 deploy/identity/

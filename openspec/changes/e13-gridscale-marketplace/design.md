@@ -18,7 +18,7 @@ Two engines: a **Caddy** template and a mirrored **nginx** template, from one pa
 
 ## Layout
 
-```
+```text
 stacks/gridscale-marketplace/          # Terramate stack (phase 2; gated on E1g)
   caddy/                               # marketplace app: Caddy
   nginx/                               # marketplace app: nginx (mirror)

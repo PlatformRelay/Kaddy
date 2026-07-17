@@ -531,15 +531,15 @@ bootstrapping. See driving-range `driving-range/docs/ROADMAP.md` and
 
 ## Suggested loop order
 
-**Phase 1 — kaddy on local kind ($0 cloud)**
+### Phase 1 — kaddy on local kind ($0 cloud)
 
 1. **E1e** (kind + Cilium substrate — ✅ landed)  
 2. **E1** (kubeconfig handoff + ArgoCD — ✅ landed) → E1b ∥ E1c  
 3. **E2** (gateway spike — ✅ landed; weight-mutation → E7)  
 4. **E3** → **E4** (✅ landed) ∥ E5 → E6 → **E7** → E8 (evidence from local cluster)
 
-**Phase 2 — gridscale lab (after E3–E7 green locally)**
+### Phase 2 — gridscale lab (after E3–E7 green locally)
 
-5. E1g (GSK day-0) → E6g (Upjet provider + VM) → E8b (live demo)  
-6. E11, E12 in parallel where possible  
-7. E9 / E10 if time
+1. E1g (GSK day-0) → E6g (Upjet provider + VM) → E8b (live demo)  
+2. E11, E12 in parallel where possible  
+3. E9 / E10 if time

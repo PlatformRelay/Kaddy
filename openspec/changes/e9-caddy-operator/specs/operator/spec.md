@@ -80,6 +80,7 @@ arrays, PUT inserts, PATCH replaces)
 ---
 
 ## REQ-E9-EXIT: Gate before merge
+
 **Test:** `operator/internal/controller/e9-exit_test.go`
 **Priority:** must
 

@@ -29,6 +29,7 @@ The spike cluster is built in [driving-range](https://github.com/PlatformRelay/d
 
 1. Export kubeconfig from driving-range per that repo's runbook.
 2. Verify baseline:
+
    ```bash
    kubectl get nodes
    kubectl get pods -n kube-system -l k8s-app=cilium
@@ -36,15 +37,20 @@ The spike cluster is built in [driving-range](https://github.com/PlatformRelay/d
    kubectl get ciliumloadbalancerippool
    kubectl get storageclass
    ```
+
 3. Bootstrap Argo CD from kaddy:
+
    ```bash
    kubectl apply -f deploy/bootstrap/argocd.yaml
    kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=300s
    ```
+
 4. After E2 sync, record platform Gateway address:
+
    ```bash
    kubectl get gateway -n gateway platform -o jsonpath='{.status.addresses[0].value}'
    ```
+
 5. Point DNS (Cloudflare) at that IP for lab hostnames (`dex.platformrelay.dev`, etc.).
 
 ## Phase 2 (gridscale GSK)

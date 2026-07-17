@@ -103,6 +103,7 @@ reopen the Nix-as-substrate question settled in D-003/D-015.
 ## Consequences
 
 **Enables:**
+
 - The VM-image deliverable inherits the container-grade supply-chain story: **cosign sign** (E1c-S03) +
   **Trivy scan** (E1c-S02) now run against a **minimal, reproducible** image — a sharper "near-zero-CVE
   vs the Ubuntu base" comparison than E13 can make.
@@ -113,6 +114,7 @@ reopen the Nix-as-substrate question settled in D-003/D-015.
   multi-cloud story the gridscale-specific Packer builder can't tell.
 
 **Forecloses / costs (named honestly):**
+
 - A **Nix skill dependency** enters the repo; E14 is gated and cuttable so it can't derail phase-2 close.
 - The **boot contract** must be empirically proven (E14-S01) before any image work — the design is a
   wishlist without it.
@@ -125,6 +127,7 @@ reopen the Nix-as-substrate question settled in D-003/D-015.
   E14-S01 injection channel. No secrets in the image.
 
 **Follow-up / migration:**
+
 - New epic **E14** (`e14-nix-golden-images`), phase 3, gated behind Phase 2's live-proof cycle.
 - Offline gate mirrors the repo pattern (`task test:smoke:e13`): `nix flake check` + build-toplevel-twice-
   compare-store-path + reuse the existing **promtool `caddy_*` fire test** for the deploy-proof leg —

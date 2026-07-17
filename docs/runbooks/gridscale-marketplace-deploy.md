@@ -22,7 +22,7 @@ task test:smoke:e13
 
 ## Layout
 
-```
+```text
 packer/                                  # golden-image build (Caddy/nginx + /metrics)
   caddy.pkr.hcl  nginx.pkr.hcl
   files/         index.html, Caddyfile, nginx.conf      # sample page + configs
@@ -89,7 +89,7 @@ Export the build storage's snapshot to the E1g object-storage bucket. In
 Terraform this is `gridscale_snapshot.object_storage_export` (host/access_key/
 secret_key/bucket/object); the `object` must end `.gz`. The resulting path is:
 
-```
+```text
 s3://<images-bucket>/caddy-golden.gz     # and nginx-golden.gz
 ```
 
@@ -153,7 +153,7 @@ holds remote state).
   We use **`Adminpanel`** and carry the real classification ("web server") in
   `meta_components` / `meta_overview`. Enforced by module variable validation.
 - **`object_storage_path` must be `.gz` and start `s3://`** — enforced by module
-  + stack variable validation (`^s3://.+\.gz$`) and by the offline `tofu test`.
+  - stack variable validation (`^s3://.+\.gz$`) and by the offline `tofu test`.
 - **`meta_icon` required** — base64 of the repo logo (`slides/public/branding/
   logo-512.png`), copied to `modules/marketplace-template/assets/icon.png` and
   read via `filebase64("${path.module}/assets/icon.png")` so it is not a giant

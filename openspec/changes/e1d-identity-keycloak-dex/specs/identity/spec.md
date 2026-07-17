@@ -121,6 +121,7 @@ Epic: E1d · ADR: [0107](../../../docs/adr/0107-identity-keycloak-dex.md) · **D
 kube-prometheus-stack values live in the observability lane's boundary and
 wiring `auth.generic_oauth` there is not an identity-lane change. Dex's
 static-client pattern (see `argocd` in `deploy/identity/dex/configmap.yaml`
+
 + the paired SOPS secrets under `deploy/secrets/`) is the template E10 reuses.  
 **Given** Grafana Helm values with `auth.generic_oauth`  
 **When** user opens Grafana UI  

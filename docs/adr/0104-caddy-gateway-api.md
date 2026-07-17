@@ -23,6 +23,7 @@ ingress controller.
 
 The **platform cluster** needs Gateway API for HTTPRoute path routing, TLS, and Argo Rollouts weight
 mutation. On driving-range, **Cilium** is the CNI with kube-proxy replacement and native **Gateway API**
+
 + **LB-IPAM/L2** (driving-range ADR-0203, `driving-range/docs/adr/0203-edge-cilium-gateway.md`).
 On **GSK 1.29+**, Cilium is the default CNI; edge uses **gridscale LBaaS** annotations on the Gateway
 controller `LoadBalancer` Service (phase 2).
@@ -54,13 +55,13 @@ controller `LoadBalancer` Service (phase 2).
 
 ## Consequences
 
-- E2 validates Cilium Gateway, not Caddy controller.
-- E5 platform monitoring focuses on Gateway/Cilium metrics; the **`caddy_*` scrape rules + alerts belong
++ E2 validates Cilium Gateway, not Caddy controller.
++ E5 platform monitoring focuses on Gateway/Cilium metrics; the **`caddy_*` scrape rules + alerts belong
   to the `e-caddy-mvp` VM-variant slice** ([`deploy/caddy-mvp/monitoring/`](../../deploy/caddy-mvp/monitoring/),
   REQ-CADDY-S01-03), parked out of active platform monitoring (ARCH-2, D-026).
-- ADR-0401 Caddy operator remains optional for tenant lifecycle, not platform ingress.
++ ADR-0401 Caddy operator remains optional for tenant lifecycle, not platform ingress.
 
 ## References
 
-- [Cilium Gateway API](https://docs.cilium.io/en/latest/network/servicemesh/gateway-api/gateway-api/)
-- [gridscale GSK Load Balancer](https://my.gridscale.io/product-documentation/cloud-computing/products/paas/kubernetes/loadbalancing/introduction/)
++ [Cilium Gateway API](https://docs.cilium.io/en/latest/network/servicemesh/gateway-api/gateway-api/)
++ [gridscale GSK Load Balancer](https://my.gridscale.io/product-documentation/cloud-computing/products/paas/kubernetes/loadbalancing/introduction/)

@@ -20,7 +20,7 @@ task e1g:down    # RUTHLESS teardown — run after EVERY live test
 
 ## Stack layout & dependency order
 
-```
+```text
 stacks/gridscale/
   object-storage/   # state anchor (LOCAL state) — bootstrapped FIRST
   network/          # private network + firewall + public IPv4/IPv6

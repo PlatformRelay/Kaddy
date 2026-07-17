@@ -11,7 +11,7 @@ Epic: E5 · **Refs:** gridscale brief (response codes, latency, uptime, alerting
 > Fire+silent rigor is preserved, now at `tests/promtool/caddy-mvp-marshal.test.yaml`. The affected
 > REQs below (S01-01, S03-01, S06-01) are **fulfilled by the `e-caddy-mvp` slice**, not by active
 > platform monitoring; their scope is reconciled, not deleted.
-
+>
 > **Fire-leg re-point (ARCH-2/ARCH-8/DIR-2, 2026-07-16).** The remaining "active" marshal-http
 > alerts still used `caddy_http_requests_total{job="caddy"}` — unfireable on this platform — and
 > `deploy/monitoring/` was GitOps-orphaned (no Application synced it; ARCH-8). This revision
@@ -36,6 +36,7 @@ Epic: E5 · **Refs:** gridscale brief (response codes, latency, uptime, alerting
 **Then** metric `caddy_http_requests_total` or documented equivalent exists  
 **Test:** `tests/promtool/caddy-mvp-marshal.test.yaml`
 **Verify:**
+
 ```bash
 promtool test rules tests/promtool/caddy-mvp-marshal.test.yaml
 ```

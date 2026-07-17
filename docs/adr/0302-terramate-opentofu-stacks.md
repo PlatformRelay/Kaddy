@@ -14,7 +14,7 @@ Day-0 resources need IaC with DRY label injection and stack boundaries.
 
 Repository layout:
 
-```
+```text
 terramate.tm.hcl          # root config
 stacks/
   gridscale/

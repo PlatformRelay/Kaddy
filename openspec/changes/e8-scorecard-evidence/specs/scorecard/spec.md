@@ -26,6 +26,7 @@ Epic: E8 · ADR: [0202](../../../docs/adr/0202-evidence-as-artifact.md)
 **Then** Alertmanager shows firing `HighRequestRate`  
 **Test:** `tests/smoke/e8-s01-02.sh`
 **Verify:**
+
 ```bash
 curl -s http://127.0.0.1:9093/api/v2/alerts | jq -e '.[] | select(.labels.alertname=="HighRequestRate")'
 ```
@@ -199,6 +200,7 @@ working URL
 ---
 
 ## REQ-E8-EXIT: Full scorecard pipeline
+
 **Test:** `hack/scorecard/validate.sh`
 **Priority:** must  
 

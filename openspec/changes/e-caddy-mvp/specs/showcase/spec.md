@@ -21,6 +21,7 @@ Material** docs (`docs/`, `mkdocs.yml`) at `/docs/`, behind a landing page — n
 **Test:** `tests/chainsaw/caddy-mvp/showcase/content-served/chainsaw-test.yaml`
 
 **Verify:**
+
 ```bash
 curl -sf http://127.0.0.1:30080/docs/ | grep -qi 'kaddy' && \
 curl -sf http://127.0.0.1:30080/slides/ | grep -qi 'kaddy'
@@ -38,6 +39,7 @@ into the Caddy image — no build toolchain in the runtime layer, immutable + ve
 **Test:** `tests/deck/showcase-image-build.sh`
 
 **Verify:**
+
 ```bash
 # multi-stage: builder stage produces static assets, runtime is caddy:* with no node/python
 grep -qE '^FROM .* AS build' deploy/showcase/Dockerfile && \
@@ -56,6 +58,7 @@ are scraped — turning "Caddy vs nginx" into a designed comparison, not two unr
 **Test:** `tests/chainsaw/caddy-mvp/showcase/proxy-topology/chainsaw-test.yaml`
 
 **Verify:**
+
 ```bash
 kubectl get rollouts.argoproj.io -n caddy-mvp nginx-proxy caddy-origin \
   -o jsonpath='{.items[*].status.availableReplicas}' | grep -qE '1 1|[1-9] [1-9]'
@@ -74,6 +77,7 @@ the D-026 loop (the alerts now have the tenant target they were parked to await)
 **Test:** `tests/promtool/caddy-mvp-showcase.test.yaml`
 
 **Verify:**
+
 ```bash
 promtool test rules tests/promtool/caddy-mvp-showcase.test.yaml
 ```
@@ -91,6 +95,7 @@ pulls it)
 **Test:** `tests/chainsaw/caddy-mvp/showcase/byo-source/chainsaw-test.yaml`
 
 **Verify:**
+
 ```bash
 kubectl get website -n byo-demo -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}' | grep -q True
 ```

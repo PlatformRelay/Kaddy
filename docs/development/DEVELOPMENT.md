@@ -55,7 +55,7 @@ Every OpenSpec REQ includes a `Verify:` block — implement the test before the 
 
 ## Commits
 
-```
+```text
 :sparkles: feat(scope): short summary
 ```
 

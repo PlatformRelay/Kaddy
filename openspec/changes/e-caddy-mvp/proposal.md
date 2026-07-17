@@ -42,6 +42,7 @@ A self-service Backstage form picks the variant. Both variants exist for **Caddy
 (nginx mirrors the same structure as the legacy stand-in).
 
 ### Variant A — VM-based (MINIMAL) · the brief spine
+
 - Just Caddy (or nginx) on a VM + **alerting**.
 - In-cluster Prometheus scrapes the **VM's external metrics endpoint**.
 - This is the brief spine **serve → scrape → fire**, and exactly where the parked `caddy_*`
@@ -51,6 +52,7 @@ A self-service Backstage form picks the variant. Both variants exist for **Caddy
 - Kept deliberately **simple**: no Rollouts, no in-cluster cert lifecycle.
 
 ### Variant B — Kubernetes-based (RICH) · the preferred/primary path
+
 - Certificates via **cert-manager**.
 - **Blue/green + canary** progressive delivery via **Argo Rollouts** (mulligan, E7) — demoed
   **only** on this variant.
@@ -65,7 +67,7 @@ A self-service Backstage form picks the variant. Both variants exist for **Caddy
 
 The demo spine is built through the **normal epic sequence**, not as a one-off:
 
-```
+```text
 E1e (kind + Cilium substrate, landed) → E1 (GitOps bootstrap) → E3 (GitOps core / observability)
   → E4 (sample site / clubhouse-tls) → [E-Caddy-MVP tenant demo]
 E7 (mulligan / Argo Rollouts) → Variant B progressive-delivery slice

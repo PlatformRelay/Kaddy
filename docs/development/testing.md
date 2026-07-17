@@ -5,7 +5,7 @@ implementation lane.
 
 ## Pyramid at a glance
 
-```
+```text
 L4 scorecard (evidence HTML)
 L3 k6 + PromQL alert checks
 L2 Chainsaw (cluster declarative e2e)  ← primary GitOps gate
@@ -70,7 +70,7 @@ Details: `evidence/fixtures/README.md`.
 
 ### Harness layout
 
-```
+```text
 hack/scorecard/
   capture.sh       # --fixtures / SCORECARD_FIXTURES=1 → dated run bundle + index.html
   validate.sh      # schema check on evidence/runs/<date>/ (or newest run)
@@ -82,7 +82,7 @@ live APIs land. Live L3 then needs `k6` + `BASE_URL` (and optional `RATE`).
 
 ## Chainsaw layout
 
-```
+```text
 tests/chainsaw/
   README.md
   .chainsaw.yaml            # global config (timeouts, namespaces)

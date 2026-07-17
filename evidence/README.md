@@ -4,7 +4,7 @@ Reproducible monitoring and alerting artifacts for the gridscale submission — 
 
 ## Layout
 
-```
+```text
 evidence/
   README.md           # this file
   fixtures/           # offline snapshots for SCORECARD_FIXTURES=1

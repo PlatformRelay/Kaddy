@@ -7,7 +7,7 @@
 
 ## Handoff
 
-```
+```text
 driving-range (tofu output kubeconfig + documented Gateway LB IP pool)
   → kaddy deploy/bootstrap/argocd.yaml
 ```
