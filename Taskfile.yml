@@ -9,6 +9,14 @@ run: once
 
 vars:
   MARKDOWNLINT_CONFIG: hack/tooling/.markdownlint-cli2.yaml
+  # DOC-13: narrowed markdownlint scope — SHIPPABLE docs only. markdownlint-cli2
+  # ignores config-file globs when a config is passed via --config, so these are
+  # passed positionally (here + the CI step in .github/workflows/verify.yaml).
+  # Keep the two lists in sync. Machine/scratch/vendored trees (.claude/,
+  # references/, agent-context/, slides/) are excluded by NOT globbing them.
+  MARKDOWNLINT_GLOBS: >-
+    docs/**/*.md openspec/**/*.md modules/**/*.md evidence/**/*.md
+    operator/**/*.md deploy/**/*.md *.md
   DENYLIST: hack/tooling/sanitize-denylist.txt
   # Pinned upstream ArgoCD version (E1 bootstrap). No floating tags — the
   # install manifest and every image it references are versioned to this tag.
@@ -27,7 +35,7 @@ tasks:
     cmds:
       - |
         if command -v markdownlint-cli2 >/dev/null 2>&1; then
-          markdownlint-cli2 --config "{{.MARKDOWNLINT_CONFIG}}" "**/*.md" "#node_modules" "#slides/dist"
+          markdownlint-cli2 --config "{{.MARKDOWNLINT_CONFIG}}" {{.MARKDOWNLINT_GLOBS}}
         else
           echo "markdownlint-cli2 not installed — skip (install via npm/pnpm for local lint)"
         fi

@@ -69,6 +69,18 @@ jobs:
             | sudo tar -xz -C /usr/local/bin --strip-components=1 --wildcards '*/rg'
       - name: task verify (scrub + lint + openspec + spec coverage)
         run: task verify
+      # DOC-13: enforce markdownlint in CI over the SHIPPABLE doc surface only.
+      # `task verify`/`task lint` graceful-skip when the tool is absent (local
+      # ergonomics), so this dedicated step is the REAL gate. ubuntu-latest ships
+      # Node, so `npx` needs no setup-node step. Globs are positional and MUST
+      # match Taskfile.yml's MARKDOWNLINT_GLOBS (config-file globs are ignored
+      # when the config is passed via --config). Excluded by omission: .claude/,
+      # references/, agent-context/, slides/ (machine/scratch/vendored/deck).
+      - name: markdownlint (DOC-13 — shippable docs gate)
+        run: >-
+          npx -y markdownlint-cli2 --config hack/tooling/.markdownlint-cli2.yaml
+          "docs/**/*.md" "openspec/**/*.md" "modules/**/*.md" "evidence/**/*.md"
+          "operator/**/*.md" "deploy/**/*.md" "*.md"
       - name: task test:unit (L0 tofu test — modules/labels)
         run: task test:unit
       - name: task test:policy (L1 conftest — ADR-0301 labels)
