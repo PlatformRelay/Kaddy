@@ -124,6 +124,7 @@ ok "in-cluster Website path intact + XRD exposes variant selector"
 # ambiguous and composes NOTHING. Enforce the invariant so no Website manifest
 # (demo claim, chainsaw fixture, example) regresses the in-cluster path.
 missing_sel=""
+v1_sel=""
 while IFS= read -r wf; do
   # Only XR *instances* (apiVersion platform.kaddy.io) — skip the XRD and the
   # Compositions (which reference kind: Website in compositeTypeRef, not as an
