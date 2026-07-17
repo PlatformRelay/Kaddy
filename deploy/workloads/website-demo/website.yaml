@@ -35,9 +35,13 @@ spec:
   # `compositionSelector` performs the routing (matches the label on
   # composition-website.yaml). No behavior change for the E6 smoke.
   variant: in-cluster
-  compositionSelector:
-    matchLabels:
-      platform.kaddy.io/variant: in-cluster
+  # Crossplane v2 nests composition selection under spec.crossplane (the Website
+  # XR is namespaced, D-027). Top-level spec.compositionSelector is the v1 shape
+  # and is rejected by strict decode on the v2 XRD (live-proven E6g).
+  crossplane:
+    compositionSelector:
+      matchLabels:
+        platform.kaddy.io/variant: in-cluster
   image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
   port: 8080
   path: /putting-green

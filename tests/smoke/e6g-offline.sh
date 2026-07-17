@@ -132,11 +132,21 @@ while IFS= read -r wf; do
   grep -qE '^kind:[[:space:]]*Website[[:space:]]*$' "${wf}" || continue
   grep -qE 'compositionSelector' "${wf}" \
     || missing_sel="${missing_sel} ${wf}"
+  # Crossplane v2: selection MUST be nested under spec.crossplane. The top-level
+  # v1 shape (`^  compositionSelector:`, i.e. directly under spec) is rejected by
+  # strict decode on the v2 namespaced XRD (live-proven E6g), so reject it here
+  # before it reaches an auto-synced cluster.
+  if grep -qE '^[[:space:]]{2}compositionSelector:' "${wf}"; then
+    v1_sel="${v1_sel} ${wf}"
+  fi
 done < <(grep -rlE '^kind:[[:space:]]*Website' "${ROOT}/deploy" "${ROOT}/tests" 2>/dev/null)
 if [[ -n "${missing_sel}" ]]; then
   fail "Website XR(s) missing spec.compositionSelector (ambiguous now 2 Compositions exist):${missing_sel}"
 fi
-ok "every committed Website XR pins a compositionSelector (no ambiguous claims)"
+if [[ -n "${v1_sel:-}" ]]; then
+  fail "Website XR(s) use the v1 top-level spec.compositionSelector — Crossplane v2 requires spec.crossplane.compositionSelector:${v1_sel}"
+fi
+ok "every committed Website XR pins a v2 spec.crossplane.compositionSelector (no ambiguous/v1 claims)"
 
 # --- 5) ArgoCD app renders deploy/crossplane (new manifests sync via GitOps) -
 grep -qE 'path:[[:space:]]*deploy/crossplane[[:space:]]*$' "${APP}" \
