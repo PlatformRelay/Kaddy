@@ -1,0 +1,95 @@
+/*
+ * kaddy deck — hybrid kubernetes-workshop visual port (ADR-0112 · E12c-S05).
+ *
+ * Adopts the kubernetes-workshop `--kw-*` surface/text CSS-variable system,
+ * dark graphite background, Inter + JetBrains Mono fonts, and the footer +
+ * progress-bar + kicker/chip chrome — but OVERRIDES the decorative accent from
+ * k8s-blue (#326ce5) to Kaddy's golf-teal (fairway green / sea teal) so the
+ * chrome matches the coastal-links Moebius cover art.
+ *
+ * Guarded by tests/deck/theme-tokens.sh (asserts --kw-* present + accent teal,
+ * not #326ce5).
+ */
+
+:root {
+  /* --- surface / text system (ported from kubernetes-workshop --kw-*) --- */
+  --kw-bg: #0b0e14;            /* dark graphite background */
+  --kw-surface: #131720;      /* panel / card surface */
+  --kw-surface-2: #1b2130;    /* raised surface */
+  --kw-border: #2a3242;       /* hairline borders */
+  --kw-text: #e6edf3;         /* primary text */
+  --kw-text-dim: #9aa7b8;     /* secondary / dimmed text */
+
+  /* --- semantic status colors (kept from workshop) --- */
+  --kw-ok: #3fb950;           /* landed / healthy */
+  --kw-warn: #d29922;         /* designed / in-progress */
+  --kw-danger: #f85149;       /* failing */
+
+  /* --- accent OVERRIDE (ADR-0112): golf-teal, NOT k8s-blue #326ce5 --- */
+  --kw-accent: #14b8a6;       /* sea teal (Tailwind teal-500) */
+  --kw-accent-2: #2f9e6f;     /* fairway green */
+  --kw-accent-dim: #0f766e;   /* deep teal for chrome */
+}
+
+/* Base surfaces + fonts. */
+.slidev-layout {
+  background: var(--kw-bg);
+  color: var(--kw-text);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.slidev-layout code,
+.slidev-layout pre {
+  font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+.slidev-layout h1,
+.slidev-layout h2 { color: var(--kw-text); }
+
+.slidev-layout a { color: var(--kw-accent); }
+
+/* --- workshop chrome: 2px progress bar along the top of every slide --- */
+.slidev-progress-bar,
+.kw-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--kw-accent);
+  z-index: 50;
+}
+
+/* --- workshop chrome: footer + page counter --- */
+.kw-footer {
+  position: fixed;
+  bottom: 0.6rem; left: 1rem; right: 1rem;
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--kw-text-dim);
+  opacity: 0.7;
+}
+
+/* --- workshop chrome: uppercase mono kicker (used by CoverArt dividers) --- */
+.kw-kicker,
+.kicker {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--kw-accent);
+}
+
+/* --- workshop chrome: chip / card motif --- */
+.kw-chip,
+.chip {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--kw-border);
+  background: var(--kw-surface);
+  color: var(--kw-text-dim);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+}
+.kw-chip--ok    { border-color: var(--kw-ok);    color: var(--kw-ok); }
+.kw-chip--warn  { border-color: var(--kw-warn);  color: var(--kw-warn); }

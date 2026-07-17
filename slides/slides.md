@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD025 MD041 MD033 MD024 MD013 MD036 MD001 MD003 MD022 MD023 -->
 ---
 theme: seriph
+# Hybrid k8s-workshop visual port (ADR-0112 · E12c-S05): Inter + JetBrains Mono.
+fonts:
+  sans: 'Inter'
+  mono: 'JetBrains Mono'
 title: kaddy — Website-as-a-Service
 info: |
   ## kaddy — a caddie for your websites
