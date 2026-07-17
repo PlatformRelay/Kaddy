@@ -3,11 +3,53 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.4.0] — 2026-07-17
+
+**Phase-2 live extensions + deck refresh.** The gridscale delivery is now proven live end-to-end on
+real infrastructure (ephemeral create→verify→destroy, tenant clean after each): the **E6g Website
+Crossplane composition** provisions a real gridscale nginx VM serving `/legacy` + `/metrics` on a
+public IP; the **E13 Marketplace** register+import works for both Caddy and nginx engines; and the
+**E8b GSK substrate** (cluster + network + object-storage anchor) provisions cleanly. The **E12c deck
+refresh** reframes the interview deck around landed gridscale value (the provider + 3 upstream bug-fix
+PRs) with a gate-exempt appendix and a hybrid workshop visual identity. Audit verdict: **READY**.
+
+### Features
+- **deck:** E12c-S01 appendix-exempt gates + raised main budget
+- **deck:** E12c-S02 gridscale value hero + Crossplane-as-IaC
+- **deck:** E12c-S03 agentic-workflow beat (epic -> plan -> story -> test)
+- **deck:** E12c-S04 appendix — NixOS path, repo-tree, quickstart, solved-different-ways
+- **deck:** E12c-S05 hybrid k8s-workshop styling port (ADR-0112)
+- **deck:** E12c-S06 wire recorded-surface fallback slots to guide names
+- **deck:** E12c-S07 Kaddy README badge row
+
+### Fixes
+- **deck:** E12c-S05 theme-tokens.sh — drop backticks in fail message
+- **e6g:** Live-prove Website composition VM + fix real defects
+- **e6g:** Migrate in-cluster Website claim to v2 selector + tighten gate
+
+### Tests
+- **e13:** Live-prove S02 Marketplace register+import (both engines)
+- **e6g:** Init v1_sel guard var (tech-review F4)
+
+### Documentation
+- **inbox:** Session close — phase-2 live-proof cycle + operator answers
+- **adr:** ADR-0303 + E14 — Phase 3 Nix golden images (forward-looking)
+- **e12c:** Ratify design-lane spec + admit E12c/D-038 to backlog
+- **roadmap:** Complete E12c backlog rows (S05-S07,S09)
+- **hygiene:** E12c-S09 rename HIRING_EXERCISE, fix broken E14 links
+- **hygiene:** E12c-S09 complete — commit the README+ROADMAP link fixes
+- **coord:** Log E6g/E13-S02 live proofs + deck merge + review outcomes
+- **DOC-10:** Drop stale 15/15 GitOps-apps count + fix its guard
+- **e8b:** GSK substrate live-proven; app-layer egress-blocked (decide-and-log)
+
 ## [0.3.1] — 2026-07-17
 
 ### Tests
 - **e6g:** Live-prove provider-gridscale actuates real gridscale infra
 - **e13:** Live-prove deploy->serve->scrape on a real gridscale VM
+
+### Chores
+- **release:** V0.3.1 — phase-2 live-proof cycle
 
 ## [0.3.0] — 2026-07-17
 
