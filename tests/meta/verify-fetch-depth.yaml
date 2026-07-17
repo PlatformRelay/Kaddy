@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# CI-wiring guard: any workflow that runs `task verify` or `task test:meta:ci`
+# transitively runs tests/meta/release-provenance.yaml, which DAG-checks ROADMAP
+# tag-provenance claims via `git merge-base --is-ancestor`. That needs the FULL
+# history + tags on the runner. GitHub's actions/checkout defaults to
+# fetch-depth: 1 (shallow) and omits tags — under which the provenance guard is
+# inert (skips/no-ops). This guard FAILS if such a workflow's checkout step
+# lacks `fetch-depth: 0` and `fetch-tags: true`, so the no-op regression the
+# reviewer caught cannot silently return. Mirrors the ws3-sha-pinned-actions.yaml
+# repo-wide-workflow-scan pattern.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+shopt -s nullglob
+workflows=("${ROOT}/.github/workflows/"*.yaml "${ROOT}/.github/workflows/"*.yml)
+[[ ${#workflows[@]} -gt 0 ]] || fail "no workflows found under .github/workflows/"
+
+checked=0
+for wf in "${workflows[@]}"; do
+  rel="${wf#"${ROOT}"/}"
+  # Only workflows that actually run the provenance guard matter. It runs under
+  # `task verify` (which chains test:meta:ci) and directly under test:meta:ci.
+  if ! grep -qE '(^|[[:space:]])task[[:space:]]+(verify|test:meta:ci)([[:space:]]|$)' "$wf"; then
+    continue
+  fi
+  checked=$((checked + 1))
+
+  # The checkout step must fetch full history AND tags. We assert both keys are
+  # present with their required values somewhere in the workflow file; a workflow
+  # running the guard has exactly one checkout, so file-scoped is sufficient and
+  # keeps the guard simple + offline.
+  grep -qE '^[[:space:]]*fetch-depth:[[:space:]]*0[[:space:]]*$' "$wf" \
+    || fail "$rel runs 'task verify'/'test:meta:ci' but its actions/checkout lacks 'fetch-depth: 0' — release-provenance would be a shallow-clone no-op there"
+  grep -qE '^[[:space:]]*fetch-tags:[[:space:]]*true[[:space:]]*$' "$wf" \
+    || fail "$rel runs 'task verify'/'test:meta:ci' but its actions/checkout lacks 'fetch-tags: true' — release-provenance would find no tags to check ancestry against"
+done
+
+[[ ${checked} -gt 0 ]] || fail "no workflow runs 'task verify'/'test:meta:ci' — the release-provenance guard is never exercised in CI (assert is vacuous)"
+
+echo "OK: verify-fetch-depth — ${checked} workflow(s) running the provenance guard fetch full history + tags"

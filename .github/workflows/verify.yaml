@@ -18,7 +18,17 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth: 0 + fetch-tags: true are LOAD-BEARING for
+      # tests/meta/release-provenance.yaml (run via `task verify` →
+      # `test:meta:ci`): it DAG-checks ROADMAP "epic landed after/in v<X.Y.Z>"
+      # claims with `git merge-base --is-ancestor`. A shallow clone (default
+      # fetch-depth: 1) or a tagless checkout makes that guard skip — inert
+      # exactly where it must have teeth. Enforced by
+      # tests/meta/verify-fetch-depth.yaml so it cannot silently regress.
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       # SEC-1: secret scan in CI (not just bypassable pre-commit). Pinned to the
       # same gitleaks version as .pre-commit-config.yaml, using the repo config.
       - name: Install gitleaks

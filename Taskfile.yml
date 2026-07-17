@@ -83,6 +83,7 @@ tasks:
       - bash tests/smoke/e8-s03-01.sh
       - bash tests/meta/doc10-roadmap-status.yaml
       - bash tests/meta/release-provenance.yaml
+      - bash tests/meta/verify-fetch-depth.yaml
       - bash tests/meta/batch2-smoke-wired.yaml
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
       - bash tests/smoke/e1g-offline.sh
