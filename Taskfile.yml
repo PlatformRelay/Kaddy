@@ -402,6 +402,11 @@ tasks:
           ( cd "stacks/gridscale/${s}" && tofu destroy -auto-approve ) || true
         done
         ( cd stacks/gridscale/object-storage && tofu destroy -auto-approve ) || true
+        # Scrub each stack's local `.terraform/` so a leftover backend cache from
+        # this live run can't break the next OFFLINE gate (ENV-1).
+        for s in lbaas k8s network object-storage; do
+          rm -rf "stacks/gridscale/${s}/.terraform"
+        done
         echo "teardown complete — verify in the gridscale panel that nothing lingers."
 
   test:smoke:e8b:

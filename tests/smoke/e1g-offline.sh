@@ -47,12 +47,18 @@ ok "tofu fmt clean"
 # never redden an unrelated gate on a hermetic/offline runner we PROBE init once
 # and skip (not fail) the provider-dependent steps if the provider is
 # genuinely unreachable. fmt + conftest below still run — they need no provider.
+# A leftover untracked `.terraform/` from a prior LIVE run can hold a stale
+# backend cache (state pointing at a deleted S3 key) that makes `tofu init` fail
+# even with `-backend=false`. Scrub it before every init — the offline gate wants
+# a fresh `.terraform`, so removing local cache is always correct here.
+rm -rf "${STACKS_ROOT}/object-storage/.terraform"
 if ! ( cd "${STACKS_ROOT}/object-storage" && tofu init -backend=false -input=false >/dev/null 2>&1 ); then
   echo "SKIP: gridscale provider unreachable (no registry egress / cold cache) — validate+test skipped; fmt+conftest still enforced"
 else
   for s in "${STACKS[@]}"; do
     d="${STACKS_ROOT}/${s}"
     [[ -d "$d" ]] || fail "missing stack ${s}"
+    rm -rf "${d}/.terraform"
     ( cd "$d" && tofu init -backend=false -input=false >/dev/null 2>&1 ) || fail "tofu init ${s}"
     ( cd "$d" && tofu validate >/dev/null 2>&1 ) || fail "tofu validate ${s}"
     ok "validate ${s}"

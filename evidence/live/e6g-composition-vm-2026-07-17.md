@@ -36,12 +36,17 @@ GET http://185.241.34.52/metrics  → 200  nginx stub_status (Active connections
 
 ## Topology finding (committed design)
 
+> **Update (D-039):** the composed private `Network` MR was subsequently DROPPED from the committed
+> composition — the serving topology is now the single public NIC (Server + IPv4 + Storage, 3-kind
+> offline gate). The run captured below composed the private `Network` MR at capture time; the facts of
+> what the run provisioned/served/destroyed are unchanged.
+
 Two attempts isolated the variables. **Dual-NIC** (public + composed private NIC on the Server) was
 live-shown to **break serving** (public IPv4 stops routing — dual default-route ambiguity), even with
 the nginx fix. **Single public NIC** on the Server serves cleanly. Committed design therefore attaches
-ONLY the gridscale Public Network to the Server; the composed private `Network` MR is still provisioned
-as part of the graph (satisfies the minimal-graph gate + is available for a private/east-west tier) but
-is deliberately NOT the Server's default route. Verified `/legacy` + `/healthz` + `/metrics` = 200 on the
+ONLY the gridscale Public Network to the Server. At capture time the composed private `Network` MR was
+also provisioned as part of the graph but deliberately kept OFF the Server's default route (later
+dropped entirely per the D-039 note above). Verified `/legacy` + `/healthz` + `/metrics` = 200 on the
 single-NIC topology, then destroyed.
 
 ## Cost discipline
