@@ -310,6 +310,57 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ---
 
+## E14 · Nix golden images (phase 3 — forward-looking, gated behind Phase 2 live-proof)
+
+**OpenSpec:** [e14-nix-golden-images](../openspec/changes/e14-nix-golden-images/)  
+**ADR:** [0303](adr/0303-nix-golden-images.md) · **Decision:** D-037 · **Gate:** Phase 2 live-proof cycle closed (E6g/E13/E8b live)  
+**GOVERNANCE:** supply-chain / image-provenance → **maintainer-LGTM-required** before merge.
+
+The **fourth way** to satisfy the exercise (alongside e-caddy-mvp K8s Variant B, Crossplane-VM Variant A /
+E6g, and the E13 Packer-Marketplace template): a **Nix-built golden image**. Same deliverable as E13 (a
+gridscale Marketplace 2.0 template serving Caddy/nginx + `/metrics`, feeding the `caddy_*` marshal alerts)
+— but built by **`nixos-generators`** (flake-locked, reproducible, full-closure SBOM, minimal near-zero-CVE
+base) instead of imperative Packer. **Additive — E13's Packer builder is kept** (D-037 does not supersede
+D-032). Nix here is an image *builder*, **not** a cluster OS — D-003/D-015 (Talos/GSK substrate) stand.
+
+**Boot contract (the hinge, resolved by provider docs, proven in S01):** a from-scratch NixOS image does
+**not** inherit gridscale's base-template SSH/password injection (`storage.template.password` is *public-
+templates-only*). Instead: **network = DHCP** (gridscale auto-assigns; NixOS DHCP on the NIC → IP, no
+config); **first-boot config = `gridscale_server.user_data_base64`** (cloud-init / Cloudbase-init /
+Ignition per the provider docs). The demo minimum (serve + `/metrics` + scrape) needs **neither** — the
+service starts declaratively at boot — so S01 is a crisp pass/fail spike, not an assumption.
+
+**Enterprise feature set — tiered (MVP → provenance → multi-cloud):**
+
+| Tier | Capability | Anchors to |
+| --- | --- | --- |
+| **MVP** | Caddy/nginx + sample page + `/metrics` + exporter as a **NixOS module** (declarative; replaces `provision-*.sh`); boots + serves on gridscale | E13 image content; ADR-0303 |
+| **MVP** | Offline gate: `nix flake check` + build-toplevel-twice-**compare-store-path** + reuse promtool `caddy_*` fire test; **skip-not-fail** if `nix` absent | E13-S03; `task test:smoke:e13` pattern |
+| **Provenance** | Full-**closure SBOM** + **Trivy** scan (minimal near-zero-CVE vs Ubuntu base) + **cosign** sign | E1c-S02, E1c-S03, ADR-0106 |
+| **Provenance** | **sops-nix** secret provisioning (per-instance age key via `user_data_base64`, **never baked in**) | ADR-0110 (D-020) |
+| **Provenance** | nixpkgs pin bumped by **Renovate** | `renovate.json` |
+| **Multi-cloud** | **One source → many targets** — `nixos-generators` emits qcow2 (gridscale) + gce/amazon/openstack | ADR-0303 portability |
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E14-S01 | **Boot-contract spike** — NixOS image gets a DHCP lease on gridscale + resolve the cloud-init datasource (NoCloud/config-drive vs metadata) for `user_data_base64`; serve + `/metrics` with zero injection | ⬜ |
+| E14-S02 | Image-as-**NixOS module** — Caddy/nginx + sample page + `/metrics` + exporter, declarative (replaces `provision-*.sh`) | ⬜ |
+| E14-S03 | **Reproducibility + SBOM + sign gate** — flake-lock; build-twice-compare **toplevel store-path**; full-closure SBOM; Trivy scan; cosign sign (image bit-repro = stretch) | ⬜ |
+| E14-S04 | **Marketplace register/import** — `nixos-generate` → `.gz` → object storage → `gridscale_marketplace_application` (+ `meta_icon`) → `_import` (private tenant) | ⬜ |
+| E14-S05 | **Deploy proof** — `gridscale_server` from the Nix template serves page + `caddy_*` alert fires (serve→scrape→fire) | ⬜ |
+| E14-S06 | Runbook + exercise-traceability row (Nix golden-image path) | ⬜ |
+
+**Constraints (inherited from E13, designed around):** `category` enum lacks "web server" (use
+`Adminpanel`/`CMS` + `meta_*`); `object_storage_path` must be `.gz`/`s3://`; `meta_icon` required
+(repo logo `slides/public/branding/logo-512.png`, base64). Publish **privately** into our tenant
+(`unique_hash` import); global listing needs gridscale review — out of scope.
+
+**Exit criteria (epic):** boot contract proven (S01); reproducible closure gate green offline; a Nix
+golden image imports to the private tenant and a `gridscale_server` from it serves the page + fires a
+`caddy_*` alert (one ephemeral live cycle, ruthless teardown). E13 Packer path remains green throughout.
+
+---
+
 ## E7 · Progressive delivery (mulligan) ✅ (live weight shift + abort rollback; analysis scaffolded)
 
 **OpenSpec:** [e7-mulligan-rollouts](../openspec/changes/e7-mulligan-rollouts/)  

@@ -6,7 +6,7 @@ Theme-numbered ADRs (`0Txx`) grouped by concern. Status: **Current** unless note
 | --- | --- | --- |
 | 01 · Platform foundations | 0101–0111 | VM vs platform, GSK substrate, ArgoCD, **Cilium Gateway**, Crossplane, security, **identity**, **logging**, **portal/IDP**, **SOPS secrets**, **portal auto-gen** |
 | 02 · Delivery & evidence | 0201–0202 | Rollouts, scorecard |
-| 03 · IaC & labeling | 0301–0302 | Labels everywhere, Terramate |
+| 03 · IaC & labeling | 0301–0303 | Labels everywhere, Terramate, **Nix golden images** |
 | 04 · Future operator | 0401 | Caddy operator (design-first) |
 | 07 · Engineering | 0701 | Testing pyramid + Chainsaw |
 
@@ -31,5 +31,6 @@ Theme-numbered ADRs (`0Txx`) grouped by concern. Status: **Current** unless note
 | [0202](0202-evidence-as-artifact.md) | Evidence as reproducible artifact (scorecard) |
 | [0301](0301-resource-labeling-convention.md) | Resource naming & labeling convention |
 | [0302](0302-terramate-opentofu-stacks.md) | Terramate-managed OpenTofu stacks |
+| [0303](0303-nix-golden-images.md) | Nix golden images for gridscale Marketplace (alongside Packer) — **Proposed** |
 | [0401](0401-caddy-operator-design-first.md) | Caddy operator — design-first |
 | [0701](0701-testing-strategy-chainsaw.md) | Testing strategy — pyramid, TDD, Chainsaw |
