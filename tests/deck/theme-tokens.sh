@@ -42,7 +42,7 @@ grep -qiE '#0b0e14' "${STYLE}" || fail "dark graphite background #0b0e14 not set
 #    #326ce5 to document the override.
 need '\-\-kw-accent'                 "--kw-accent variable"
 accent_decl="$(grep -E '^\s*--kw-accent\s*:' "${STYLE}" | head -1)"
-[ -n "${accent_decl}" ] || fail "--kw-accent has no `--kw-accent: <value>;` declaration"
+[ -n "${accent_decl}" ] || fail "--kw-accent has no --kw-accent:<value>; declaration"
 echo "${accent_decl}" | grep -qiE '#[0-9a-f]{6}' \
   || fail "--kw-accent declaration has no hex value: ${accent_decl}"
 if echo "${accent_decl}" | grep -qiE '#326ce5'; then
