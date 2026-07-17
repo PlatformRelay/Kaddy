@@ -393,3 +393,45 @@ did not permit `mulligan`; the workloads sync also contained a caddy-origin dupl
 **Counterpoints (agent, kept):** CI Chainsaw `security-mulligan-netpol` still observed an unauthorized
 cross-ns curl succeeding after policy apply — separate from the GitOps destination/port blockers;
 tracked as residual live-enforcement debt, not a merge stop for the scoped fix.
+
+## D-037 — E14: Nix golden images for gridscale Marketplace templates, alongside Packer (does NOT supersede D-032 or D-003)
+
+**Date:** 2026-07-17 · **Status:** Proposed (pending operator approval + maintainer LGTM — supply-chain).
+**Context:** kaddy satisfies the exercise's web-server deliverable four ways once this lands: e-caddy-mvp
+K8s (Variant B), Crossplane-VM (Variant A / E6g), the E13 **Packer** Marketplace template (D-032), and —
+proposed here — a **Nix-built** golden image. The operator wants a Phase 3 + a new epic (E14) with a
+full, enterprise-ready feature set, and treats the feature set as the epic content. The pull is
+provenance: a **flake-locked reproducible**, **full-closure-SBOM'd**, **minimal near-zero-CVE**,
+cosign-signable VM image sharpens the supply-chain story the repo already tells for *container* images
+(E1c-S02 Trivy, E1c-S03 cosign) and is a direct hiring signal for a gridscale role. **This is Nix-as-
+image-builder, NOT Nix-as-cluster-OS** — D-003 (Talos over Nix) and D-015 (GSK managed k8s) are **not**
+reopened; the substrate is unchanged.
+**Feasibility hinge (resolved):** a from-scratch NixOS image loses gridscale's base-template
+SSH/password injection (`storage.template.password` = public-templates-only). Provider docs settle the
+mechanism: network = **DHCP** (auto-assigned, no config); first-boot config = **`user_data_base64`**
+(cloud-init/Cloudbase-init/Ignition). The demo minimum (serve + `/metrics` + scrape) needs neither
+(service starts declaratively). Scoped as the epic's first-story **spike (E14-S01)**, not assumed.
+**Decision:** **Add** Nix golden images as new epic **E14** (`e14-nix-golden-images`), phase 3,
+**forward-looking and gated behind Phase 2's live-proof cycle** (E6g/E13/E8b live). **Additive — keep the
+E13 Packer builder** (D-037 does **not** supersede D-032). Recorded in **ADR-0303**. Reproducibility gate
+asserts the NixOS **system-closure store-path** (not the disk image); offline gate mirrors
+`task test:smoke:e13` (`nix flake check` + build-twice-compare + promtool `caddy_*`, skip-not-fail).
+Feature set tiered MVP → provenance → multi-cloud (closure SBOM + Trivy + cosign; sops-nix per ADR-0110
+with the age key injected via user-data, never baked in; Renovate-bumped nixpkgs pin; `nixos-generators`
+multi-target portability).
+**Counterpoints (agent, kept):** (a) the Packer path already satisfies the exercise — Nix is provenance
+polish, not a gap-filler; accepted for the enterprise supply-chain flex + gridscale-role signal. (b) Nix
+has the steepest learning curve and the team has ~ zero Nix today (scored honestly in the ADR matrix:
+Packer wins on cost/familiarity/boot-risk, which is *why* E13 is kept); bounded by making E14 gated +
+cuttable with E13 as the guaranteed-green fallback (mirrors the D-016 fallback guard). (c) disk-image
+bit-reproducibility is not free — the claim is scoped to the closure store-path, image-level bit-repro is
+an explicit stretch.
+**Traceability:** ADR-0303 · epic `e14-nix-golden-images` · depends E1g (object storage + creds), E13
+(image content + Marketplace pipeline), E5/marshal (`caddy_*` alerts) · exercise-traceability
+optional-task row · **GOVERNANCE: maintainer-LGTM-required (supply-chain / image provenance).**
+
+## D-2026-07-17-live — Phase-2 live-proof completion + portal visibility (operator, end of session)
+- Remaining live proofs E13-S02 / E8b / E6g-full: operator wants ALL THREE done — scheduled for the NEXT session (phase-2 live extensions before Phase-3).
+- kaddy-portal repo: PUBLIC (operator-authorized end-of-session; flipped from the initial safe-default private).
+- Next-session priority: finish phase-2 live extensions, THEN E14/Phase-3.
+- This session delivered: v0.3.0 + v0.3.1, CI green, audit READY, all phase-2 offline + E10, 4 live proofs (E1g GSK, E13 build, E6g provider→network, E13 deploy→serve).
