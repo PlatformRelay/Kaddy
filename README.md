@@ -1,8 +1,23 @@
+<!-- markdownlint-disable MD013 MD033 MD041 -->
 # kaddy — a caddie for your websites
 
 <p align="center">
   <img src="slides/public/branding/logo-dark.png" alt="kaddy" width="128" height="128" />
 </p>
+
+<p align="center">
+  <a href="https://github.com/PlatformRelay/Kaddy/actions/workflows/verify.yaml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PlatformRelay/Kaddy/verify.yaml?branch=main&label=CI&logo=github" /></a>
+  <a href="https://github.com/PlatformRelay/Kaddy/actions/workflows/deck.yaml"><img alt="deck build" src="https://img.shields.io/github/actions/workflow/status/PlatformRelay/Kaddy/deck.yaml?branch=main&label=deck&logo=slides" /></a>
+  <a href="https://platformrelay.github.io/Kaddy/"><img alt="docs / Pages" src="https://img.shields.io/website?url=https%3A%2F%2Fplatformrelay.github.io%2FKaddy%2F&label=docs%20%C2%B7%20Pages&up_message=live&down_message=pending" /></a>
+  <img alt="license" src="https://img.shields.io/badge/license-see%20repo-lightgrey" />
+</p>
+
+<!-- Badge caveats (REQ-E12c-S07-01): the CI/deck badges reflect the real
+     verify.yaml + deck.yaml workflows on PlatformRelay/Kaddy. The docs/Pages
+     badge points at the published GitHub Pages URL (E8-S03, live); it renders
+     "pending" if Pages is ever down. The LICENSE file is not yet committed, so
+     the license badge is a neutral "see repo" placeholder rather than an
+     uncaveated claim — swap it to the real SPDX badge when LICENSE lands. -->
 
 **Security-first · spec-driven · Kubernetes-native Website-as-a-Service.**
 
