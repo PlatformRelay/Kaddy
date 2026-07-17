@@ -8,6 +8,11 @@ Items waiting on the operator. Answered decisions move to `decisions.md`.
 each fresh-independently-reviewed then ff-merged): deck-F2 (#4) · e6g-trim (#3) ·
 app-count-guard (DOC-10 follow-up) · SEC-14 · DOC-13. See `decisions.md` **D-040**.
 
+🔖 **Released v0.4.1** — <https://github.com/PlatformRelay/Kaddy/releases/tag/v0.4.1>
+(hardening + real CI gates + GSK `:6443` live proof). Fresh audit **READY** (0 P0/P1);
+its 3 new P3s (DECK-1 deck-gate wiring · DOC-14 evidence-truth · ENV-1 gate robustness)
+were also fixed + independently reviewed + merged. Main CI fully green; all badges green.
+
 🎯 **GSK `:6443` is OPEN** with the VPN disconnected — your hypothesis confirmed.
 Ephemeral GSK cluster provisioned, `kubectl get nodes` → `node Ready v1.30.14`, torn
 down (tenant clean). Evidence `evidence/live/e8b-6443-egress-open-2026-07-17.md`.
