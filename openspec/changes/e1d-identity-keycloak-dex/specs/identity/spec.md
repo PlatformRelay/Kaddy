@@ -122,7 +122,7 @@ kube-prometheus-stack values live in the observability lane's boundary and
 wiring `auth.generic_oauth` there is not an identity-lane change. Dex's
 static-client pattern (see `argocd` in `deploy/identity/dex/configmap.yaml`
 
-+ the paired SOPS secrets under `deploy/secrets/`) is the template E10 reuses.  
+- the paired SOPS secrets under `deploy/secrets/`) is the template E10 reuses.  
 **Given** Grafana Helm values with `auth.generic_oauth`  
 **When** user opens Grafana UI  
 **Then** OAuth login via Dex available; anonymous auth disabled  

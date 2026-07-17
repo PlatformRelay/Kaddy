@@ -14,7 +14,7 @@ promtool test rules tests/promtool/caddy-mvp-showcase.test.yaml   # epic: re-hom
 
 ## Layout
 
-```
+```text
 tests/promtool/
   README.md
   marshal.test.yaml              # ACTIVE — deploy/monitoring/rules/marshal-http.yaml (E5)

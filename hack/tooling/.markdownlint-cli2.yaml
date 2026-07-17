@@ -8,7 +8,7 @@
 # `task lint` (Taskfile.yml) and the CI step (.github/workflows/verify.yaml).
 # Keep those two invocations in sync. Canonical shippable set (for reference):
 #   docs/**/*.md openspec/**/*.md modules/**/*.md evidence/**/*.md \
-#   operator/**/*.md deploy/**/*.md *.md
+#   operator/**/*.md deploy/**/*.md tests/**/*.md skills/**/*.md *.md
 # Deliberately EXCLUDED (machine/scratch/vendored — never linted):
 #   .claude/** (git worktrees) · references/** (cached vendor docs, gitignored)
 #   agent-context/** (agent/operator scratch) · slides/** (deck self-disables)
@@ -30,8 +30,14 @@ config:
   # commands-show-output: runbooks show command + output in one fence.
   MD014: false
 
+  # --- Tuned: match the repo's prevailing house style ---
+  # ul-style: dash — the repo's bullets are `-`; enforce that (not the linter
+  # default of "first-seen") so the rule normalises toward convention.
+  MD004:
+    style: dash
+
   # --- Kept ON (structural / correctness — enforced) ---
-  # MD001 heading-increment, MD004 ul-style, MD012 no-multiple-blanks,
+  # MD001 heading-increment, MD012 no-multiple-blanks,
   # MD022/MD031/MD032 surrounding-blanks, MD028 no-blank-in-blockquote,
   # MD029 ol-prefix, MD036 emphasis-as-heading, MD040 fenced-code-language,
   # MD046 code-block-style, MD047 trailing-newline, MD009 trailing-spaces.

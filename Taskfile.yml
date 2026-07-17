@@ -9,16 +9,19 @@ run: once
 
 vars:
   MARKDOWNLINT_CONFIG: hack/tooling/.markdownlint-cli2.yaml
+  # Pinned markdownlint-cli2 version (SEC-4: Renovate-trackable, like gitleaks/
+  # conftest/terramate/kyverno). Mirror this in .github/workflows/verify.yaml.
+  MARKDOWNLINT_VERSION: 0.23.1
   # DOC-13: narrowed markdownlint scope — SHIPPABLE docs only. markdownlint-cli2
   # ignores config-file globs when a config is passed via --config, so these are
   # passed positionally (here + the CI step in .github/workflows/verify.yaml).
-  # Keep the two lists in sync. Machine/scratch/vendored trees (.claude/,
+  # Keep the two lists BYTE-IDENTICAL. Machine/scratch/vendored trees (.claude/,
   # references/, agent-context/, slides/) are excluded by NOT globbing them.
   # Each glob is QUOTED so markdownlint-cli2's globby does the (recursive `**`)
   # expansion — NOT the shell, whose non-recursive `**` would silently under-lint.
   MARKDOWNLINT_GLOBS: >-
     "docs/**/*.md" "openspec/**/*.md" "modules/**/*.md" "evidence/**/*.md"
-    "operator/**/*.md" "deploy/**/*.md" "*.md"
+    "operator/**/*.md" "deploy/**/*.md" "tests/**/*.md" "skills/**/*.md" "*.md"
   DENYLIST: hack/tooling/sanitize-denylist.txt
   # Pinned upstream ArgoCD version (E1 bootstrap). No floating tags — the
   # install manifest and every image it references are versioned to this tag.
@@ -36,10 +39,18 @@ tasks:
     desc: Markdown and shell lint
     cmds:
       - |
-        if command -v markdownlint-cli2 >/dev/null 2>&1; then
+        # Pinned version (SEC-4) via npx so local == CI. A PATH-installed
+        # markdownlint-cli2 is used only when it already matches the pin (fast
+        # path, no download); otherwise fall back to the pinned npx form. Skip
+        # gracefully when neither is available (local dev without Node).
+        MDL_PIN="markdownlint-cli2@{{.MARKDOWNLINT_VERSION}}"
+        if command -v markdownlint-cli2 >/dev/null 2>&1 \
+           && markdownlint-cli2 --help 2>&1 | grep -q "v{{.MARKDOWNLINT_VERSION}} "; then
           markdownlint-cli2 --config "{{.MARKDOWNLINT_CONFIG}}" {{.MARKDOWNLINT_GLOBS}}
+        elif command -v npx >/dev/null 2>&1; then
+          npx -y "$MDL_PIN" --config "{{.MARKDOWNLINT_CONFIG}}" {{.MARKDOWNLINT_GLOBS}}
         else
-          echo "markdownlint-cli2 not installed — skip (install via npm/pnpm for local lint)"
+          echo "markdownlint-cli2 + npx not available — skip (install Node/npm for local lint)"
         fi
       - |
         if command -v shellcheck >/dev/null 2>&1; then
