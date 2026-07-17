@@ -1278,3 +1278,182 @@ Appendix. If a question wants the NixOS path, the repo layout, a five-minute
 quickstart, or the three ways I solved the same brief, the slides are here —
 outside the recorded fifteen minutes, ready when you are.
 -->
+
+---
+layout: default
+---
+
+# §A-1 · The NixOS path — *designed*
+
+<div class="inline-block px-2 py-0.5 rounded bg-amber-700/40 border border-amber-600 text-sm">🧭 Designed — not landed</div>
+
+<div class="pt-4 text-left max-w-3xl mx-auto text-lg">
+
+Today's golden-image path is **Packer** — `packer/caddy.pkr.hcl` and
+`packer/nginx.pkr.hcl` build the gridscale Marketplace VM images (E13). That is
+what actually ships.
+
+The **NixOS path** is the designed Phase-3 evolution: reproducible, bit-for-bit
+golden images built from a Nix flake, recorded as **E14 / ADR-0303** (Status:
+*Proposed*, alongside Packer — it does not supersede it).
+
+**Honest caveat:** there is **no `flake.nix` in this repo yet.** This slide is a
+*designed* beat, held to the same landed-vs-designed scorecard as everything
+else — I am not going to pretend it is running.
+
+</div>
+
+<!--
+The NixOS path, and I am tagging it designed, not landed. What ships today is
+Packer — packer slash caddy dot pkr dot hcl and its nginx sibling build the
+gridscale Marketplace images in E13. The designed Phase-3 evolution is Nix:
+reproducible, bit-for-bit golden images from a flake, recorded as E14 and
+ADR-0303, proposed, alongside Packer rather than replacing it. The honest
+caveat, because a senior audience will check: there is no flake dot nix in this
+repo yet. This is a drawing-board beat, held to the same scorecard as everything
+else — I will not pretend it runs.
+-->
+
+---
+layout: default
+---
+
+# §A-2 · Repo tour — the estate map
+
+<div class="grid grid-cols-2 gap-x-8 gap-y-1 pt-4 text-left text-sm font-mono">
+
+<div>
+
+- `deploy/` — GitOps manifests (ArgoCD app-of-apps)
+- `stacks/` — OpenTofu/Terramate day-0 IaC
+- `modules/` — reusable Tofu modules (labels)
+- `compositions` → in `deploy/` — Crossplane XRD/Compositions
+- `packer/` — Marketplace VM image builds
+- `policy/` — Rego + Kyverno governance
+
+</div>
+
+<div>
+
+- `openspec/` — epics → plans → stories (REQs)
+- `tests/` — the gate matrix (promtool, smoke, deck…)
+- `hack/` — scripts (cluster, scorecard, verify)
+- `docs/` — ADRs, ROADMAP, architecture
+- `evidence/` — reproducible scorecard reports
+- `slides/` — this Slidev deck
+- `operator/` — the Kubebuilder operator
+
+</div>
+
+</div>
+
+<div class="pt-3 text-center text-teal-400 text-sm">
+Every top-level directory has one job. The whole estate at a glance — a tree you can navigate.
+</div>
+
+<!--
+The repo tour — the estate map, so you can find anything. Deploy holds the
+GitOps manifests, the ArgoCD app-of-apps. Stacks is the OpenTofu and Terramate
+day-zero infrastructure; modules are the reusable Tofu modules. Packer builds
+the Marketplace VM images; policy is the Rego and Kyverno governance. Openspec
+is the epics, plans and stories — the REQs. Tests is the whole gate matrix.
+Hack is the scripts, docs is the ADRs and roadmap, evidence is the reproducible
+scorecard reports, slides is this deck, and operator is the Kubebuilder
+operator. Every top-level directory has exactly one job — a tree you can
+navigate.
+-->
+
+---
+layout: default
+---
+
+# §A-3 · Quickstart & tools — Kaddy's kit bag
+
+<div class="pt-2 text-left max-w-3xl mx-auto">
+
+```bash
+task cluster:up        # kind + Cilium + Gateway API + cert-manager
+task bootstrap:argocd  # pinned ArgoCD + app-of-apps
+task test:smoke:e5     # marshal monitoring smoke (needs a green cluster)
+task demo              # the choreographed mulligan weight-shift demo
+```
+
+</div>
+
+<div class="pt-3 text-left max-w-3xl mx-auto text-sm">
+
+**Tools of the trade:** Task · kind · kubectl · helm · **OpenTofu** · Terramate ·
+Packer · conftest · promtool · **k6** · gitleaks · **SOPS** · cosign.
+
+Missing a tool? Every gate **skips-not-fails** when its CLI is absent — the repo
+stays honest on a bare machine.
+
+</div>
+
+<!--
+Quickstart, and the tools — Kaddy's kit bag. Task cluster colon up brings up
+kind with Cilium, the Gateway API and cert-manager; task bootstrap colon argocd
+installs pinned ArgoCD and the app-of-apps; task test colon smoke colon e5 runs
+the marshal monitoring smoke against a green cluster; and task demo runs the
+choreographed mulligan weight-shift. The tools of the trade are Task, kind,
+kubectl, helm, OpenTofu, Terramate, Packer, conftest, promtool, k6, gitleaks,
+SOPS and cosign. And if you are missing one, every gate skips rather than fails
+when its CLI is absent, so the repo stays honest even on a bare machine.
+-->
+
+---
+layout: default
+---
+
+# §A-4 · Solved different ways — three routes to the same green
+
+<div class="grid grid-cols-3 gap-4 pt-4 text-left text-sm">
+
+<div class="p-3 rounded border border-green-600">
+
+### 🚗 Caddy VM — *the brief*
+
+The literal exercise: **Caddy on a Linux VM**, a page served, Prometheus
+scraping, an alert firing. Delivered as the Packer image + the `clubhouse`
+tenant. **Landed.**
+
+</div>
+
+<div class="p-3 rounded border border-green-600">
+
+### ☸ Rich K8s variant
+
+The same tenant as a first-class **Kubernetes** citizen: Crossplane `Website`
+claim → TLS edge → monitored → progressive delivery. The platform's main path.
+**Landed.**
+
+</div>
+
+<div class="p-3 rounded border border-amber-600">
+
+### ❄ Nix golden image
+
+The **designed** Phase-3 route (E14/ADR-0303): one reproducible Nix-built image,
+several identical greens. **Designed — not yet grown.**
+
+</div>
+
+</div>
+
+<div class="pt-3 text-center text-teal-400">
+Same destination, deliberate choices — I walked all three ways on purpose, and I am precise about which are landed and which are designed.
+</div>
+
+<!--
+Solved different ways — three routes to the same green, because the same brief
+can be delivered more than one way and I chose deliberately. Route one is the
+literal exercise: Caddy on a Linux VM, a page served, Prometheus scraping, an
+alert firing — delivered as the Packer image and the clubhouse tenant, and it is
+landed. Route two is the rich Kubernetes variant: the same tenant as a
+first-class citizen, a Crossplane Website claim composing the TLS edge,
+monitoring and progressive delivery — the platform's main path, also landed.
+Route three is the Nix golden image, the designed Phase-3 route from E14 and
+ADR-0303 — one reproducible image, many identical greens — and that one is
+designed, not yet grown. Same destination, deliberate choices, and I am precise
+about which are landed and which are designed.
+-->
