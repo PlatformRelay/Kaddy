@@ -33,6 +33,13 @@ spec:
     helm:
       releaseName: alloy
       valuesObject:
+        # SEC-14 EXCEPTION (audit P2-2): Alloy is INTENTIONALLY not hardened to
+        # runAsNonRoot. It is a DaemonSet that tails host pod logs from /var/log
+        # (see the mounts.varlog + __path__ tailing config below) and functionally
+        # requires root/host access. It is the documented Kyverno carve-out —
+        # deploy/policies/kyverno/require-run-as-nonroot.yaml excludes `alloy*` in
+        # the monitoring namespace. Its runtime user is left at the chart default;
+        # do NOT add a runAsNonRoot securityContext here (it would break log tailing).
         controller:
           # DaemonSet — one collector per node (REQ-E3-S02-04).
           type: daemonset

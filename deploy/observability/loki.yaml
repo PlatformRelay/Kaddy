@@ -36,6 +36,28 @@ spec:
         # --- deployment topology: single binary, filesystem ---
         deploymentMode: SingleBinary
         loki:
+          # SEC-14 (audit P2-2): pin an explicit, hardened securityContext at the
+          # values layer (defense in depth). The grafana/loki 6.x chart already
+          # applies these by default, but pinning them here means a future chart-
+          # default regression cannot silently drop non-root/dropped-caps/RO-rootfs.
+          # readOnlyRootFilesystem stays TRUE: the writable /var/loki mount comes
+          # from the 2Gi PVC configured under singleBinary.persistence below.
+          # Cross-ref the compensating admission control:
+          # deploy/policies/kyverno/require-run-as-nonroot.yaml (Enforce).
+          podSecurityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           auth_enabled: false
           # Chart requires an explicit schema config for SingleBinary/filesystem.
           commonConfig:

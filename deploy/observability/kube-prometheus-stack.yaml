@@ -36,6 +36,17 @@ spec:
       # Server-side apply not needed here; the chart CRDs install via the
       # bundled crds. Skip CRD hooks handled by syncOptions below.
       valuesObject:
+        # SEC-14 (audit P2-2): pin explicit, hardened securityContexts at the
+        # values layer (defense in depth). The kube-prometheus-stack chart already
+        # applies non-root/dropped-caps/RuntimeDefault-seccomp defaults to Grafana
+        # and to the Prometheus/Alertmanager operator CRs; pinning them here means
+        # a chart-default regression cannot silently drop that hardening.
+        # readOnlyRootFilesystem is intentionally NOT forced on these components
+        # (Grafana writes its SQLite DB; Prometheus/Alertmanager write TSDB/state).
+        # EXCEPTION — prometheus-node-exporter (below): a host-metrics DaemonSet
+        # needing hostPath/host-PID access; its upstream context is left at the
+        # chart default (do NOT force a context that breaks host access). Compensating
+        # admission control: deploy/policies/kyverno/require-run-as-nonroot.yaml (Enforce).
         # --- global / HA off ---
         fullnameOverride: kps
         defaultRules:
@@ -44,6 +55,14 @@ spec:
           alertmanagerSpec:
             replicas: 1
             retention: 24h
+            # SEC-14: explicit pod securityContext (matches chart default).
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 2000
+              fsGroup: 2000
+              seccompProfile:
+                type: RuntimeDefault
             resources:
               requests:
                 cpu: 25m
@@ -63,6 +82,14 @@ spec:
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false
             probeSelectorNilUsesHelmValues: false
+            # SEC-14: explicit pod securityContext (matches chart default).
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 2000
+              fsGroup: 2000
+              seccompProfile:
+                type: RuntimeDefault
             resources:
               requests:
                 cpu: 200m
@@ -75,6 +102,22 @@ spec:
           enabled: true
           replicas: 1
           defaultDashboardsEnabled: true
+          # SEC-14: explicit pod + container securityContext (matches chart
+          # default). readOnlyRootFilesystem is left OFF — Grafana writes its
+          # SQLite DB / plugin cache to the container filesystem.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 472
+            runAsGroup: 472
+            fsGroup: 472
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           # admin creds (SEC-12 / review P1-3): sourced from the Kubernetes
           # Secret monitoring/grafana-admin — created out-of-band with a
           # random password by `task bootstrap:e1c`, never committed. SOPS/
@@ -104,6 +147,12 @@ spec:
             dashboards:
               enabled: true
         # --- keep small, useful exporters ---
+        # SEC-14 EXCEPTION: prometheus-node-exporter is a host-metrics DaemonSet
+        # (hostPath / host network+PID). Its upstream chart already runs it with an
+        # appropriate hardened-but-host securityContext; we deliberately leave that
+        # at the chart default and do NOT force a non-root/RO-rootfs context that
+        # would break host access — mirroring the Alloy host-access carve-out in
+        # deploy/policies/kyverno/require-run-as-nonroot.yaml.
         nodeExporter:
           enabled: true
         prometheus-node-exporter:
