@@ -392,11 +392,12 @@ did not permit `mulligan`; the workloads sync also contained a caddy-origin dupl
 **Outcome:** apps Synced+Healthy; mulligan NetPols=2 (+1 CNP); caddy-mvp NetPols=5 (+2 CNP).  
 **Counterpoints (agent, kept):** CI Chainsaw `security-mulligan-netpol` still observed an unauthorized
 cross-ns curl succeeding after policy apply — separate from the GitOps destination/port blockers;
-tracked as residual live-enforcement debt, not a merge stop for the scoped fix.
+tracked as residual live-enforcement debt, not a merge stop for the scoped fix.  
+**Affirmation:** operator **affirmed Option A** 2026-07-17 via `/operator-inbox` (rejected B broaden-to-all-ns and C leave-OutOfSync). AppProject stays a **closed named-destination allowlist** — consistent with the workspace cross-repo relay answer (do NOT wildcard; preserves E1c/SEC-11 / ADR-0106 hardening). Decision CLOSED.
 
 ## D-037 — E14: Nix golden images for gridscale Marketplace templates, alongside Packer (does NOT supersede D-032 or D-003)
 
-**Date:** 2026-07-17 · **Status:** Proposed (pending operator approval + maintainer LGTM — supply-chain).
+**Date:** 2026-07-17 · **Status:** APPROVED (gated) 2026-07-17 via `/operator-inbox` — admitted to the backlog as a Phase-3 plan, **gated behind the Phase-2 live-proof cycle** (E6g/E13/E8b live); no E14 code starts before phase-2 live is done. Maintainer LGTM (supply-chain) still required before any E14 supply-chain code merges — approval admits the epic, not the merge.
 **Context:** kaddy satisfies the exercise's web-server deliverable four ways once this lands: e-caddy-mvp
 K8s (Variant B), Crossplane-VM (Variant A / E6g), the E13 **Packer** Marketplace template (D-032), and —
 proposed here — a **Nix-built** golden image. The operator wants a Phase 3 + a new epic (E14) with a
@@ -429,6 +430,24 @@ an explicit stretch.
 **Traceability:** ADR-0303 · epic `e14-nix-golden-images` · depends E1g (object storage + creds), E13
 (image content + Marketplace pipeline), E5/marshal (`caddy_*` alerts) · exercise-traceability
 optional-task row · **GOVERNANCE: maintainer-LGTM-required (supply-chain / image provenance).**
+
+## D-038 — Phase-2 coordinator decisions RATIFIED (operator, `/operator-inbox` 2026-07-17)
+
+**Date:** 2026-07-17 · **Status:** RATIFIED. Operator endorsed the bundle of four decide-and-log
+calls the `/agent-loop-local` coordinator made during phase-2 (all already implemented + merged +
+tech-reviewed at ratification time):
+1. **Definition of "phase-2 complete" = Option B** — offline gates green for every stack + ONE
+   ephemeral live proof-cycle per live-gated story (create→verify→capture→`tofu destroy`); **E8b
+   becomes an on-demand bring-up** (task target + runbook, proven once ephemerally), NOT a standing
+   env. Reconciles "all backlog complete" with the ruthless-teardown cost rule (standing lab ~€115/mo).
+2. **Object-storage bucket = the one cheap persistent anchor** on LOCAL state (~€0.06/GB; resolves the
+   remote-state backend chicken-and-egg); all expensive compute (GSK/LBaaS/VMs) cycles create→destroy.
+3. **gridscale provider auth env-var mapping** — provider reads `GRIDSCALE_UUID`/`GRIDSCALE_TOKEN`;
+   `.envrc` now exports both (operator update 2026-07-17), so `TF_VAR` mapping is optional.
+4. **E6g single `Website` XRD with `spec.variant` enum** (k8s|vm) + `compositionSelector` routing —
+   NOT a separate `WebsiteVM` kind; lower blast radius, keeps the in-cluster Website path intact.
+**Counterpoint (agent, kept):** all four were already live in `main` at ratification, so ratification
+is endorsement-of-record, not a gate — revisiting any would mean rework. Operator ratified all.
 
 ## D-2026-07-17-live — Phase-2 live-proof completion + portal visibility (operator, end of session)
 - Remaining live proofs E13-S02 / E8b / E6g-full: operator wants ALL THREE done — scheduled for the NEXT session (phase-2 live extensions before Phase-3).

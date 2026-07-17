@@ -464,6 +464,22 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 
 ---
 
+## E12c · Deck + docs refresh (storyline, styling, badges, recording) 🚧
+
+**OpenSpec:** [e12c-deck-docs-refresh](../openspec/changes/e12c-deck-docs-refresh/) · **ADR:** [0112](adr/0112-deck-visual-identity.md) (hybrid k8s-workshop visual port, golf-teal accent) · **Decision:** design-lane spec RATIFIED 2026-07-17 (INBOX §E12c)
+
+**Reframe:** *"I call myself a platform engineer, so I submit a platform — and made something genuinely useful for gridscale along the way."* ~15-min main deck + gate-exempt appendix; landed-vs-designed honesty preserved. Image **prompts** authored (S15+ Mœbius covers); operator generates the art.
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E12c-S01 | Appendix-exempt gates + raised main budget (`<!-- APPENDIX -->` sentinel; main sums [1400,2200] words / [600,1000]s) | ⬜ |
+| E12c-S02 | gridscale value-creation hero + Crossplane-as-IaC (main arc; provider-gridscale + 3 TF-provider bug MRs — **landed**) | ⬜ |
+| E12c-S03 | Agentic-workflow beat (epic → plan → story → test, walked on `e5-monitoring-marshal`) | ⬜ |
+| E12c-S04 | Appendix (post-sentinel, gate-exempt): NixOS-path (**designed**) · repo-tree · quickstart+tools · solved-different-ways | ⬜ |
+| E12c-S08 | provider-gridscale badge/release backfill (SEPARATE repo) | ⏸ HELD — outward-facing; needs explicit operator go-ahead |
+
+---
+
 ## E10 · Portal / IDP ✂️ (auto-generated from the XRD)
 
 **OpenSpec:** [e10-portal-stretch](../openspec/changes/e10-portal-stretch/) — **cuttable**  

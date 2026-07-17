@@ -4,20 +4,13 @@ Items waiting on the operator. Answered decisions move to `decisions.md`.
 
 ## Decisions
 
-### D-037 — Phase 3 + E14 (Nix golden images) — Nix-built Marketplace image alongside E13 Packer, gated behind Phase 2 live-proof; provenance flex (reproducible closure + SBOM + cosign/Trivy + sops-nix); maintainer-LGTM (supply-chain). Boot contract resolved: DHCP + `user_data_base64` cloud-init, proven in E14-S01. **Status: PROPOSED — awaiting operator approval.** See ADR-0303 / decisions.md.
+### D-037 — ANSWERED 2026-07-17 → decisions.md — E14 Nix golden images
 
-### D-036 — Affirm coordinator choice (A) — Argo F-01 unblocks
+**Status:** APPROVED (gated) via `/operator-inbox`. Epic `e14-nix-golden-images` admitted to the backlog as a Phase-3 plan, gated behind the Phase-2 live-proof cycle; no E14 code before phase-2 live. Additive (keeps E13 Packer). Maintainer-LGTM (supply-chain) still required before any E14 code merges. See ADR-0303 / D-037 in decisions.md.
 
-**Status:** EXECUTED 2026-07-16 (awaiting affirmation). See `decisions.md`.
-**Done:** PR #13 @ `9f18ebf` — AppProject `mulligan` + drop duplicate Rollout port; Argo
-`policies`/`workloads`/`root` Synced; netpols present in mulligan + caddy-mvp.
+### D-036 — ANSWERED 2026-07-17 → decisions.md — Argo F-01 unblock (Option A)
 
-**Options (for affirmation):**
-- **(A) Recommended / chosen** — two small GitOps fixes → land → re-sync
-- **(B)** Broaden AppProject to all namespaces
-- **(C)** Leave OutOfSync; document debt only
-
-**Answer / instructions:** _operator affirms or overrides_
+**Status:** AFFIRMED — **(A)**. Operator affirmed the landed two GitOps fixes (PR #13 @ `9f18ebf`) via `/operator-inbox` 2026-07-17; rejected (B) broaden-to-all-ns and (C) leave-OutOfSync. AppProject stays a closed named allowlist. See `decisions.md`.
 
 ### D-034 — ANSWERED 2026-07-16 → decisions.md — Land E9 S01/S02 onto main
 
@@ -46,7 +39,7 @@ Do **not** hold.
 - [x] **Re-sync Argo apps `policies` + `workloads`** — DONE 2026-07-16 via D-036 land + sync.
       `policies`/`workloads`/`root` Synced+Healthy; mulligan NetPol×2 (+CNP); caddy-mvp NetPol×5 (+CNP).
 - [x] **release** — **v0.2.0 RELEASED** 2026-07-16 (tag 42e3eee + GitHub release; git-cliff CHANGELOG).
-- [ ] **Affirm D-036 (A)** — or override.
+- [x] **Affirm D-036 (A)** — AFFIRMED 2026-07-17 via `/operator-inbox` → decisions.md.
 - [x] Enable GitHub Pages — DONE.
 - [x] Container runtime Podman-only (D-035).
 - [x] `direnv allow`.
@@ -85,7 +78,11 @@ Do **not** hold.
 
 ## Phase 2 loop — decisions (2026-07-16 late / session start)
 
-### 🔴 DECIDED (awaiting approval) — Definition of "phase-2 complete" reconciles with cost-sensitivity
+> **✅ RATIFIED 2026-07-17** via `/operator-inbox` — the four phase-2 coordinator decide-and-log calls
+> below (phase-2-complete=B, object-storage anchor, provider auth mapping, E6g single-XRD variant) are
+> endorsed and recorded as **D-038** in `decisions.md`. Blocks kept here for context only; no longer open.
+
+### ✅ RATIFIED (was 🔴 DECIDED) — Definition of "phase-2 complete" reconciles with cost-sensitivity
 Context: Several phase-2 exit criteria are live-gated (E1g "apps sync on GSK / LBaaS URL works", E6g-S04 "real VM", E13-S03 "alert fires against gridscale VM", **E8b-S01 literally "keep stack running through interview window"**). E8b-S01 as written contradicts the standing rule "tear down every resource the moment a test is done".
 Options: (A) leave lab running for E8b [violates cost rule] · (B) offline gates green for every stack + ONE ephemeral live proof-cycle per live-gated story (create→verify→capture evidence→`tofu destroy`); E8b becomes an on-demand bring-up (task target + runbook), proven once ephemerally, NOT a standing env — the "interview window" is a future operator-triggered event · (C) author IaC only, never go live.
 Chose: **(B)**. Best balances "all backlog complete" with "ruthlessly cost-sensitive". E8b deliverable = reproducible bring-up + teardown, evidence captured once.
@@ -173,3 +170,14 @@ Revert: if E10 should stay cut, drop the e10 lane; if driving-range should be dr
 1. **Remaining phase-2 live work** → do **ALL THREE** (E13-S02 Marketplace register, E8b full GSK bring-up, E6g full Website-composition VM). Per answer 3, these are for the **next session**.
 2. **kaddy-portal visibility** → **PUBLIC** — DONE (flipped via API; https://github.com/PlatformRelay/kaddy-portal now public).
 3. **Next-session focus** → **finish phase-2 live extensions** (the three above) BEFORE starting E14/Phase-3 (Nix golden images).
+
+---
+
+## 📐 DECISION — E12c deck + docs refresh spec authored (2026-07-17)
+Architect lane (`/design-architecture`) produced a durable, gated design spec for a deck+docs refresh — NOT executed, spec only. Review before running the execution lanes.
+- **Change:** `openspec/changes/e12c-deck-docs-refresh/` (proposal + tasks + `specs/deck/spec.md` with REQ/Test/Verify) · **ADR-0112** (deck visual identity) · `slides/recording-guide.md` (GIF protocol) · `new-cover-prompts.md` (Mœbius S15+).
+- **Operator decisions baked in:** ~15-min main deck + gate-exempt appendix (raise `sectionTime`→[600,1000], words→[1400,2200]; appendix exempt via `<!-- APPENDIX -->` sentinel) · **hybrid** k8s-workshop styling (workshop `--kw-*` chrome+fonts, **golf-teal accent**, not k8s-blue).
+- **Storyline reframe:** "I'm a platform engineer, so I submit a platform — and shipped real value for gridscale." New MAIN sections: gridscale value-creation hero (provider-gridscale + 3 TF-provider bug MRs — LANDED), Crossplane-as-IaC intro, agentic-workflow (epic→plan→story→test). APPENDIX: NixOS path (DESIGNED — E14/ADR-0303, no flake.nix), repo-tree, quickstart+tools, solved-different-ways.
+- **⚠️ Outward-facing, needs go-ahead:** REQ-E12c-S08 fixes `provider-gridscale`'s failing badges in the SEPARATE repo — Scorecard→durable `api.securityscorecards.dev` score badge (transient 503s, config is fine); Release→backfill `gh release create v0.1.1/v0.1.0` + tag-triggered `release.yml` (tags exist, zero GitHub Releases). Do NOT fire without explicit operator go-ahead.
+- **Honesty guardrail:** every new section tagged landed-vs-designed against §03; NixOS stays designed.
+Revert: delete `openspec/changes/e12c-deck-docs-refresh/`, `docs/adr/0112-*`, `slides/recording-guide.md`.
