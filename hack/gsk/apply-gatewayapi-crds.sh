@@ -13,14 +13,25 @@
 #   stall). Stripping just the isIP/isCIDR/isURL CEL rules lets the CRDs apply;
 #   they then serve at v1, which is what Traefik needs.
 #
-# READ-ONLY on kind: this script targets ONLY the KUBECONFIG you export (the GSK
-# kubeconfig). It never touches the local kind cluster. Run it ONCE on the GSK
-# cloud-edge before applying deploy/gateway-controller/traefik.
+# kind-safety: this MUTATES the target cluster (force-applies Gateway API CRDs),
+# so it is guarded by hack/lib/guard-context.sh (E1g-S05a) — it REFUSES to run
+# against kind-kaddy-dev (or any non-GSK context) unless you opt in to the named
+# GSK context via KADDY_GSK_CONTEXT. This prevents force-adopting Cilium's
+# Gateway API CRD field ownership on the local kind cluster.
 #
 # Usage:
 #   export KUBECONFIG=<GSK kubeconfig>
+#   kubectl config use-context kaddy-gsk-admin@kaddy-gsk
+#   export KADDY_GSK_CONTEXT="$(kubectl config current-context)"
 #   hack/gsk/apply-gatewayapi-crds.sh
 set -euo pipefail
+
+# Refuse to mutate a non-opted-in context (default: kind-only guard; GSK requires
+# the KADDY_GSK_CONTEXT opt-in). Shared with the bootstrap:* tasks.
+_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=hack/lib/guard-context.sh disable=SC1091
+. "${_root}/hack/lib/guard-context.sh"
+guard_writable_context
 
 # Pin the Gateway API release (no floating tag). Bump deliberately.
 GATEWAY_API_VERSION="${GATEWAY_API_VERSION:-v1.5.1}"

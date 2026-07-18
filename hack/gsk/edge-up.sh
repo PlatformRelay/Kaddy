@@ -42,6 +42,12 @@ kubectl apply -f "${REPO_ROOT}/deploy/cert-manager/cloud-only/cluster-issuer-dns
 
 # 3) Traefik Gateway API controller (creates the `traefik` GatewayClass + a
 #    type=LoadBalancer Service that the GSK CCM fronts with a public IP).
+#    The Application is project-scoped to gsk-cloud-edge, so the AppProject MUST
+#    exist first — else ArgoCD rejects the App with an unknown-project error.
+#    Applying the App also requires ArgoCD present on the edge (bootstrap:argocd
+#    with KADDY_GSK_CONTEXT); if ArgoCD is absent this apply will fail on the
+#    unknown CRD — bootstrap ArgoCD first (see docs/runbooks/gridscale-live-demo.md).
+kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/gsk-cloud-edge.yaml"
 kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yaml"
 kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
 
