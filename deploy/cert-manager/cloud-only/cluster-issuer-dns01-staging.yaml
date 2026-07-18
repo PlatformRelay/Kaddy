@@ -1,0 +1,57 @@
+# E1g-S05f — Let's Encrypt STAGING ClusterIssuer, Cloudflare DNS-01 solver
+# (CLOUD-ONLY — the real gridscale GSK edge; NOT applied on kind).
+#
+# Proven live 2026-07-18: this issuer reached Ready=True on GSK and (via the prod
+# sibling) issued a publicly-trusted cert for *.lab.platformrelay.dev.
+#
+# WHY DNS-01 (not the kind path's HTTP-01): DNS-01 proves domain control by
+# writing a TXT record, so issuance needs NO inbound reachability to the cluster
+# — the right fit for a cloud edge where we do not want to expose the ACME
+# challenge path. The kind path (deploy/cert-manager/cluster-issuer-staging.yaml)
+# stays on HTTP-01 via the Cilium Gateway and is UNCHANGED.
+#
+# EXCLUDED FROM GITOPS SYNC BY LOCATION: the platform-core Application
+# directory-syncs deploy/cert-manager with recurse OFF (the ArgoCD default), so
+# this cloud-only/ subdir is never rendered/applied on kind. Apply it on the GSK
+# edge via hack/gsk/edge-up.sh.
+#
+# SECRET — the Cloudflare API token lives in Secret `cloudflare-api-token` (ns
+# cert-manager, key `api-token`). It is NEVER committed. Create it out-of-band
+# from $CLOUDFLARE_TOKEN, or let the ExternalSecret in this directory
+# (externalsecret-cloudflare-token.yaml) populate it from an out-of-band store.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging-dns01
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: letsencrypt-staging-dns01
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05f
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  acme:
+    # ACME v2 STAGING directory — untrusted chain (validate the DNS-01 pipeline
+    # here first before spending prod rate-limit budget).
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: konrad.heimel@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-dns01-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              # References the Secret only — the token itself is never in git.
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - platformrelay.dev

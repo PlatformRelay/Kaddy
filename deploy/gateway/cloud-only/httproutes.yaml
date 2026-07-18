@@ -1,0 +1,134 @@
+# E1g-S05e — app HTTPRoutes for the GSK cloud-edge (CLOUD-ONLY; live-extracted
+# 2026-07-18; NOT applied on kind).
+#
+# Each route lives in its APP's namespace and attaches to the clubhouse Gateway's
+# matching HTTPS listener by sectionName (the listener admits routes from All
+# namespaces, so no ReferenceGrant is needed for the parent attach — the backend
+# Service is in the same namespace as its route). One host each:
+#   argocd.lab   -> argocd-server        (ns argocd)      port 80
+#   grafana.lab  -> monitoring-grafana   (ns monitoring)  port 80
+#   demo.lab     -> caddy                (ns caddy-demo)  port 80
+#
+# NOTE (argocd): argocd-server must run with server.insecure=true
+# (argocd-cmd-params-cm) behind this TLS-terminating gateway, else it 307-loops
+# HTTP->HTTPS. That is a runtime config on the argocd install, not a route field.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: argocd
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: traefik
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https-argocd
+  hostnames:
+    - argocd.lab.platformrelay.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: argocd-server
+          port: 80
+          weight: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: grafana
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: traefik
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https-grafana
+  hostnames:
+    - grafana.lab.platformrelay.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: monitoring-grafana
+          port: 80
+          weight: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: caddy-demo
+  namespace: caddy-demo
+  labels:
+    owner: platform-team
+    service: caddy-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-demo
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: traefik
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https-demo
+  hostnames:
+    - demo.lab.platformrelay.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: caddy
+          port: 80
+          weight: 1

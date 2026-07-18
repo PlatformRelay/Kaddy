@@ -1,0 +1,61 @@
+# E1g-S05b — restricted AppProject for the gridscale GSK cloud-edge Gateway API
+# controller (Traefik). CLOUD-ONLY membership.
+#
+# WHY A DEDICATED PROJECT: the Traefik controller lands in ns `traefik`, pulls
+# the traefik/traefik chart from the upstream Helm repo, and (via the chart)
+# creates the cluster-scoped `traefik` GatewayClass plus its ClusterRole/
+# ClusterRoleBinding. No existing project permits that namespace + sourceRepo +
+# cluster-scoped GatewayClass, so a new closed-list project is the
+# least-clobbering fit (leaves platform/observability/workloads untouched) —
+# mirrors the e8b-demo dedicated-project pattern.
+#
+# INERT ON KIND: this AppProject is a policy object with NO members on the local
+# kind cluster (the only Application in this project —
+# deploy/gateway-controller/traefik/application.yaml — lives OUTSIDE the kind
+# app-of-apps root and is applied only on the GSK edge). Like every project it is
+# GitOps-managed via the root's recurse-on sync of deploy/apps/, and `task
+# bootstrap:e3` applies projects/ first so the cloud-edge child can reference it
+# when it is applied on GSK.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: gsk-cloud-edge
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: gateway-controller
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: gsk-cloud-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1g-S05b
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  description: >-
+    kaddy GSK cloud-edge (E1g): the Traefik Gateway API controller in `traefik`.
+    Cloud-only — the member Application lives outside the kind app-of-apps and is
+    applied only on the gridscale GSK edge. On-demand, torn down after each demo.
+  sourceRepos:
+    - https://github.com/PlatformRelay/Kaddy.git
+    # The Traefik Gateway API controller Helm chart (closed list — one repo).
+    - https://traefik.github.io/charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: traefik
+  clusterResourceWhitelist:
+    # The Traefik chart creates the GatewayClass and its cluster RBAC. Closed
+    # list, not */*.
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition

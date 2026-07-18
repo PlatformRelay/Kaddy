@@ -180,9 +180,61 @@ same pattern as `deploy/cert-manager/cloud-only/`. On the cloud edge, point the
 platform Gateway's `certificateRefs` Secret at `e8b-demo-tls-le-staging` first
 (untrusted chain — expected), then flip to `e8b-demo-tls-le-prod`.
 
+## Cloud-edge (Traefik Gateway API) apply path — E1g-S05b/S05e/S05f
+
+The live cloud-edge proven 2026-07-18 (three public HTTPS URLs with real Let's
+Encrypt certs) is codified as cloud-only GitOps overlays. It replaces the kind
+Cilium edge on GSK because **GSK's managed Cilium cannot serve Gateway API**
+(D-042) — a self-contained Traefik controller is used instead. All of it is
+**excluded-by-location** from the kind app-of-apps and is applied only on GSK:
+
+- [`deploy/gateway-controller/traefik/`](../../deploy/gateway-controller/traefik/)
+  — the Traefik Gateway API controller as an ArgoCD Application. It is **not** a
+  child under `deploy/apps/` (that would install a second controller on kind); it
+  lives outside the kind root and is applied only on the edge. The Traefik chart
+  creates the `traefik` GatewayClass itself (`providers.kubernetesGateway.enabled`),
+  so no GatewayClass object is hand-authored.
+- [`deploy/gateway/cloud-only/`](../../deploy/gateway/cloud-only/) — the
+  `clubhouse` Gateway (three HTTPS listeners on **port 8443** — Traefik's
+  `websecure` entrypoint, not 443), the per-host Certificates, and the app
+  HTTPRoutes. Excluded because `deploy/apps/gateway.yaml` syncs `deploy/gateway`
+  with recurse OFF.
+- [`deploy/cert-manager/cloud-only/`](../../deploy/cert-manager/cloud-only/) — the
+  DNS-01 Let's Encrypt ClusterIssuers (staging + prod, Cloudflare solver) and a
+  token-less ExternalSecret/SecretStore. The Cloudflare token is **never
+  committed** — it lives in Secret `cloudflare-api-token` (ns cert-manager),
+  created out-of-band from `$CLOUDFLARE_TOKEN` or populated by the ExternalSecret.
+
+Key GSK findings (why the edge differs from kind):
+
+- **LoadBalancer CCM exists.** A `type=LoadBalancer` Service auto-provisions a
+  gridscale loadbalancer + public IP (proven `185.241.34.187`). No manual
+  NodePort/LBaaS wiring — this collapses the old S05c/S05d steps.
+- **Gateway API CRDs need patching for k8s 1.30.** The v1.5.1 standard-channel
+  TLSRoute/BackendTLSPolicy CRDs use the k8s-1.31 `isIP`/`isCIDR`/`isURL` CEL
+  functions and are rejected by GSK's k8s 1.30. Strip those CEL rules first —
+  `hack/gsk/apply-gatewayapi-crds.sh` does this. If TLSRoute never applies,
+  Traefik's cache never syncs and reconciliation silently stalls.
+- **argocd behind TLS termination** must run with `server.insecure=true`
+  (`argocd-cmd-params-cm`) or it 307-loops HTTP->HTTPS.
+
+Replayable apply (cloud-edge only — refuses to run against kind):
+
+```bash
+export KUBECONFIG=<GSK kubeconfig>
+export KADDY_GSK_CONTEXT=$(kubectl config current-context)
+# Cloudflare token Secret must exist first (never committed):
+kubectl -n cert-manager create secret generic cloudflare-api-token \
+  --from-literal=api-token="$CLOUDFLARE_TOKEN"
+hack/gsk/edge-up.sh     # CRDs (CEL-stripped) -> DNS-01 issuers -> Traefik -> Gateway+certs+routes
+```
+
 ## References
 
 - [gridscale-day0.md](gridscale-day0.md) — the E1g substrate this composes on.
+- `deploy/gateway-controller/traefik/` + `deploy/gateway/cloud-only/` +
+  `deploy/cert-manager/cloud-only/` — the codified cloud-edge overlays.
+- `hack/gsk/apply-gatewayapi-crds.sh` + `hack/gsk/edge-up.sh` — the edge apply path.
 - `deploy/monitoring/e8b-demo/` — the read-only demo surfaces (GitOps).
 - `deploy/apps/e8b-demo.yaml` + `deploy/apps/projects/e8b-demo.yaml` — the child
   Application and its dedicated closed-list AppProject (destinations = monitoring

@@ -1,0 +1,47 @@
+# E1g-S05f — Let's Encrypt PRODUCTION ClusterIssuer, Cloudflare DNS-01 solver
+# (CLOUD-ONLY — the real gridscale GSK edge; NOT applied on kind).
+#
+# Proven live 2026-07-18: issued publicly-trusted certs for
+# argocd/grafana/demo.lab.platformrelay.dev (issuer Let's Encrypt CN=R11/YR1,
+# chain verifies without -k). Use ONLY after the staging sibling validates the
+# DNS-01 pipeline — prod has strict rate limits.
+#
+# See cluster-issuer-dns01-staging.yaml for the full rationale (DNS-01 over
+# HTTP-01, excluded-by-location, token-in-Secret-never-committed). The kind path
+# (deploy/cert-manager/cluster-issuer-prod.yaml) stays on HTTP-01 and is
+# UNCHANGED.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod-dns01
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: letsencrypt-prod-dns01
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05f
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  acme:
+    # ACME v2 PRODUCTION directory — real rate limits; use only after staging.
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: konrad.heimel@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-dns01-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              # References the Secret only — the token itself is never in git.
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - platformrelay.dev

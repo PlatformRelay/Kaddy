@@ -33,6 +33,28 @@ platform — `clubhouse` — not as a one-off VM script.
 > see [decisions D-025](agent-context/decisions.md) and [ROADMAP](docs/ROADMAP.md). The 3-node Talos
 > [driving-range](../driving-range/) is a deferred optional maturity-contrast spike (D-025).
 
+## Live demo
+
+The platform runs on a real **gridscale GSK** cloud-edge with **publicly-trusted
+Let's Encrypt certificates** (verified live 2026-07-18):
+
+- **<https://argocd.lab.platformrelay.dev>** — the ArgoCD app-of-apps UI (the GitOps story).
+- **<https://grafana.lab.platformrelay.dev>** — anonymous-viewer Grafana (dashboards + Prometheus).
+- **<https://demo.lab.platformrelay.dev>** — the Caddy website tenant (the served demo).
+
+Served through a Traefik Gateway API edge behind a gridscale LoadBalancer, with
+DNS-01 Let's Encrypt **prod** certs (the TLS chain verifies without `-k`). The
+config is codified as GitOps overlays: the Traefik controller in
+[`deploy/gateway-controller/traefik/`](deploy/gateway-controller/traefik/) and the
+`clubhouse` Gateway + Certificates + HTTPRoutes in
+[`deploy/gateway/cloud-only/`](deploy/gateway/cloud-only/).
+
+> **On-demand, not 24/7 (DECIDED-B cost governance).** This is a reproducible
+> **live demo edge** brought up around a demo and torn down immediately after
+> (`task e8b:up` → demo → `task e8b:down`) — the GSK cluster + LoadBalancer cost
+> real money every hour they run. The URLs above are live only while the edge is
+> up; see [docs/runbooks/gridscale-live-demo.md](docs/runbooks/gridscale-live-demo.md).
+
 ## Reviewer paths
 
 **5 minutes** (honest order — skip anything labeled unavailable):

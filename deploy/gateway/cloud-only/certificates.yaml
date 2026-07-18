@@ -1,0 +1,92 @@
+# E1g-S05e/S05f — per-host Let's Encrypt Certificates for the GSK cloud-edge
+# (CLOUD-ONLY; live-extracted 2026-07-18; NOT applied on kind).
+#
+# One Certificate per demo host, issued by the DNS-01 PROD ClusterIssuer
+# (deploy/cert-manager/cloud-only/cluster-issuer-dns01-prod.yaml). cert-manager
+# writes each keypair into a Secret in THIS (traefik) namespace — the same ns as
+# the clubhouse Gateway, so its listener certificateRefs resolve. Proven live:
+# all three reached Ready=True and the served chains verify without -k.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-tls
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: argocd
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: argocd-tls
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  secretName: argocd-tls
+  dnsNames:
+    - argocd.lab.platformrelay.dev
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: grafana
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: grafana-tls
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  secretName: grafana-tls
+  dnsNames:
+    - grafana.lab.platformrelay.dev
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: demo-tls
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: caddy-demo
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: demo-tls
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  secretName: demo-tls
+  dnsNames:
+    - demo.lab.platformrelay.dev
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+    group: cert-manager.io

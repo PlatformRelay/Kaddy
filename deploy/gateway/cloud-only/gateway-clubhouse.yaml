@@ -1,0 +1,72 @@
+# E1g-S05e — the `clubhouse` Gateway on the gridscale GSK cloud-edge
+# (CLOUD-ONLY; live-extracted 2026-07-18; NOT applied on kind — see this dir's
+# README for the excluded-by-location rationale).
+#
+# Backed by the chart-owned `traefik` GatewayClass (deploy/gateway-controller/
+# traefik/). Three HTTPS listeners, one per demo host. Listener port is 8443
+# (NOT 443): Traefik matches a listener to its ENTRYPOINT port (websecure:8443),
+# and the type=LoadBalancer Service maps external 443 -> 8443. Each listener
+# terminates TLS with a per-host cert Secret in THIS (traefik) namespace and
+# admits routes from All namespaces (the app HTTPRoutes live in argocd /
+# monitoring / caddy-demo).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: clubhouse
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: clubhouse
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: clubhouse
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: https-argocd
+      hostname: argocd.lab.platformrelay.dev
+      port: 8443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: argocd-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-grafana
+      hostname: grafana.lab.platformrelay.dev
+      port: 8443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: grafana-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https-demo
+      hostname: demo.lab.platformrelay.dev
+      port: 8443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: demo-tls
+      allowedRoutes:
+        namespaces:
+          from: All
