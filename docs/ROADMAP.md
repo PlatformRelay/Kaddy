@@ -414,9 +414,10 @@ holds by default and the "interview window" is operator-triggered.
 
 **Go-live carve-out (D-042, supersedes the dev-phase absolute):** the project has
 entered go-live, where a standing live substrate is intentionally permitted — but
-**only when it is recorded and time-boxed**: what is up, since-when, a teardown-by
-date, and an owner are recorded (`evidence/live/e1g-gsk-2026-07-18.md`), with an
-explicit teardown deadline surfaced by **E1g-S07** (`task e1g:status`, soft WARN).
+**only when it is recorded and time-boxed**: what is up and since-when are captured
+in `evidence/live/e1g-gsk-2026-07-18.md`; the teardown-by date and owner (with the
+~1–2 week go-live window) live in decision **D-042** and are surfaced by
+**E1g-S07** (`task e1g:status`, soft WARN).
 This does **not** make "always-on" acceptable and does **not** weaken the
 create→verify→destroy discipline for per-story live proofs — the ephemeral
 `e8b:up`/`e8b:down` cycle stays ephemeral-by-default. Offline-authored below; live
@@ -550,4 +551,4 @@ bootstrapping. See driving-range `driving-range/docs/ROADMAP.md` and
 
 1. E1g (GSK day-0) → E6g (Upjet provider + VM) → E8b (live demo)  
 2. E11, E12 in parallel where possible  
-3. E9 / E10 if time
+3. E9 / E10 if tim

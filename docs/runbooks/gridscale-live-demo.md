@@ -28,8 +28,9 @@ where a standing live substrate is intentional (planned ~1–2 weeks, decision
 **D-042**). Under go-live a standing substrate is permitted, but **only when it
 is recorded and time-boxed**:
 
-- **recorded** — what is up, since-when, a teardown-by date, and an owner are
-  captured (`evidence/live/e1g-gsk-2026-07-18.md`); and
+- **recorded** — what is up and since-when are captured in
+  `evidence/live/e1g-gsk-2026-07-18.md`; the teardown-by date and owner live in
+  decision **D-042** (operator-placed) and are surfaced by **E1g-S07**; and
 - **time-boxed** — an explicit teardown deadline, surfaced by **E1g-S07**
   (`task e1g:status`, a soft WARN once the default ~14-day window is exceeded).
 

@@ -15,6 +15,10 @@
 #       qualifier nearby).
 # It scans ONLY durable docs — never agent-context/ (coordination, not truth).
 # Asserts on prose STRINGS, never line numbers (matches doc10-roadmap-status).
+# Known limitation: the ABSOLUTE pattern matches only the specific removed
+# phrasings ("no standing env" / "not a standing environment" / "NOT standing").
+# A reworded regression (e.g. "no standing infrastructure") is out of scope by
+# design — the guard closes the exact reconciled contradiction, not every synonym.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
