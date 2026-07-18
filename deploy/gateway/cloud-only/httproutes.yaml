@@ -132,3 +132,66 @@ spec:
           name: caddy
           port: 80
           weight: 1
+---
+# E1g-S05i — the FULL caddy-mvp Argo Rollouts canary on the cloud-edge
+# (caddy.lab). Distinct from the caddy-demo landing page above (demo.lab).
+#
+# NAME/NS COLLISION NOTE: this route is name `caddy-mvp` in ns `caddy-mvp` — the
+# SAME name+ns as deploy/workloads/caddy-mvp/httproute.yaml. That kind route
+# parents the LOCAL cilium Gateway (`caddy-mvp`/`https`, host caddy-mvp.kaddy.local)
+# and is UNCHANGED here. This cloud route parents the `clubhouse` Gateway
+# (ns traefik) by sectionName `https-caddy`, host caddy.lab.platformrelay.dev.
+# They never coexist on one cluster: the kind route ships via the `workloads`
+# ArgoCD App (kind only); this cloud route is applied imperatively via
+# edge-up.sh on the GSK edge (which runs NO ArgoCD Applications — verified
+# 2026-07-18), so there is no controller fighting over the object.
+#
+# The backendRef weights (stable 100 / canary 0) are the STABLE steady state;
+# the Argo Rollouts Gateway API plugin (amd64 on GSK — see
+# hack/gsk/rollouts-plugin-amd64.sh) mutates them live during a caddy-origin
+# canary. Because the edge is imperative (no ArgoCD sync), the mutated weights
+# simply persist — no ignoreDifferences needed here.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: caddy-mvp
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-mvp
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05i
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: traefik
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https-caddy
+  hostnames:
+    - caddy.lab.platformrelay.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: caddy-origin-stable
+          port: 8080
+          weight: 100
+        - group: ""
+          kind: Service
+          name: caddy-origin-canary
+          port: 8080
+          weight: 0

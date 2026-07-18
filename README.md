@@ -41,6 +41,7 @@ Let's Encrypt certificates** (verified live 2026-07-18):
 - **<https://argocd.lab.platformrelay.dev>** — the ArgoCD app-of-apps UI (the GitOps story).
 - **<https://grafana.lab.platformrelay.dev>** — anonymous-viewer Grafana (dashboards + Prometheus).
 - **<https://demo.lab.platformrelay.dev>** — the Caddy website tenant (the served demo).
+- **<https://caddy.lab.platformrelay.dev>** — the full **caddy-mvp** Argo Rollouts canary (showcase image `ghcr.io/platformrelay/kaddy-showcase`, live stable/canary weight-split).
 
 Served through a Traefik Gateway API edge behind a gridscale LoadBalancer, with
 DNS-01 Let's Encrypt **prod** certs (the TLS chain verifies without `-k`). The

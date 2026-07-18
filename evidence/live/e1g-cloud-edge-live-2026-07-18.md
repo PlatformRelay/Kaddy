@@ -58,9 +58,52 @@ kubectl get --raw /apis/gateway.networking.k8s.io/v1/tlsroutes   # must be 200
 - ClusterIssuers `letsencrypt-{staging,prod}-dns01` Ready; secret `cloudflare-api-token` (ns cert-manager).
 - Cloudflare A records (zone platformrelay.dev): argocd/grafana/demo.lab → 185.241.34.187.
 
+## Update — complete caddy-mvp (Argo Rollouts canary) LIVE (2026-07-18, E1g-S05i)
+
+The full **caddy-mvp** (not just the caddy-demo landing page) now serves publicly:
+
+- **<https://caddy.lab.platformrelay.dev/>** → **HTTP 200** (`curl -w '%{http_code} %{ssl_verify_result}'`
+  = `200 0` — publicly-trusted LE **prod** cert `caddy-tls`, Ready=True, notAfter 2026-10-16, verifies
+  without `-k`). Backend is the showcase image `ghcr.io/platformrelay/kaddy-showcase:0.1.1`.
+
+### What made it work (the delta over the argocd/grafana/demo edge)
+
+1. **argo-rollouts gatewayAPI plugin ARCH.** `deploy/rollouts/config.yaml` pins the plugin binary to
+   `gatewayapi-plugin-linux-arm64` (correct for the local **kind** Apple-Silicon cluster). GSK worker
+   nodes are **amd64** (Ubuntu 22.04 / x86-64) → the arm64 binary aborts with `exec format error` and
+   stalls ALL Rollout reconciliation (no canary weight is ever shifted). Fix: patch the
+   `argo-rollouts-config` ConfigMap to `...-linux-amd64` of the SAME pinned release (v0.16.0) and restart
+   the controller. Live-verified on the cluster (CM `data.location` = `...-linux-amd64`; controller
+   `quay.io/argoproj/argo-rollouts:v1.9.0`). Codified as `hack/gsk/rollouts-plugin-amd64.sh` (NOT a
+   committed second ConfigMap — ArgoCD forbids two same-named resources in one App, and the edge runs no
+   ArgoCD Application anyway). Kind arm64 default left untouched.
+2. **caddy-mvp cloud HTTPRoute + edge.** Live `caddy-mvp` HTTPRoute (ns caddy-mvp) is parented by the
+   `clubhouse` Gateway, sectionName `https-caddy`, host `caddy.lab.platformrelay.dev`, backendRefs
+   `caddy-origin-stable` weight 100 / `caddy-origin-canary` weight 0 (both port 8080). Extracted +
+   codified into `deploy/gateway/cloud-only/`: the `https-caddy` listener (:8443, cert `caddy-tls`) on the
+   clubhouse Gateway, the `caddy-tls` Certificate (DNS-01 prod), and the caddy-mvp HTTPRoute. Kind's
+   caddy-mvp (cilium Gateway, `caddy-mvp.kaddy.local`) is UNCHANGED — the cloud route is a name/ns twin
+   applied only imperatively on the edge (no ArgoCD App there, so no conflict).
+
+### Live objects (this cluster, read-only extraction)
+
+- Namespaces: `argo-rollouts`, `caddy-mvp`, `caddy-demo` all Active. Nodes 2× amd64 Ready
+  (185.241.34.168 / .180).
+- `caddy-mvp` Services: `caddy-origin`, `caddy-origin-stable`, `caddy-origin-canary`, `nginx-proxy-active`,
+  `nginx-proxy-preview` (all ClusterIP :8080). Rollout `caddy-origin` image
+  `ghcr.io/platformrelay/kaddy-showcase:0.1.1`.
+- `clubhouse` Gateway now has FOUR HTTPS :8443 listeners: `https-argocd`, `https-grafana`, `https-demo`,
+  **`https-caddy`** (cert `caddy-tls`). HTTPRoute `caddy-mvp` Accepted/ResolvedRefs on `https-caddy`.
+- `argo-rollouts-config` CM `trafficRouterPlugins.location` = `...gatewayapi-plugin-linux-amd64` (v0.16.0);
+  the last-applied annotation still shows the arm64 kind default (proves this was a live arch patch).
+
+### caddy-demo landing page — intentionally live-only
+
+The `caddy-demo` namespace serves a small static links page (a plain `caddy` Deployment + `caddy-index`
+ConfigMap, ClusterIP :80, on `demo.lab`). It is a throwaway presentation aid, not a platform artifact —
+left **intentionally live-only** (NOT codified). Its edge (listener `https-demo` + `demo-tls` + the
+`caddy-demo` HTTPRoute) is already codified by S05e; only the ConfigMap HTML is ephemeral.
+
 ## Remaining for the full demo
 
-- Deploy grafana + the caddy demo app (+ argo-rollouts dep) and add their HTTPRoute+Certificate+listener
-  (grafana.lab / demo.lab) — best via the app-of-apps cloud overlay so the argocd UI shows the GitOps story.
-- Codify all of the above into `deploy/**/cloud-only/` overlays + a Traefik GitOps app on `gsk-cloud-edge`.
 - Teardown to stop the meter: `task e1g:down` (+ delete the CCM loadbalancer + node pool).

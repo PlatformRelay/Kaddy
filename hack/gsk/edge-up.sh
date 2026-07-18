@@ -52,12 +52,26 @@ kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yam
 kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
 
 # 4) The clubhouse Gateway (3 HTTPS listeners, port 8443), per-host Certificates,
-#    and the app HTTPRoutes.
+#    and the app HTTPRoutes (incl. the caddy-mvp canary route, host caddy.lab).
 kubectl apply -f "${REPO_ROOT}/deploy/gateway/cloud-only/"
+
+# 5) Argo Rollouts plugin arch override (E1g-S05i). ONLY needed if argo-rollouts
+#    is deployed on the edge to serve the FULL caddy-mvp canary (the caddy.lab
+#    HTTPRoute above). GSK nodes are amd64, but deploy/rollouts/config.yaml pins
+#    the arm64 plugin (kind default) — without this the controller hits
+#    `exec format error` and NO rollout reconciles. Skipped automatically if the
+#    argo-rollouts deployment is absent.
+if kubectl -n argo-rollouts get deploy argo-rollouts >/dev/null 2>&1; then
+  echo "==> argo-rollouts present — overriding the gatewayAPI plugin to linux-amd64"
+  "${REPO_ROOT}/hack/gsk/rollouts-plugin-amd64.sh"
+else
+  echo "==> argo-rollouts not deployed — skipping the amd64 plugin override"
+  echo "    (deploy argo-rollouts then run hack/gsk/rollouts-plugin-amd64.sh for the caddy-mvp canary)."
+fi
 
 echo ""
 echo "==> Edge applied. Watch cert issuance + LB IP:"
 echo "    kubectl get certificate -n traefik"
 echo "    kubectl get svc -n traefik traefik -o wide   # EXTERNAL-IP = the public LB IP"
 echo "    kubectl get gateway clubhouse -n traefik"
-echo "Point Cloudflare A records {argocd,grafana,demo}.lab.platformrelay.dev at that IP (proxied=false)."
+echo "Point Cloudflare A records {argocd,grafana,demo,caddy}.lab.platformrelay.dev at that IP (proxied=false)."

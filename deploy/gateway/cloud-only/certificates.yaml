@@ -90,3 +90,35 @@ spec:
     name: letsencrypt-prod-dns01
     kind: ClusterIssuer
     group: cert-manager.io
+---
+# E1g-S05i — cert for the caddy-mvp Argo Rollouts canary tenant (caddy.lab).
+# Same DNS-01 PROD issuer; keypair Secret `caddy-tls` in ns traefik resolves the
+# clubhouse `https-caddy` listener. Proven live 2026-07-18: Ready=True, chain
+# verifies without -k (notAfter 2026-10-16).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: caddy-tls
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: caddy-mvp
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: public
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: caddy-tls
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05i
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  secretName: caddy-tls
+  dnsNames:
+    - caddy.lab.platformrelay.dev
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+    group: cert-manager.io

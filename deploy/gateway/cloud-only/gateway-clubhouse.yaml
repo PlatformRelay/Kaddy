@@ -3,7 +3,8 @@
 # README for the excluded-by-location rationale).
 #
 # Backed by the chart-owned `traefik` GatewayClass (deploy/gateway-controller/
-# traefik/). Three HTTPS listeners, one per demo host. Listener port is 8443
+# traefik/). Four HTTPS listeners, one per demo host (the `https-caddy` listener
+# — E1g-S05i — fronts the caddy-mvp Argo Rollouts canary). Listener port is 8443
 # (NOT 443): Traefik matches a listener to its ENTRYPOINT port (websecure:8443),
 # and the type=LoadBalancer Service maps external 443 -> 8443. Each listener
 # terminates TLS with a per-host cert Secret in THIS (traefik) namespace and
@@ -67,6 +68,23 @@ spec:
           - group: ""
             kind: Secret
             name: demo-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    # E1g-S05i — the caddy-mvp Argo Rollouts canary tenant (the FULL caddy-mvp,
+    # not the caddy-demo landing page on https-demo). The HTTPRoute in ns
+    # caddy-mvp attaches here by sectionName and weight-splits caddy-origin
+    # stable/canary; the Gateway API plugin mutates those weights during a canary.
+    - name: https-caddy
+      hostname: caddy.lab.platformrelay.dev
+      port: 8443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: caddy-tls
       allowedRoutes:
         namespaces:
           from: All

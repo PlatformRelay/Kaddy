@@ -1,6 +1,6 @@
 # Tasks — E7
 
-- [x] Install Argo Rollouts controller (v1.9.0, pinned) + Gateway API trafficRouting plugin (v0.16.0) — GitOps-managed via `deploy/rollouts/` + `deploy/apps/rollouts.yaml`; plugin wired in `argo-rollouts-config` CM + extra HTTPRoute RBAC (`deploy/rollouts/config.yaml`)
+- [x] Install Argo Rollouts controller (v1.9.0, pinned) + Gateway API trafficRouting plugin (v0.16.0) — GitOps-managed via `deploy/rollouts/` + `deploy/apps/rollouts.yaml`; plugin wired in `argo-rollouts-config` CM + extra HTTPRoute RBAC (`deploy/rollouts/config.yaml`). **Arch caveat:** the CM pins the `...-linux-arm64` plugin binary for the kind/Apple-Silicon dev cluster; the amd64 gridscale GSK cloud-edge overrides it via `hack/gsk/rollouts-plugin-amd64.sh` (E1g-S05i) — same pinned release, cloud-only, kind default untouched.
 - [x] Blue/green (REQ-E7-S01-01/03) — `deploy/workloads/mulligan/rollout-bluegreen.yaml` (active/preview, autoPromotionEnabled:false); promotion flips active→green (proven live)
 - [~] Blue/green analysis (REQ-E7-S01-02) — **PARTIAL**: promotion is blocked *structurally* (autoPromotion off), proven live; the pre-promotion `AnalysisTemplate` (`analysistemplate.yaml`) is SCAFFOLDED against live Prometheus but NOT wired into the Rollout steps (nginx demo emits no failing SLI to gate on)
 - [x] Canary + weights (REQ-E7-S02-01) — HTTPRoute weight mutation PROVEN live (`100/0 → 20 → 50 → 100`); closes E2-deferred REQ-E2-S02-03; `ignoreDifferences` (jqPathExpressions) on the workloads App holds during a live shift
