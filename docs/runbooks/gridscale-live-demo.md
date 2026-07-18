@@ -62,6 +62,23 @@ continue: it re-runs the ArgoCD bootstrap (`task bootstrap:argocd`) and the
 app-of-apps (`task bootstrap:e3`) against the GSK cluster and waits for the
 argocd-server rollout.
 
+> **Bootstrap context opt-in (E1g-S05a).** Every `bootstrap:*` task refuses to
+> run against any context other than `kind-kaddy-dev` by default — the local
+> prod-nuke guard (`hack/lib/guard-context.sh`). To bootstrap onto GSK, first
+> select the GSK context, then export its name so the guard opts in to exactly
+> that one context (it is never a blanket disable — the active context must match
+> the named value, and unset behaviour is the byte-for-byte kind-only default):
+>
+> ```bash
+> export KUBECONFIG=<GSK kubeconfig>                       # from the k8s stack output
+> kubectl config use-context kaddy-gsk-admin@kaddy-gsk     # the GSK context
+> export KADDY_GSK_CONTEXT=$(kubectl config current-context)
+> task bootstrap:argocd && task bootstrap:e3               # now proceed against GSK
+> ```
+>
+> Offline-provable: `bash tests/smoke/bootstrap-guard.sh` (part of
+> `task test:smoke:e1g`) asserts all four guard branches with a mocked kubectl.
+
 ### 2. Verify
 
 ```bash
