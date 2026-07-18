@@ -19,5 +19,7 @@ later serialized step (`task e1g:up`). See docs/runbooks/gridscale-day0.md.
   - [ ] E1g-S05g: Cloudflare DNS records → LBaaS IPs + LE staging→prod + live public serve verify — depends S05c/S05e/S05f
   - [ ] E1g-S05h: **Security spike** — investigate + mitigate GSK worker-node public-IP exposure (node came up EXTERNAL-IP `185.241.34.168`; `gridscale_k8s ~>2.2` exposes no disable-public-IP arg — confirm provider/API limit + safe mitigation)
   - Build order: **S05a → S05d → S05b → S05c → (S05e ∥ S05f) → S05g.** S05h is an independent security spike (no dep).
+  - [ ] E1g-S06: Reconcile the retired "no standing env" DECIDED-B prose → go-live recorded+time-boxed carve-out (INBOX/ROADMAP/runbooks/Taskfile e8b strings) + offline doc-truth guard `tests/meta/e1g-standing-policy.yaml`; forward-refs S07 + D-04x. Doc-truth/cost-governance, NOT a blocker. Closes audit WIP-D1 (doc half). Body in `agent-context/BACKLOG.md` § "Go-live cost governance".
+  - [ ] E1g-S07: Cost-visibility standing marker + `task e1g:status` + SOFT time-box WARN guardrail (~14d default, always exit 0, absent=no-op) wired into `test:meta:ci`; `task verify` EXIT 0 even with a stale marker (softness proof). Closes audit WIP-D1 (TTL half). Depends S06.
 - [x] Gate: `task test:smoke:e1g` (offline) — EXIT 0
 - [ ] Live-proof: `task e1g:up` then re-sync app-of-apps (later serialized step, costs money)
