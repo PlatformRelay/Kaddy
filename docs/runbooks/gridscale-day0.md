@@ -163,9 +163,9 @@ time" rule was an overspend guard for the build phase. In **go-live** a standing
 live substrate is intentionally permitted — but **only when it is
 recorded and time-boxed**: what is up and since-when are captured in
 `evidence/live/e1g-gsk-2026-07-18.md`; the teardown-by date and owner (with the
-~1–2 week go-live window) live in decision **D-042** and are surfaced by
-**E1g-S07** (`task e1g:status`, a soft WARN once the default ~14-day window is
-exceeded). This is cost-governance, not a blocker, and it does
+~1–2 week go-live window) will be captured in decision **D-042** (operator-placed)
+and surfaced by **E1g-S07** (`task e1g:status`, a soft WARN once the default ~14-day
+window is exceeded). This is cost-governance, not a blocker, and it does
 **not** relax the ruthless per-test teardown above — that stays the default; the
 carve-out covers only the one sanctioned, recorded standing substrate.
 
