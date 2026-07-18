@@ -525,3 +525,32 @@ substrate live-proven) + E12c deck+docs refresh + DOC-10 truth fix. Cut on CI-gr
 verdict READY (0 P0/P1). git-cliff CHANGELOG. Rationale: natural milestone (phase-2 live cycle
 substantially closed), meaningful user-facing value accumulated, audit READY. Revert: releases are
 operator-only to delete — flag if the scope was wrong.
+
+## D-041 — 2026-07-18 — Standing GSK substrate + cloud-edge decomposition
+
+**Context:** Operator asked to "deploy the gridscale infrastructure and add the links to the README."
+Investigation before spend surfaced a hard conflict: the requested standing-URLs path is not a
+bring-up but **unbuilt cloud-edge engineering** — `task e8b:up` is guard-locked to `kind-kaddy-dev`
+(`bootstrap:argocd`/`bootstrap:e3` refuse any non-kind context) and GSK has no ingress edge out of
+the box (Gateway API / Cilium GatewayClass / LB-IPAM are installed only by the kind E1e bring-up).
+Presented a corrected 3-way choice (bounded proof / build-the-edge / docs-only).
+
+**Operator choice:** **Build the full cloud edge** (standing demo, leave it up), then mid-session
+pivoted to **write stories for the missing tasks + `/handover`** rather than complete the multi-hour
+edge build live. Provisioned the substrate (object-storage → network → GSK cluster) live and **left it
+STANDING** (billing). LBaaS + the edge were NOT built.
+
+**Landed:** decomposed the deferred edge into stories **E1g-S05a–h** (a: bootstrap opt-in · b: GSK
+Gateway API · c: LBaaS→node · d: network-topology reconcile · e: real `platformrelay.dev` hostnames ·
+f: DNS-01 issuer · g: DNS+LE serve · **h: node-public-IP security spike**) + **E13-S05** (live
+Marketplace deploy validation). Committed+pushed `8802d24`. Evidence `evidence/live/e1g-gsk-2026-07-18.md`.
+
+**Agent counterpoints (kept):** (1) A standing substrate contradicts DECIDED-B (on-demand,
+ruthless-teardown-after-every-test) and bills hourly — flagged twice, operator accepted. (2) A raw
+LBaaS IP with no app edge yields no working URL — "clickable links" required the full edge build,
+which is the deferred work, not a deploy. (3) GSK worker nodes get **public** IPs and the platform
+firewall is orphaned (nodes sit on GSK's own `k8s_private_network_uuid`) — a real attack-surface
+concern; `gridscale_k8s ~>2.2` exposes no disable/firewall arg → tracked as the S05h spike.
+
+**Reversal:** run `task e1g:down` to tear down the standing substrate (stops billing). Releases/live
+infra remain operator-directed.

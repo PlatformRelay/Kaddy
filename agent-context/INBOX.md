@@ -2,6 +2,40 @@
 
 Items waiting on the operator. Answered decisions move to `decisions.md`.
 
+## 🔴 2026-07-18 — LIVE GSK SUBSTRATE IS STANDING + BILLING (action needed)
+
+**A live gridscale GSK substrate was left UP and is billing by the hour.** The operator opted
+into a "standing demo" then pivoted to stories + handover, so it was NOT torn down.
+
+**Stop the meter (one-liner):**
+
+```bash
+task e1g:down    # destroys lbaas → k8s → network → object-storage; then CHECK the gridscale panel is clean
+```
+
+Standing resources (all billing): object-storage anchor (bucket `kaddy-tfstate` on gos3.io) ·
+network (public IPv4 **185.241.34.52**, ipv4/ipv6 UUIDs in tofu state) · **GSK cluster**
+`e2ac442d-7026-4577-8f24-086cfea61be5` (node Ready v1.30.14, EXTERNAL-IP 185.241.34.168 — the
+dominant cost). LBaaS was NOT provisioned. Kubeconfig at `.state/gsk/kubeconfig` (gitignored).
+If `e1g:down` can't init a workload stack's S3 backend, re-init per `docs/runbooks/gridscale-day0.md`
+(backend-config from the object-storage outputs).
+
+**Decision needed:** continue the cloud-edge build (start **E1g-S05a**) vs **tear down now**. Leaving
+it up keeps billing. See decision D-041 below.
+
+**Key finding (why the standing demo couldn't yield live URLs):** the phase-2 public cloud edge is
+**UNBUILT** — `task e8b:up` is guard-locked to context `kind-kaddy-dev`, and GSK has no ingress edge
+out of the box (Gateway API / Cilium GatewayClass / LB-IPAM are installed only by the kind E1e
+bring-up). Decomposed into stories **E1g-S05a–h** + **E13-S05** (see `agent-context/BACKLOG.md`).
+Committed + pushed to main (`8802d24`); evidence `evidence/live/e1g-gsk-2026-07-18.md`.
+
+**Operator asks logged this session (now backlog):** (1) write cloud-edge stories → E1g-S05a–g;
+(2) investigate GSK node public-IP exposure → **E1g-S05h** (security spike — `gridscale_k8s ~>2.2`
+exposes no arg to disable node public IPs; confirm provider/API limit + safe mitigation);
+(3) deploy + validate the Marketplace templates once → **E13-S05**.
+
+---
+
 ## Loop3 (2026-07-17) — backlog exhausted + GSK `:6443` OPEN — summary for operator
 
 ✅ **All D-039 next-session lanes + audit-backlog DONE, on `main`, CI green** (5 lanes,
