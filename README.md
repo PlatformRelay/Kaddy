@@ -123,12 +123,19 @@ day-0 substrate (E1g), the Upjet `provider-gridscale` consumer (E6g), the on-dem
 (E8b), and the gridscale Marketplace template (E13) — each gated offline (`tofu test`/conftest/
 kubeconform/promtool) with live provisioning ruthlessly cost-gated (create → verify → `tofu
 destroy`). **E1g's GSK cluster was live-proven** on real gridscale (`kubectl get nodes` Ready, then
-torn down, tenant left clean — see [evidence/live/e1g-gsk-2026-07-17.md](evidence/live/e1g-gsk-2026-07-17.md)).
+torn down, tenant left clean — see [evidence/live/e1g-gsk-2026-07-17.md](evidence/live/e1g-gsk-2026-07-17.md);
+re-provisioned standing 2026-07-18, [evidence/live/e1g-gsk-2026-07-18.md](evidence/live/e1g-gsk-2026-07-18.md)).
+A 2026-07-18 live standing-demo attempt surfaced that the **public cloud edge is not yet built**:
+`task e8b:up` is guard-locked to the local kind context, and GSK has no ingress edge out of the box
+(Gateway API / Cilium GatewayClass / LB-IPAM are installed only by the kind bring-up). That deferred
+work is now decomposed into stories **E1g-S05a–h** (bootstrap opt-in, GSK Gateway API, LBaaS→node,
+network-topology reconcile, real `*.platformrelay.dev` hostnames, DNS-01 issuer, DNS+LE serve, and a
+node-public-IP security spike) in [agent-context/BACKLOG.md](agent-context/BACKLOG.md).
 The **Backstage self-service portal** (E10, cuttable) landed its kaddy-side GitOps wiring
 (`deploy/portal`); the Backstage app source lives in the separate
 [PlatformRelay/kaddy-portal](https://github.com/PlatformRelay/kaddy-portal) repo. The remaining
-live proofs (E6g provider install, E13 image pipeline, E8b bring-up, the running portal) are
-cost-gated follow-ups. Full plan: [ROADMAP](docs/ROADMAP.md).
+live proofs (E6g provider install, E13 Marketplace deploy → **E13-S05**, the public E8b edge →
+E1g-S05a–h, the running portal) are cost-gated follow-ups. Full plan: [ROADMAP](docs/ROADMAP.md).
 
 ## Reference material
 

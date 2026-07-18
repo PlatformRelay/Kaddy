@@ -45,4 +45,7 @@
 
 - [~] One-click Marketplace deploy demonstrable end-to-end: register → import → deploy from template →
       served page + `caddy_*` alert fires against the gridscale VM (offline-authored; live-proof pending, `task e13:up` + runbook).
+  - [ ] **E13-S05** (2026-07-18, operator request): live one-shot deploy validation — run the full
+        register→import→deploy→serve chain ONCE on real gridscale, capture evidence, then tear down.
+        Full story body in `agent-context/BACKLOG.md` § "Phase-2 gridscale Marketplace live validation".
 - [x] Gate: `task test:spec` (structure) + `tofu test` + offline gate (`task test:smoke:e13`); live smoke gated on E1g credits.
