@@ -6,18 +6,37 @@ demo (e.g. an interview walkthrough), show the read-only demo surfaces, then
 runbook ([gridscale-day0.md](gridscale-day0.md)) — read that first; this runbook
 only adds the demo layer and the demo choreography.
 
-## Framing — on-demand, NOT standing (DECIDED-B)
+## Framing — on-demand by default (DECIDED-B, reconciled by D-042)
 
 The E8b story was originally phrased as "keep the gridscale stack running through
 the interview window". That contradicts the project's ruthless-teardown cost
 rule (the gridscale GSK cluster + LBaaS cost real money every hour they are up).
 
 **Reconciled, operator-approved definition:** E8b is a **reproducible on-demand
-bring-up**, proven ephemerally — **not a standing environment**. The "interview
-window" is an **operator-triggered** `task e8b:up` … demo … `task e8b:down`
-cycle, run just before the demo and torn down immediately after. It is **not
-always-on** infra. If you need it live for a 30-minute interview, bring it up 10
-minutes before and tear it down the moment you are done.
+bring-up**, proven ephemerally. The "interview window" is an
+**operator-triggered** `task e8b:up` … demo … `task e8b:down` cycle, run just
+before the demo and torn down immediately after — it is **not always-on** infra.
+If you need it live for a 30-minute interview, bring it up 10 minutes before and
+tear it down the moment you are done.
+
+### Go-live standing carve-out (D-042, supersedes the dev-phase absolute)
+
+The dev-phase DECIDED-B rule treated a standing environment as forbidden — an
+overspend guard for the build phase, now superseded for go-live (see below).
+The project has now entered **go-live**,
+where a standing live substrate is intentional (planned ~1–2 weeks, decision
+**D-042**). Under go-live a standing substrate is permitted, but **only when it
+is recorded and time-boxed**:
+
+- **recorded** — what is up, since-when, a teardown-by date, and an owner are
+  captured (`evidence/live/e1g-gsk-2026-07-18.md`); and
+- **time-boxed** — an explicit teardown deadline, surfaced by **E1g-S07**
+  (`task e1g:status`, a soft WARN once the default ~14-day window is exceeded).
+
+This carve-out is cost-governance, not a licence for "always-on": it does **not**
+declare standing infra always fine, and it does **not** weaken the ephemeral
+`e8b:up`/`e8b:down` demo cycle or the per-story create→verify→destroy live-proof
+discipline, both of which stay ephemeral-by-default.
 
 ## TL;DR
 
@@ -133,9 +152,11 @@ pool keeps billing).
 
 The demo runs on the same GSK node pool + LBaaS + public IPs as E1g (see the cost
 table in [gridscale-day0.md](gridscale-day0.md) — the GSK node pool dominates).
-Because E8b is **on-demand, not standing**, the cost is bounded to the minutes the
-demo actually runs. **Always `task e8b:down` immediately after the demo.** Never
-leave the demo up "just in case" — bring it up again on demand next time.
+Because the E8b demo is **on-demand and ephemeral-by-default**, its cost is bounded
+to the minutes the demo actually runs. **Always `task e8b:down` immediately after
+the demo.** Never leave the demo up "just in case" — bring it up again on demand
+next time. (A deliberately *standing* go-live substrate is a separate, recorded and
+time-boxed carve-out — see the go-live carve-out above and D-042.)
 
 ## Read-only posture (why the demo is safe to expose)
 

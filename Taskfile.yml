@@ -103,6 +103,7 @@ tasks:
       - bash tests/smoke/caddy-mvp-s05-03-offline.sh
       - bash tests/smoke/e8-s03-01.sh
       - bash tests/meta/doc10-roadmap-status.yaml
+      - bash tests/meta/e1g-standing-policy.yaml
       - bash tests/meta/release-provenance.yaml
       - bash tests/meta/verify-fetch-depth.yaml
       - bash tests/meta/batch2-smoke-wired.yaml
@@ -416,7 +417,7 @@ tasks:
       - bash tests/smoke/e8b-offline.sh
 
   e8b:up:
-    desc: "E8b — LIVE on-demand demo bring-up (COSTS MONEY; DECIDED-B on-demand, NOT standing). Composes the E1g GSK substrate, re-syncs the GitOps app-of-apps, waits healthy. Tear down with e8b:down after the demo."
+    desc: "E8b — LIVE on-demand demo bring-up (COSTS MONEY; DECIDED-B on-demand, ephemeral-by-default — a standing go-live substrate is a separate recorded and time-boxed carve-out, D-042/E1g-S07). Composes the E1g GSK substrate, re-syncs the GitOps app-of-apps, waits healthy. Tear down with e8b:down after the demo."
     env:
       KUBECONFIG: '{{.KUBECONFIG}}'
     cmds:
@@ -448,7 +449,9 @@ tasks:
       - |
         set -euo pipefail
         # The demo surfaces are GitOps-managed on the ephemeral GSK cluster, so
-        # destroying the gridscale substrate reclaims everything. No standing env.
+        # destroying the gridscale substrate reclaims everything. The demo is
+        # ephemeral-by-default; a standing go-live substrate is a separate
+        # recorded and time-boxed carve-out (D-042 / E1g-S07), not this cycle.
         task e1g:down
         echo "E8b demo torn down (gridscale substrate destroyed via e1g:down)."
 

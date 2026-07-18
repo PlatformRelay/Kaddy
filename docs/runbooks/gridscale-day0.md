@@ -158,6 +158,16 @@ object-storage anchor is destroyed last because it holds the remote state; if
 you want to keep the anchor between tests (cheapest option) destroy only the
 workload stacks and leave `object-storage` up.
 
+**Go-live standing carve-out (D-042).** The dev-phase "tear it all down every
+time" rule was an overspend guard for the build phase. In **go-live** a standing
+live substrate is intentionally permitted — but **only when it is
+recorded and time-boxed**: what is up, since-when, a teardown-by date, and an
+owner are recorded (`evidence/live/e1g-gsk-2026-07-18.md`), with an explicit
+teardown deadline surfaced by **E1g-S07** (`task e1g:status`, a soft WARN once the
+default ~14-day window is exceeded). This is cost-governance, not a blocker, and it does
+**not** relax the ruthless per-test teardown above — that stays the default; the
+carve-out covers only the one sanctioned, recorded standing substrate.
+
 ## Phase-1 ↔ phase-2 deltas
 
 - **Substrate**: phase-1 kind cluster → phase-2 GSK managed cluster. Same

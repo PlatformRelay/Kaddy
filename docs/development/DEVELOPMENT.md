@@ -39,6 +39,11 @@ task lint     # markdown + shellcheck
 Implementation lanes add `task test` (L0–L2), promtool, and cluster integration checks per
 story — see [testing.md](testing.md) for the full matrix and the CI workflows that run it.
 
+The go-live standing-substrate policy (a standing live env is permitted when **recorded and
+time-boxed** — D-042, `tests/meta/e1g-standing-policy.yaml`, surfaced by E1g-S07's soft
+`task e1g:status` WARN) is **cost-governance, not a blocker**: the doc-truth guard only reddens
+on an unreconciled unqualified "no standing env" absolute, never on the substrate being up.
+
 ## Testing
 
 Mandatory TDD — see [testing.md](testing.md) and ADR-0701. Summary:

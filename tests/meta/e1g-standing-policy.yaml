@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# E1g-S06 — go-live standing-substrate doc-truth guard (offline; WIP-D1).
+#
+# The dev-phase DECIDED-B rule ("on-demand, NOT standing / No standing env") was
+# an overspend guard for the BUILD phase. The project is now in go-live (D-042),
+# where a standing live substrate is intentional — permitted ONLY when it is
+# RECORDED (what is up, since-when, teardown-by, owner) and TIME-BOXED (explicit
+# teardown deadline), surfaced by E1g-S07's `task e1g:status` soft WARN.
+#
+# This guard keeps that reconciliation honest offline:
+#   (a) the go-live "recorded and time-boxed" carve-out phrasing is PRESENT in
+#       each governed durable home; and
+#   (b) no governed doc silently reintroduces an UNQUALIFIED standing-env
+#       absolute (an absolute with no go-live/recorded/time-boxed/carve-out
+#       qualifier nearby).
+# It scans ONLY durable docs — never agent-context/ (coordination, not truth).
+# Asserts on prose STRINGS, never line numbers (matches doc10-roadmap-status).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROADMAP="$ROOT/docs/ROADMAP.md"
+LIVEDEMO="$ROOT/docs/runbooks/gridscale-live-demo.md"
+DAY0="$ROOT/docs/runbooks/gridscale-day0.md"
+TASKFILE="$ROOT/Taskfile.yml"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+# Stable phrase the reconcile introduces everywhere the carve-out is stated.
+CARVEOUT='recorded and time-boxed'
+# The dev-phase absolutes that, UNQUALIFIED, contradict the go-live carve-out.
+ABSOLUTE='no standing env|not a standing environment|NOT standing'
+# Qualifiers that make a standing statement a legitimate carve-out, not a false
+# absolute (go-live permits a recorded, time-boxed standing substrate).
+QUALIFIER='go-live|recorded|time-boxed|carve-out|D-042'
+
+# --- (a) carve-out phrasing PRESENT in each governed durable home ------------
+for DOC in "$ROADMAP" "$LIVEDEMO" "$DAY0"; do
+  [ -f "$DOC" ] || fail "governed doc missing: $DOC"
+  grep -qiF "$CARVEOUT" "$DOC" \
+    || fail "$DOC must state the go-live '$CARVEOUT' standing carve-out"
+done
+
+# The carve-out must forward-reference the enforcement story + the decision/record.
+grep -qiF 'E1g-S07' "$LIVEDEMO" \
+  || fail "gridscale-live-demo.md carve-out must forward-reference E1g-S07 (soft WARN time-box)"
+grep -qiF 'D-042' "$LIVEDEMO" \
+  || fail "gridscale-live-demo.md carve-out must cite the D-042 go-live decision"
+grep -qiF 'e1g-gsk-2026-07-18' "$LIVEDEMO" \
+  || fail "gridscale-live-demo.md carve-out must cite the evidence/live record"
+
+# --- (b) no UNQUALIFIED standing-env absolute in any governed doc ------------
+# A line carrying an absolute is only OK if it also carries a go-live qualifier.
+for DOC in "$ROADMAP" "$LIVEDEMO" "$DAY0" "$TASKFILE"; do
+  [ -f "$DOC" ] || fail "governed doc missing: $DOC"
+  if grep -iE "$ABSOLUTE" "$DOC" | grep -qivE "$QUALIFIER"; then
+    grep -inE "$ABSOLUTE" "$DOC" | grep -ivE "$QUALIFIER" >&2 || true
+    fail "$DOC carries an UNQUALIFIED standing-env absolute (add a $QUALIFIER carve-out qualifier, or reconcile the line)"
+  fi
+done
+
+echo "OK: E1g-S06 go-live standing-substrate doc-truth (recorded + time-boxed carve-out)"

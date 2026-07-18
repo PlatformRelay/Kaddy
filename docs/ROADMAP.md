@@ -409,10 +409,18 @@ reviewer path.
 **Runbook:** [gridscale-live-demo.md](runbooks/gridscale-live-demo.md)
 
 DECIDED-B (operator-approved): E8b ships as a reproducible **on-demand** bring-up
-(`task e8b:up` / `e8b:down`), proven ephemerally — **not a standing environment**
-(the ruthless-teardown cost rule holds; the "interview window" is
-operator-triggered). Offline-authored below; live bring-up/serve pending the live
-cycle.
+(`task e8b:up` / `e8b:down`), proven ephemerally — the ruthless-teardown cost rule
+holds by default and the "interview window" is operator-triggered.
+
+**Go-live carve-out (D-042, supersedes the dev-phase absolute):** the project has
+entered go-live, where a standing live substrate is intentionally permitted — but
+**only when it is recorded and time-boxed**: what is up, since-when, a teardown-by
+date, and an owner are recorded (`evidence/live/e1g-gsk-2026-07-18.md`), with an
+explicit teardown deadline surfaced by **E1g-S07** (`task e1g:status`, soft WARN).
+This does **not** make "always-on" acceptable and does **not** weaken the
+create→verify→destroy discipline for per-story live proofs — the ephemeral
+`e8b:up`/`e8b:down` cycle stays ephemeral-by-default. Offline-authored below; live
+bring-up/serve pending the live cycle.
 
 | ID | Story | Status |
 | --- | --- | --- |
