@@ -3,6 +3,45 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.5.0] — 2026-07-18
+
+**The gridscale cloud-edge goes live — real public URLs with real certs.** The phase-2
+substrate swap is complete and running: the kaddy platform serves on a standing gridscale
+GSK cluster behind a **Traefik v3 Gateway-API edge** with **publicly-trusted Let's Encrypt**
+certificates. Four live HTTPS surfaces — **Argo CD**, **Grafana**, the full **caddy-mvp**
+(Argo Rollouts canary showcase), and a demo landing page — on `*.lab.platformrelay.dev`,
+all HTTP 200 with a verifiable chain. Highlights: **E1g-S05a** adds a GSK-targetable
+bootstrap opt-in (`KADDY_GSK_CONTEXT`) that hardens rather than weakens the kind-only
+prod-nuke guard; **E1g-S05b/e/f/g** are codified into cloud-only GitOps overlays (Traefik
+controller app, `clubhouse` Gateway + per-host HTTPS listeners, cert-manager **DNS-01**
+Cloudflare issuers with a token-less ExternalSecret, real hostnames) plus replayable
+`hack/gsk/` scripts and a prominent README "Live demo" section; **E1g-S05i** codifies the
+caddy-mvp canary edge. Three findings shaped the build: GSK's managed Cilium **cannot** serve
+Gateway API (→ Traefik, decision **D-042**), GSK **has** a service-LoadBalancer CCM (auto
+public IP — collapses S05c/S05d), and Gateway API v1.5.1 CRDs need their k8s-1.31-only `isIP`
+CEL rules stripped to apply on GSK's k8s 1.30. **E1g-S05h** records the GSK node public-IP
+exposure as an accepted risk with compensating controls; **E1g-S06** reconciles the
+cost-governance prose into a recorded, time-boxed go-live standing carve-out with an offline
+doc-truth guard. Every lane independently reviewed (0 P0/P1); `task verify` green throughout.
+
+### Features
+- **e1g-s05a:** GSK-targetable bootstrap opt-in via shared context guard
+- **e1g:** Codify live GSK cloud-edge into GitOps overlays + LINKS (S05b/e/f/g)
+- **e1g-s05i:** Codify live caddy-mvp Rollouts canary on GSK cloud-edge
+
+### Documentation
+- **inbox:** Log v0.4.1 release + audit-P3 fixes (DECK-1/DOC-14/ENV-1)
+- **e1g:** Decompose deferred cloud-edge into E1g-S05a-h + E13-S05; live GSK substrate evidence (2026-07-18)
+- **inbox:** Handover 2026-07-18 — flag STANDING GSK substrate (billing) + D-041 + E1g-S05a-h/E13-S05
+- **e1g:** Backlog E1g-S06/S07 — go-live cost-governance for standing infra (audit WIP-D1)
+- **e1g-s06:** Reconcile "no standing env" prose -> go-live recorded+time-boxed carve-out + doc-truth guard (WIP-D1)
+- **e1g-s06:** Fix doc-truth overclaim (F-01) + guard-scope caveat (F-02)
+- **e1g-s06:** D-042 forward-ref framing (NEW-A) + restore ROADMAP typo (NEW-B)
+
+### Other
+- **e1g-s05b:** Guard gsk CRD apply against kind (S05a helper) + apply AppProject before Traefik App (review G1/G2)
+- **e1g:** S05h spike — GSK node public-IP exposure is accepted risk (no provider/API mitigation)
+
 ## [0.4.1] — 2026-07-17
 
 **Hardening, real CI gates, and a live `:6443` proof.** A remediation loop that burned
