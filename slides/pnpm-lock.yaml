@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@iconify/vue':
+        specifier: ^5.0.1
+        version: 5.0.1(vue@3.5.39(typescript@5.9.3))
       '@slidev/cli':
         specifier: ^0.49.29
-        version: 0.49.29(@babel/parser@7.29.7)(@nuxt/kit@3.21.8)(@types/markdown-it@14.1.2)(@types/node@18.19.130)(@vue/compiler-sfc@3.5.39)(postcss@8.5.19)(rollup@4.62.2)
+        version: 0.49.29(@babel/parser@7.29.7)(@nuxt/kit@3.21.8)(@types/markdown-it@14.1.2)(@types/node@18.19.130)(@vue/compiler-sfc@3.5.39)(playwright-chromium@1.61.1)(postcss@8.5.19)(rollup@4.62.2)
       '@slidev/theme-default':
         specifier: ^0.25.0
         version: 0.25.0
@@ -21,6 +24,9 @@ importers:
       markdownlint-cli2:
         specifier: ^0.14.0
         version: 0.14.0
+      playwright-chromium:
+        specifier: ^1.61.1
+        version: 1.61.1
 
 packages:
 
@@ -634,6 +640,11 @@ packages:
 
   '@iconify/utils@3.1.4':
     resolution: {integrity: sha512-b1S7B1k9ohZ+iNTi2ATxbRYG9fTrJmUT0rc46bvVnNxqNRGW7dyo/vRREwyniI5IRN2RSJHDcm+s3BjWrSAjHw==}
+
+  '@iconify/vue@5.0.1':
+    resolution: {integrity: sha512-aumwwooJlFJ5H5qYWB6ZTAyM0C8hpfcSVLB9/a3qnH1GGvIJ+FEbpEs4s/HfErYe/M5qZeLjwmESR5fFm3lXEw==}
+    peerDependencies:
+      vue: '>=3.0.0'
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2581,6 +2592,16 @@ packages:
   plantuml-encoder@1.4.0:
     resolution: {integrity: sha512-sxMwpDw/ySY1WB2CE3+IdMuEcWibJ72DDOsXLkSmEaSzwEUaYBT6DWgOfBiHGCux4q433X6+OEFWjlVqp7gL6g==}
 
+  playwright-chromium@1.61.1:
+    resolution: {integrity: sha512-YK3K8JakUv5Hq5WjY6oU/XwuD/041s9XVtoTKTrZHYRY72DOAsni/iXye7iBS8lgYWUZENt/6tBnpmhaSg72ug==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright-core@1.61.1:
+    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   points-on-curve@0.2.0:
     resolution: {integrity: sha512-0mYKnYYe9ZcqMCWhUjItv/oHjvgEsfKvnUTg8sAtnHr3GVy7rGkXCb6d5cSyqrWqL4k81b9CPg3urd+T7aop3A==}
 
@@ -3620,6 +3641,11 @@ snapshots:
       '@iconify/types': 2.0.0
       import-meta-resolve: 4.2.0
 
+  '@iconify/vue@5.0.1(vue@3.5.39(typescript@5.9.3))':
+    dependencies:
+      '@iconify/types': 2.0.0
+      vue: 3.5.39(typescript@5.9.3)
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -3903,7 +3929,7 @@ snapshots:
 
   '@sindresorhus/merge-streams@2.3.0': {}
 
-  '@slidev/cli@0.49.29(@babel/parser@7.29.7)(@nuxt/kit@3.21.8)(@types/markdown-it@14.1.2)(@types/node@18.19.130)(@vue/compiler-sfc@3.5.39)(postcss@8.5.19)(rollup@4.62.2)':
+  '@slidev/cli@0.49.29(@babel/parser@7.29.7)(@nuxt/kit@3.21.8)(@types/markdown-it@14.1.2)(@types/node@18.19.130)(@vue/compiler-sfc@3.5.39)(playwright-chromium@1.61.1)(postcss@8.5.19)(rollup@4.62.2)':
     dependencies:
       '@antfu/ni': 0.22.4
       '@antfu/utils': 0.7.10
@@ -3976,6 +4002,8 @@ snapshots:
       vue: 3.5.39(typescript@5.9.3)
       yaml: 2.9.0
       yargs: 17.7.3
+    optionalDependencies:
+      playwright-chromium: 1.61.1
     transitivePeerDependencies:
       - '@babel/parser'
       - '@nuxt/kit'
@@ -6146,6 +6174,12 @@ snapshots:
       pathe: 2.0.3
 
   plantuml-encoder@1.4.0: {}
+
+  playwright-chromium@1.61.1:
+    dependencies:
+      playwright-core: 1.61.1
+
+  playwright-core@1.61.1: {}
 
   points-on-curve@0.2.0: {}
 

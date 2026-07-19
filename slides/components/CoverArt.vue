@@ -56,7 +56,7 @@ function onError(event: Event) {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #0a1014;
+  background: #071b28;
 }
 
 .kd-cover-image {
@@ -70,12 +70,9 @@ function onError(event: Event) {
 .kd-cover-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(10, 16, 20, 0.88) 12%,
-    rgba(10, 16, 20, 0.35) 55%,
-    rgba(10, 16, 20, 0.12)
-  );
+  background:
+    linear-gradient(90deg, rgba(7, 27, 40, 0.88), rgba(7, 27, 40, 0.18) 72%),
+    linear-gradient(to top, rgba(11, 14, 20, 0.92) 7%, rgba(11, 14, 20, 0.15) 62%);
 }
 
 .kd-cover-body {
@@ -91,14 +88,20 @@ function onError(event: Event) {
   font-size: 0.85rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #5eead4;
+  color: #a9f2dc;
   margin-bottom: 0.5rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
 }
 
 .kd-cover-title {
-  font-size: 2.4rem;
-  line-height: 1.15;
+  max-width: 760px;
+  font-size: 2.5rem;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
   margin: 0;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
 .kd-ai-footer {
@@ -108,7 +111,7 @@ function onError(event: Event) {
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #f8fafc;
-  opacity: 0.45;
+  color: #f7f2e8;
+  opacity: 0.7;
 }
 </style>

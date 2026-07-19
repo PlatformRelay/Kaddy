@@ -1,43 +1,86 @@
 /*
- * kaddy deck — hybrid kubernetes-workshop visual port (ADR-0112 · E12c-S05).
- *
- * Adopts the kubernetes-workshop `--kw-*` surface/text CSS-variable system,
- * dark graphite background, Inter + JetBrains Mono fonts, and the
- * progress-bar chrome — but OVERRIDES the decorative accent from k8s-blue
- * (#326ce5) to Kaddy's golf-teal (fairway green / sea teal) so the chrome
- * matches the coastal-links Moebius cover art. The kicker + AI footer are
- * applied by CoverArt.vue's scoped styles (.kd-cover-kicker / .kd-ai-footer),
- * not here.
- *
- * Guarded by tests/deck/theme-tokens.sh (asserts --kw-* present + accent teal,
- * not #326ce5).
+ * Kaddy's independent Slidev theme layer. It borrows the workshop's disciplined
+ * token, card, chip, and page-chrome grammar while keeping a coastal Kaddy palette.
  */
-
 :root {
-  /* --- surface / text system (ported from kubernetes-workshop --kw-*) --- */
-  --kw-bg: #0b0e14;            /* dark graphite background */
-  --kw-surface: #131720;      /* panel / card surface */
-  --kw-surface-2: #1b2130;    /* raised surface */
-  --kw-border: #2a3242;       /* hairline borders */
-  --kw-text: #e6edf3;         /* primary text */
-  --kw-text-dim: #9aa7b8;     /* secondary / dimmed text */
-
-  /* --- semantic status colors (kept from workshop) --- */
-  --kw-ok: #3fb950;           /* landed / healthy */
-  --kw-warn: #d29922;         /* designed / in-progress */
-  --kw-danger: #f85149;       /* failing */
-
-  /* --- accent OVERRIDE (ADR-0112): golf-teal, NOT k8s-blue #326ce5 --- */
-  --kw-accent: #14b8a6;       /* sea teal (Tailwind teal-500) */
-  --kw-accent-2: #2f9e6f;     /* fairway green */
-  --kw-accent-dim: #0f766e;   /* deep teal for chrome */
+  --kw-bg: #0b0e14;
+  --kw-surface: #142129;
+  --kw-surface-2: #1c2d35;
+  --kw-border: #3d5660;
+  --kw-text: #f7f2e8;
+  --kw-text-dim: #c4d0ce;
+  --kw-ok: #66d1ad;
+  --kw-warn: #e3ba68;
+  --kw-danger: #ff7f73;
+  --kw-accent: #42c5a2;
+  --kw-accent-2: #7ed9bd;
+  --kw-accent-dim: #167f70;
+  --kd-navy: #071b28;
+  --kd-graphite: #0b0e14;
+  --kd-paper: #f7f2e8;
+  --kd-sea: #42c5a2;
+  --kd-sand: #e3ba68;
+  --kd-coral: #ff7f73;
 }
 
-/* Base surfaces + fonts. */
 .slidev-layout {
-  background: var(--kw-bg);
+  position: relative;
+  background:
+    radial-gradient(circle at 92% 8%, rgb(66 197 162 / 10%), transparent 28%),
+    linear-gradient(145deg, var(--kd-navy), var(--kw-bg) 58%);
   color: var(--kw-text);
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  padding: 2.6rem 3.2rem 2.2rem;
+}
+
+.slidev-layout::after {
+  position: absolute;
+  right: 2rem;
+  bottom: 0.7rem;
+  color: var(--kw-text-dim);
+  content: attr(data-slidev-no);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+}
+
+.slidev-layout h1 {
+  max-width: 900px;
+  margin: 0.15rem 0 0;
+  color: var(--kd-paper);
+  font-size: 2.2rem;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.slidev-layout h2,
+.slidev-layout h3 {
+  color: var(--kd-paper);
+}
+
+.slidev-layout h3 {
+  margin: 0.45rem 0 0.45rem;
+  font-size: 1.05rem;
+}
+
+.slidev-layout p,
+.slidev-layout li {
+  line-height: 1.45;
+}
+
+.slidev-layout ul,
+.slidev-layout ol {
+  margin: 0.45rem 0 0;
+}
+
+.slidev-layout li + li {
+  margin-top: 0.28rem;
+}
+
+.slidev-layout a {
+  color: var(--kw-accent-2);
+  text-decoration-color: var(--kw-accent-dim);
 }
 
 .slidev-layout code,
@@ -45,24 +88,291 @@
   font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 }
 
-.slidev-layout h1,
-.slidev-layout h2 { color: var(--kw-text); }
-
-.slidev-layout a { color: var(--kw-accent); }
-
-/* --- workshop chrome: 2px progress bar along the top of every slide.
- *     `.slidev-progress-bar` is injected by Slidev itself (no authored
- *     markup), so this selector IS live. --- */
-.slidev-progress-bar {
-  position: fixed;
-  top: 0; left: 0;
-  height: 2px;
-  background: var(--kw-accent);
-  z-index: 50;
+.slidev-layout :not(pre) > code {
+  border: 1px solid var(--kw-border);
+  border-radius: 0.28rem;
+  background: #07151d;
+  color: #c8f4e7;
+  padding: 0.08rem 0.28rem;
+  font-size: 0.86em;
 }
 
-/* The kicker and AI-footer chrome are applied by CoverArt.vue's scoped
- * <style> (.kd-cover-kicker / .kd-ai-footer). The former ported .kw-footer /
- * .kw-kicker / .kicker / .kw-chip / .chip class rules were orphaned (no
- * element referenced them — slides bind CoverArt props and use Tailwind
- * utilities for status) and were deleted per D-039 F2. */
+.slidev-progress-bar {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--kw-accent), var(--kd-sand));
+}
+
+/*
+ * Slidev 0.49 keeps the go-to-slide autocomplete mounted above the viewport.
+ * With a long deck its list extends back into view, so remove that picker; the
+ * overview route and previous/next navigation remain available.
+ */
+#slidev-goto-dialog {
+  display: none !important;
+}
+
+.kd-kicker {
+  color: var(--kw-accent-2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.kd-lede {
+  color: var(--kd-paper);
+  font-size: 1.2rem;
+}
+
+.kd-muted {
+  display: block;
+  color: var(--kw-text-dim);
+}
+
+.kd-small {
+  color: var(--kw-text-dim);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.kd-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.kd-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kd-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kd-card {
+  min-width: 0;
+  border: 1px solid var(--kw-border);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, rgb(28 45 53 / 96%), rgb(20 33 41 / 96%));
+  padding: 1rem 1.05rem;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 16%);
+}
+
+.kd-card p {
+  margin: 0.35rem 0 0;
+}
+
+.kd-card-accent {
+  border-color: var(--kw-accent-dim);
+  box-shadow: inset 3px 0 var(--kw-accent);
+}
+
+.kd-card-ok {
+  border-color: #3b8f77;
+  box-shadow: inset 3px 0 var(--kw-ok);
+}
+
+.kd-card-warn {
+  border-color: #92743c;
+  box-shadow: inset 3px 0 var(--kw-warn);
+}
+
+.kd-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  vertical-align: -0.14em;
+  color: var(--kw-accent-2);
+}
+
+.kd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--kw-border);
+  border-radius: 999px;
+  background: var(--kw-surface-2);
+  color: var(--kd-paper);
+  padding: 0.3rem 0.58rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.kd-chip-ok {
+  border-color: #3b8f77;
+  color: #a9f2dc;
+}
+
+.kd-chip-warn {
+  border-color: #92743c;
+  color: #ffe0a0;
+}
+
+.kd-callout {
+  border-left: 3px solid var(--kd-sand);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: rgb(227 186 104 / 10%);
+  color: var(--kd-paper);
+  padding: 0.65rem 0.85rem;
+}
+
+.kd-diagram {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.kd-node {
+  display: flex;
+  min-width: 8rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--kw-border);
+  border-radius: 0.65rem;
+  background: var(--kw-surface);
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.kd-node-primary {
+  border-color: var(--kw-accent);
+  background: #113f3c;
+  color: #d8fff3;
+  font-weight: 700;
+}
+
+.kd-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--kd-sand);
+  font-size: 1.4rem;
+}
+
+.kd-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.kd-flow-vertical {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.kd-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.55rem;
+  align-items: center;
+  border: 1px solid var(--kw-border);
+  border-radius: 0.65rem;
+  background: var(--kw-surface);
+  padding: 0.7rem 0.8rem;
+}
+
+.kd-step > span {
+  grid-row: span 2;
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--kw-accent-dim);
+  color: white;
+  font-weight: 800;
+}
+
+.kd-step code {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.kd-stack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.kd-surface {
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid #4a6570;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  box-shadow: 0 14px 30px rgb(0 0 0 / 22%);
+}
+
+.kd-surface-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #102832;
+  color: #f7f2e8;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.kd-surface iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: white;
+  aspect-ratio: 16 / 7;
+}
+
+.kd-surface-fallback {
+  min-height: 6.6rem;
+  background: #1a2931;
+  color: var(--kw-text-dim);
+}
+
+.kd-surface-fallback p {
+  padding: 0.3rem 0.7rem 0.7rem;
+  font-size: 0.74rem;
+}
+
+.kd-code-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem 0.8rem;
+  align-items: center;
+}
+
+.kd-footer-link {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 3.2rem;
+  color: var(--kw-text-dim);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.64rem;
+}
+
+/* Mermaid often injects inline colors; force an accessible dark-diagram surface. */
+.mermaid {
+  border: 1px solid var(--kw-border);
+  border-radius: 0.75rem;
+  background: #f7f2e8;
+  padding: 0.45rem;
+}
+
+.mermaid svg {
+  max-height: 340px;
+}
+
+.mermaid .label,
+.mermaid .nodeLabel,
+.mermaid .edgeLabel {
+  color: #09202b !important;
+  fill: #09202b !important;
+}
+
+.mermaid .edgeLabel {
+  background-color: #f7f2e8 !important;
+}

@@ -12,6 +12,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GATES=(
   slidev-build.sh
   theme-tokens.sh
+  deck-quality.sh
   speaker-notes-coverage.sh
   script-wordcount.sh
   iframe-surfaces.sh
