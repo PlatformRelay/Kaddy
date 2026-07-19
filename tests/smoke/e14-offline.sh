@@ -54,6 +54,18 @@ run_nix() {
     bash -c "$1"
 }
 
+run_nix_amd64() {
+  # Same as run_nix but pins linux/amd64. Used ONLY for the caddy-validate step,
+  # which must EXECUTE the image's own caddy (an x86_64 binary — the image target).
+  # On an x86_64 runner (CI) this is native; on an arm dev host it emulates (the
+  # caddy closure is substituted from cache, so only the ~1s validate runs under
+  # emulation). Everything else stays on the fast native-arch run_nix.
+  docker run --rm --platform linux/amd64 \
+    -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false' \
+    -v "${NIXDIR}":/work -w /work "${NIX_IMAGE}" \
+    bash -c "$1"
+}
+
 # --- 2) nixpkgs-fmt (STRICT when the container is reachable) -----------------
 if ! docker image inspect "${NIX_IMAGE}" >/dev/null 2>&1; then
   if ! docker pull "${NIX_IMAGE}" >/dev/null 2>&1; then
@@ -83,19 +95,37 @@ else
   fail "nix flake check failed — the flake or the caddy-golden module does not evaluate"
 fi
 
-# --- 4) caddy validate the golden Caddyfile (STRICT) ------------------------
+# --- 4) caddy validate the golden Caddyfile with the IMAGE'S caddy (STRICT) --
 # `nix flake check --no-build` does NOT parse the Caddyfile (services.caddy is
 # handed an opaque configFile), so a broken serving contract would slip through.
 # Validate the real file — the same one the module serves. This catches
-# STRUCTURAL errors (unknown/misspelled directives, unbalanced braces); it does
-# NOT catch semantically-valid-but-wrong values (e.g. a bad `admin` address),
-# which surface only at boot (proven live in E14-S03). `root * /srv` validates
-# fine offline (caddy checks syntax, not path existence). The file is
-# byte-for-byte packer/files/Caddyfile.
-if run_nix 'nix run nixpkgs#caddy -- validate --adapter caddyfile --config caddy/Caddyfile >/dev/null 2>&1'; then
-  ok "caddy validate (golden Caddyfile parses)"
+# STRUCTURAL errors (unknown/misspelled directives, unbalanced braces) AND
+# version-skew (a directive valid in a newer caddy but not the one the image
+# ships) — the exact class that shipped E14-S03's non-serving image: the old gate
+# validated with `nixpkgs#caddy` from the MUTABLE dev registry (>= 2.9), while the
+# image pinned caddy 2.8.4, which rejects the Caddyfile's global `metrics { per_host }`
+# at boot. To close that hole the validation MUST use the caddy the image ACTUALLY
+# ships — read straight from flake.lock's nixpkgs-caddy pin (single source of truth;
+# caddy adaptation is arch-independent so the container's native arch is fine).
+# It still does NOT catch semantically-valid-but-wrong values (e.g. a bad `admin`
+# address), which surface only at boot. `root * /srv` validates fine offline.
+# Build the caddy the image ACTUALLY ships (config.services.caddy.package — tracks
+# the flake's nixpkgs-caddy pin; revert the pin and this goes red) and validate the
+# Caddyfile with it. `caddy validate` runs the same Caddyfile->JSON adaptation the
+# service does at boot, so a version-skew directive (valid in a newer caddy, not the
+# pinned one) fails HERE instead of silently on the VM.
+# One container: build the caddy closure (substituted from cache) + validate in it
+# (each `docker run --rm` is ephemeral, so build+run must share one invocation).
+# Steps 2/3 above already proved egress works, so a failure here is a real config
+# error, not a fetch skip.
+if run_nix_amd64 '
+  set -e
+  nix build .#nixosConfigurations.caddy-golden.config.services.caddy.package -o /tmp/caddy-pkg >/dev/null 2>&1
+  /tmp/caddy-pkg/bin/caddy validate --adapter caddyfile --config caddy/Caddyfile >/dev/null 2>&1
+'; then
+  ok "caddy validate (golden Caddyfile adapts with the image's OWN pinned caddy)"
 else
-  fail "caddy validate failed — nix/caddy/Caddyfile is not a valid Caddyfile"
+  fail "caddy validate failed — nix/caddy/Caddyfile does not adapt with the caddy the image ships (version skew? see flake.nix nixpkgs-caddy pin)"
 fi
 
 echo "PASS: e14 offline gate green"

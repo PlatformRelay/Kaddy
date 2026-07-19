@@ -44,7 +44,7 @@ in
   # NIC). The nixos-generators `raw` format does NOT pull in the qemu-guest
   # profile, so a from-scratch image's initrd lacks the virtio drivers — the VM
   # powers on but the kernel never sees the boot disk (no root mount) or the NIC
-  # (no DHCP), so it never serves (observed live 2026-07-19: E14-S03 v1 provisioned
+  # (no DHCP), so it never boots (the SEPARATE serve failure once booted was the caddy 2.8.4 skew, fixed by the package pin below) (observed live 2026-07-19: E14-S03 v1 provisioned
   # + powered on but did not serve). The qemu-guest profile adds virtio_pci /
   # virtio_blk / virtio_scsi / virtio_net to the initrd — the ADR-0303 boot
   # contract's missing piece for a scratch image on gridscale.
@@ -73,6 +73,10 @@ in
     # Use the exact golden Caddyfile rather than the generated virtualHosts
     # config so `admin off` + the standalone :2019 metrics site are preserved.
     configFile = caddyfile;
+    # NOTE: the Caddyfile's global `metrics { per_host }` block requires caddy
+    # >= 2.9. The package is pinned accordingly in flake.nix (nixpkgs-caddy) —
+    # nixos-24.11's caddy 2.8.4 rejects that block at boot and the image serves
+    # nothing (E14-S03). Keep services.caddy.package >= 2.9 if this module moves.
   };
 
   # --- Minimal, image-friendly base ---------------------------------------
