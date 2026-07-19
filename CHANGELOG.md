@@ -3,6 +3,46 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.6.0] — 2026-07-19
+
+**The Nix "fourth way" goes live — a reproducible, flake-locked golden image, served and
+scraped on gridscale.** E14 completes the golden-image story: alongside the Packer/Ubuntu
+path, kaddy now ships a **Nix-built** gridscale Marketplace image (`caddy-nix`) — a
+minimal-CVE, full-closure NixOS 24.11 image built reproducibly from a flake, exported to
+object storage, registered + imported as a one-click Marketplace app, and **live-proven
+end-to-end**: deploy → `GET /` 200 + `/healthz` + `:2019/metrics` (158 `caddy_` series) →
+Prometheus `up=1` on the standing GSK cluster, with every ephemeral VM torn down clean
+(0 orphans). The serve failure that stumped two earlier attempts turned out to be a caddy
+version skew — nixos-24.11's caddy 2.8.4 rejects the golden Caddyfile's `metrics { per_host }`
+block, so `caddy run` exited before binding :80 — fixed at source by pinning caddy ≥ 2.9. The
+Marketplace also gains engine-OS naming + logos (`caddy-ubuntu`, `caddy-nix`), and E13-S05
+live-proved the one-click Caddy deploy path end to end.
+
+### Features
+- **e14-s01:** Nix-built gridscale golden image (flake + nixos-generators)
+- **e14-s02:** Register kaddy-nix Marketplace app from the Nix .gz (LIVE)
+- **marketplace:** Rename templates to engine-OS names + add logos (LIVE)
+- **deck:** Rebuild interview presentation
+
+### Fixes
+- **e14-s01:** Address independent review (P1 gate wiring + Caddyfile validation)
+- **e14:** Add qemu-guest profile so the Nix image boots on gridscale (virtio)
+- **e14:** Pin caddy >=2.9 so the Nix golden image serves (E14-S03)
+
+### Tests
+- **e13-s05:** Live-prove one-click Marketplace deploy (Caddy)
+
+### Documentation
+- **e1g-s06:** Reconcile retired "no standing env" prose → go-live carve-out + doc-truth guard
+- **e14-s03:** Nix VM deploy — mechanism proven, then boot-to-serve LIVE-PROVEN (caddy ≥2.9 pin)
+- **e14-s03:** QEMU boot test narrows the diagnosis — image boots, Caddy version skew found
+- **coord:** Handover 2026-07-19 loop2 — E14 Nix path + marketplace rename/icons
+
+### Chores
+- **marketplace:** Tofu fmt the caddy/nix stack edits (align icon_path)
+- **e14:** Add hack/e14-s03-live-prove.sh — one-shot live deploy→prove→teardown
+- **e14:** Scrape-prove hook + teardown-order fix + wire nix into e13:up/down
+
 ## [0.5.0] — 2026-07-18
 
 **The gridscale cloud-edge goes live — real public URLs with real certs.** The phase-2
