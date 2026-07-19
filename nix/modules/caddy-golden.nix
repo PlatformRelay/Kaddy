@@ -18,7 +18,7 @@
 #     out shrinks the closure and removes the one empirical unknown (datasource
 #     NoCloud vs config-drive) from the critical serve path. The management path
 #     is documented in docs/runbooks/nix-golden-image.md.
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, modulesPath, ... }:
 
 let
   # The sample landing page — mirrors packer/files/index.html (kept in-tree so
@@ -40,6 +40,16 @@ let
   caddyfile = ../caddy/Caddyfile;
 in
 {
+  # gridscale is a virtio-based KVM cloud (virtio-blk disk = /dev/vda, virtio-net
+  # NIC). The nixos-generators `raw` format does NOT pull in the qemu-guest
+  # profile, so a from-scratch image's initrd lacks the virtio drivers — the VM
+  # powers on but the kernel never sees the boot disk (no root mount) or the NIC
+  # (no DHCP), so it never serves (observed live 2026-07-19: E14-S03 v1 provisioned
+  # + powered on but did not serve). The qemu-guest profile adds virtio_pci /
+  # virtio_blk / virtio_scsi / virtio_net to the initrd — the ADR-0303 boot
+  # contract's missing piece for a scratch image on gridscale.
+  imports = [ "${modulesPath}/profiles/qemu-guest.nix" ];
+
   # --- Boot contract -------------------------------------------------------
   networking.useDHCP = lib.mkDefault true;
   networking.firewall.allowedTCPPorts = [ 80 2019 ];
