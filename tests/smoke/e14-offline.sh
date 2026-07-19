@@ -83,4 +83,19 @@ else
   fail "nix flake check failed — the flake or the caddy-golden module does not evaluate"
 fi
 
+# --- 4) caddy validate the golden Caddyfile (STRICT) ------------------------
+# `nix flake check --no-build` does NOT parse the Caddyfile (services.caddy is
+# handed an opaque configFile), so a broken serving contract would slip through.
+# Validate the real file — the same one the module serves. This catches
+# STRUCTURAL errors (unknown/misspelled directives, unbalanced braces); it does
+# NOT catch semantically-valid-but-wrong values (e.g. a bad `admin` address),
+# which surface only at boot (proven live in E14-S03). `root * /srv` validates
+# fine offline (caddy checks syntax, not path existence). The file is
+# byte-for-byte packer/files/Caddyfile.
+if run_nix 'nix run nixpkgs#caddy -- validate --adapter caddyfile --config caddy/Caddyfile >/dev/null 2>&1'; then
+  ok "caddy validate (golden Caddyfile parses)"
+else
+  fail "caddy validate failed — nix/caddy/Caddyfile is not a valid Caddyfile"
+fi
+
 echo "PASS: e14 offline gate green"

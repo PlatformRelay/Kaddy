@@ -46,7 +46,7 @@ On a native x86_64 Linux host with `/dev/kvm` (or a GitHub-hosted runner — the
 task e14:build             # plain nix build; the QEMU VM uses hardware KVM
 ```
 
-CI build-of-record: **`.github/workflows/e14-nix-image.yml`** (`workflow_dispatch`) builds on
+CI build-of-record: **`.github/workflows/e14-nix-image.yaml`** (`workflow_dispatch`) builds on
 `ubuntu-latest` and uploads the `.gz` artifact. This is the reproducible build environment.
 
 ### Option B — TCG fallback (local, on a KVM-less host; SLOW)

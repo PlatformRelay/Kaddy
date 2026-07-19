@@ -59,6 +59,15 @@ build environment is a **KVM-capable x86_64 host / CI runner**: `.github/workflo
 (`workflow_dispatch`) builds on `ubuntu-latest` (native `/dev/kvm`) and uploads the `.gz`. See
 `docs/runbooks/nix-golden-image.md`.
 
+### 4. Re-confirmed after the review refactor
+
+Independent review (REQUEST CHANGES → fixed) moved the Caddyfile out of the module into
+`nix/caddy/Caddyfile` (a byte-for-byte copy of `packer/files/Caddyfile`, served via a `/srv`
+`systemd.tmpfiles` symlink) so the offline gate can `caddy validate` it. The image derivation hash
+changed accordingly (`y9yfbjj…` → `080q5vv…-nixos-disk-image.drv`; the built system carries
+`L+ /srv … kaddy-srv`), and a fresh `nix build` still completes green — so the build claim holds for
+the committed code, not just the pre-review draft.
+
 ## Boot + serving contract (ADR-0303)
 
 The `caddy-golden` module carries the boot contract a from-scratch image needs: `networking.useDHCP`

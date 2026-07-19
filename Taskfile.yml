@@ -112,6 +112,7 @@ tasks:
       - bash tests/smoke/e6g-offline.sh
       - bash tests/smoke/e8b-offline.sh
       - bash tests/smoke/e13-offline.sh
+      - bash tests/smoke/e14-offline.sh
       - bash tests/smoke/e10-offline.sh
 
   deck:build:

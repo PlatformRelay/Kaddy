@@ -28,34 +28,16 @@ let
     cp ${../srv/index.html} "$out/index.html"
   '';
 
-  # Byte-for-byte the golden Caddyfile from packer/files/Caddyfile: admin off
-  # (no admin API on a public VM) + a dedicated :2019 metrics listener with
-  # per_host labels, and the :80 site serving the page + /healthz.
-  caddyfile = pkgs.writeText "Caddyfile" ''
-    {
-    	admin off
-    	metrics {
-    		per_host
-    	}
-    }
-
-    :2019 {
-    	metrics /metrics
-    }
-
-    :80 {
-    	root * ${srvRoot}
-
-    	handle /healthz {
-    		respond "ok" 200
-    	}
-
-    	handle {
-    		encode gzip
-    		file_server
-    	}
-    }
-  '';
+  # The golden Caddyfile is a byte-for-byte copy of packer/files/Caddyfile (admin
+  # off + a dedicated :2019 metrics listener with per_host labels + the :80 site
+  # serving /srv + /healthz), so the Nix VM is a drop-in job="caddy" scrape
+  # target. Keeping it a real file (not an inlined heredoc with an interpolated
+  # store path) lets `caddy validate` check it offline in tests/smoke/e14-offline.sh
+  # — a directive typo fails the gate — instead of handing Caddy an opaque,
+  # uncheckable string. It serves /srv, which the tmpfiles rule below symlinks to
+  # the immutable store copy of the page (so the config stays root * /srv,
+  # identical to Packer's).
+  caddyfile = ../caddy/Caddyfile;
 in
 {
   # --- Boot contract -------------------------------------------------------
@@ -71,6 +53,11 @@ in
   '';
 
   # --- The serving contract (declarative; no first-boot provisioning) ------
+  # /srv is an immutable symlink to the store copy of the sample page, so the
+  # Caddyfile can stay `root * /srv` (byte-for-byte with Packer's) while the
+  # content lives in the read-only closure.
+  systemd.tmpfiles.rules = [ "L+ /srv - - - - ${srvRoot}" ];
+
   services.caddy = {
     enable = true;
     # Use the exact golden Caddyfile rather than the generated virtualHosts

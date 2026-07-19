@@ -25,7 +25,7 @@ building the entire system closure green.
 Two resolutions, both wired:
 
 1. **KVM-capable host / CI (canonical).** A native x86_64 Linux host with `/dev/kvm` (or a GitHub-hosted
-   runner — Azure VMs expose nested KVM) builds the image directly. `.github/workflows/e14-nix-image.yml`
+   runner — Azure VMs expose nested KVM) builds the image directly. `.github/workflows/e14-nix-image.yaml`
    is the reproducible build-of-record (`workflow_dispatch`, uploads the `.gz` artifact).
 2. **TCG fallback (local, slow).** Claiming the `kvm` feature in `nix.conf` lets the QEMU VM fall back to
    TCG software emulation (`-machine accel=kvm:tcg`). Under rosetta this is *double* emulation — correct
