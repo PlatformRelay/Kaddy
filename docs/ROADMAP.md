@@ -355,7 +355,7 @@ service starts declaratively at boot — so S01 is a crisp pass/fail spike, not 
 | E14-S02 | Image-as-**NixOS module** — Caddy/nginx + sample page + `/metrics` + exporter, declarative (replaces `provision-*.sh`) | 🟨 authored + builds green |
 | E14-S03 | **Reproducibility + SBOM + sign gate** — flake-lock; build-twice-compare **toplevel store-path**; full-closure SBOM; Trivy scan; cosign sign (image bit-repro = stretch) | 🟨 flake-lock done; SBOM/sign pending |
 | E14-S04 | **Marketplace register/import** — `nixos-generate` → `.gz` → object storage → `gridscale_marketplace_application` (+ `meta_icon`) → `_import` (private tenant) | ⬜ |
-| E14-S05 | **Deploy proof** — `gridscale_server` from the Nix template serves page + `caddy_*` alert fires (serve→scrape→fire) | ⬜ |
+| E14-S05 | **Deploy proof** — `gridscale_server` from the Nix template serves page + `caddy_*` alert fires (serve→scrape→fire) | 🟨 deploy mechanism proven; boot-to-serve pending (ADR-0303 boot contract — `.gz` snapshot-format fix, see evidence) |
 | E14-S06 | Runbook + exercise-traceability row (Nix golden-image path) | 🟨 runbook authored |
 
 **Constraints (inherited from E13, designed around):** `category` enum lacks "web server" (use

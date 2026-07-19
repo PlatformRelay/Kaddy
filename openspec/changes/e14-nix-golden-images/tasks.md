@@ -45,13 +45,12 @@ and — live, gated — `tests/smoke/e14-s0{2,3}-*.sh`.
 
 ## E14-S03 — Deploy a VM from the Nix template + track in Prometheus
 
-- [ ] Add failing `tests/smoke/e14-s03-deploy.sh` (asserts serve HTTP 200 + `/metrics` + Prometheus `up=1`; SKIPs without creds/cluster)
-- [ ] Deploy a `gridscale_server` (public network) from the imported Nix template
-- [ ] Prometheus-operator `ScrapeConfig` targeting `<ip>:2019/metrics` (GSK `monitoring` ns) → `up=1`
-- [~] LIVE serve + scrape + marshal `caddy_*` evaluate; teardown; tenant clean — evidence in `evidence/live/`
+- [x] Deploy mechanism proven — a `gridscale_server` + storage from `template_uuid=3aa9777e` (kaddy-nix import) + Public Network + IPv4 **provisions + powers on** (same wiring as the live Caddy VM). Evidence: `evidence/live/e14-nix-deploy-2026-07-19.md`
+- [~] **Boot-to-serve NOT yet green (ADR-0303 boot contract)** — the from-scratch Nix image provisions + powers on but does not serve `:80`/`:2019` within 6 min, across 2 attempts (before + after adding `profiles/qemu-guest.nix` for virtio). Firmware RULED OUT (gridscale default = i440fx/BIOS, matches raw/MBR). **Leading fix:** the `.gz` is a plain gzip of the nixos-generators raw disk, whereas the Caddy `.gz` came from `gridscale_snapshot.object_storage_export` (native format) — rebuild the Nix image through the gridscale snapshot-export path. Needs console (VNC) diagnosis; a dedicated follow-up.
+- [~] Prometheus-operator `ScrapeConfig` targeting `<ip>:2019/metrics` (GSK `monitoring` ns) → `up=1` — blocked on a serving Nix target (same `job="caddy"` contract proven live by E13-S05)
 
 ## Exit
 
-- [~] E14-S01 offline gate green in CI; image build proven on a KVM host / CI runner
-- [ ] At least one live register→deploy→serve→scrape cycle captured to `evidence/live/`, then torn down
-- [ ] `task verify` EXIT 0 (offline gate stays skip-not-fail)
+- [x] E14-S01 offline gate green in CI; image build proven on a KVM host / CI runner — the `e14-nix-image` workflow builds the raw image natively (ubuntu-latest + /dev/kvm) + uploads the `.gz` (runs `29675711347`, `29677048783` — SUCCESS)
+- [~] Live register→deploy→serve→scrape cycle: **register (S02) LIVE-DONE + deploy mechanism proven (S03)**; serve+scrape blocked on the from-scratch Nix **boot contract** (ADR-0303) — a dedicated follow-up (`.gz` snapshot-format fix + console diagnosis). Evidence: `evidence/live/e14-nix-{marketplace,deploy}-2026-07-19.md`
+- [x] `task verify` EXIT 0 (offline gate stays skip-not-fail)
