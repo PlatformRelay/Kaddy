@@ -1,0 +1,3 @@
+# Build artifacts (large raw images, logs) — never committed; rebuilt via task e14:build.
+/build/
+/result

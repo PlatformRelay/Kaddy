@@ -25,7 +25,7 @@ Status: ⬜ pending · 🚧 in progress · ✅ done · ✂️ cuttable
 | --- | --- | --- | --- | --- |
 | **1 · Platform (local)** | **kind + Cilium** ([E1e](../openspec/changes/e1e-kind-local-cluster/), ✅ landed) — single-node; **Cilium Gateway** + LB-IPAM/L2; in-cluster state | $0 | Now — develop GitOps platform locally | kaddy **E1e** → E1 → E1b∥E1c → E2 → E3 → E4∥E5 → E6 → E7 → E8 |
 | **2 · Lab (gridscale)** | GSK + LBaaS + Object Storage | Lab credits | After E3–E7 green locally | E1g → E6g → E8b |
-| **3 · Golden images (Nix)** | Nix-built VM images (**E14** — designed, see [ADR-0303](adr/0303-nix-golden-images.md); no change folder yet) → gridscale Marketplace + multi-cloud targets | Lab credits (ephemeral) | **After Phase 2's live-proof cycle closes** (E6g/E13/E8b live) — forward-looking, **not next-up** | E14 |
+| **3 · Golden images (Nix)** | Nix-built VM images (**E14** — [ADR-0303](adr/0303-nix-golden-images.md); change folder landed, image **builds green** — S01 build-proven, live register/deploy pending) → gridscale Marketplace + multi-cloud targets | Lab credits (ephemeral) | **Phase 2 live-proof cycle closed** — E14-S01 build landed 2026-07-19 | E14 |
 
 **Gate to phase 2:** E3–E7 green on the local kind cluster → start E1g (gridscale day-0).
 
@@ -312,7 +312,7 @@ the page + feeds the `caddy_*` marshal alerts.
 
 ## E14 · Nix golden images (phase 3 — forward-looking, gated behind Phase 2 live-proof)
 
-**OpenSpec:** `e14-nix-golden-images` — designed, not yet a change folder; see [ADR-0303](adr/0303-nix-golden-images.md).  
+**OpenSpec:** `e14-nix-golden-images` — change folder landed (`openspec/changes/e14-nix-golden-images/`); see [ADR-0303](adr/0303-nix-golden-images.md).  
 **ADR:** [0303](adr/0303-nix-golden-images.md) · **Decision:** D-037 · **Gate:** Phase 2 live-proof cycle closed (E6g/E13/E8b live)  
 **GOVERNANCE:** supply-chain / image-provenance → **maintainer-LGTM-required** before merge.
 
@@ -323,7 +323,7 @@ gridscale Marketplace 2.0 template serving Caddy/nginx + `/metrics`, feeding the
 base) instead of imperative Packer. **Additive — E13's Packer builder is kept** (D-037 does not supersede
 D-032). Nix here is an image *builder*, **not** a cluster OS — D-003/D-015 (Talos/GSK substrate) stand.
 
-**Boot contract (the hinge, resolved by provider docs, proven in S01):** a from-scratch NixOS image does
+**Boot contract (the hinge, resolved by provider docs; carried by the image — live boot proof is E14-S03):** a from-scratch NixOS image does
 **not** inherit gridscale's base-template SSH/password injection (`storage.template.password` is *public-
 templates-only*). Instead: **network = DHCP** (gridscale auto-assigns; NixOS DHCP on the NIC → IP, no
 config); **first-boot config = `gridscale_server.user_data_base64`** (cloud-init / Cloudbase-init /
@@ -341,14 +341,22 @@ service starts declaratively at boot — so S01 is a crisp pass/fail spike, not 
 | **Provenance** | nixpkgs pin bumped by **Renovate** | `renovate.json` |
 | **Multi-cloud** | **One source → many targets** — `nixos-generators` emits qcow2 (gridscale) + gce/amazon/openstack | ADR-0303 portability |
 
+> **Status 2026-07-19 (build-proven, live pending):** the change folder + `nix/flake.nix` +
+> `nix/modules/caddy-golden.nix` landed; `nix flake check` passes and the **x86_64 golden image builds
+> green** in a `nixos/nix` container (evidence: `evidence/live/e14-nix-image-build-2026-07-19.md`;
+> offline gate `task test:smoke:e14`; CI build-of-record `.github/workflows/e14-nix-image.yaml`). The
+> `agent-context/BACKLOG.md` re-decomposes execution into **build (S01)** → **export/register (S02)** →
+> **deploy + Prometheus (S03)**; the live boot/register/deploy rows below stay open until proven on
+> gridscale.
+
 | ID | Story | Status |
 | --- | --- | --- |
-| E14-S01 | **Boot-contract spike** — NixOS image gets a DHCP lease on gridscale + resolve the cloud-init datasource (NoCloud/config-drive vs metadata) for `user_data_base64`; serve + `/metrics` with zero injection | ⬜ |
-| E14-S02 | Image-as-**NixOS module** — Caddy/nginx + sample page + `/metrics` + exporter, declarative (replaces `provision-*.sh`) | ⬜ |
-| E14-S03 | **Reproducibility + SBOM + sign gate** — flake-lock; build-twice-compare **toplevel store-path**; full-closure SBOM; Trivy scan; cosign sign (image bit-repro = stretch) | ⬜ |
+| E14-S01 | **Boot-contract spike** — NixOS image gets a DHCP lease on gridscale + resolve the cloud-init datasource (NoCloud/config-drive vs metadata) for `user_data_base64`; serve + `/metrics` with zero injection | 🟨 image builds; live boot pending |
+| E14-S02 | Image-as-**NixOS module** — Caddy/nginx + sample page + `/metrics` + exporter, declarative (replaces `provision-*.sh`) | 🟨 authored + builds green |
+| E14-S03 | **Reproducibility + SBOM + sign gate** — flake-lock; build-twice-compare **toplevel store-path**; full-closure SBOM; Trivy scan; cosign sign (image bit-repro = stretch) | 🟨 flake-lock done; SBOM/sign pending |
 | E14-S04 | **Marketplace register/import** — `nixos-generate` → `.gz` → object storage → `gridscale_marketplace_application` (+ `meta_icon`) → `_import` (private tenant) | ⬜ |
 | E14-S05 | **Deploy proof** — `gridscale_server` from the Nix template serves page + `caddy_*` alert fires (serve→scrape→fire) | ⬜ |
-| E14-S06 | Runbook + exercise-traceability row (Nix golden-image path) | ⬜ |
+| E14-S06 | Runbook + exercise-traceability row (Nix golden-image path) | 🟨 runbook authored |
 
 **Constraints (inherited from E13, designed around):** `category` enum lacks "web server" (use
 `Adminpanel`/`CMS` + `meta_*`); `object_storage_path` must be `.gz`/`s3://`; `meta_icon` required

@@ -1,0 +1,66 @@
+# REQ-E14-S01-01 — Nix golden-image build-of-record.
+# The reproducible build environment: a GitHub-hosted x86_64 runner has /dev/kvm,
+# so the `nixos-generators` raw-disk assembly (a QEMU VM that requires the `kvm`
+# system feature) runs natively-fast — unlike the KVM-less colima container, where
+# the whole closure builds green but the final assembly must fall back to slow TCG
+# (see docs/runbooks/nix-golden-image.md). Builds the image in the same nixos/nix
+# container the local `task e14:build` uses, and uploads the .gz for E14-S02 export.
+name: e14-nix-image
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'nix/**'
+      - '.github/workflows/e14-nix-image.yaml'
+  pull_request:
+    paths:
+      - 'nix/**'
+      - '.github/workflows/e14-nix-image.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-golden-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Confirm KVM is available on the runner
+        run: |
+          ls -la /dev/kvm
+          echo "KVM present — the raw-disk QEMU assembly will use hardware acceleration."
+
+      - name: nix flake check (evaluate the flake)
+        run: |
+          docker run --rm \
+            -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false' \
+            -v "$PWD/nix":/work -w /work nixos/nix:latest \
+            nix flake check --no-build
+
+      - name: Build the x86_64 gridscale golden image (raw) + gzip
+        run: |
+          mkdir -p nix/build
+          docker run --rm --device /dev/kvm \
+            -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false\nsystem-features = kvm nixos-test benchmark big-parallel uid-range' \
+            -v "$PWD/nix":/work -w /work nixos/nix:latest \
+            bash -c '
+              set -euo pipefail
+              nix build .#gridscale-image --print-build-logs
+              out=$(readlink -f result)
+              img=$(find "$out" -maxdepth 1 -type f | head -1)
+              echo "built: $img ($(du -h "$img" | cut -f1))"
+              cp "$img" /work/build/nixos.img
+              gzip -c /work/build/nixos.img > /work/build/nix-golden.gz
+              ls -la /work/build/
+            '
+
+      - name: Upload the golden-image .gz artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nix-golden-image
+          path: nix/build/nix-golden.gz
+          if-no-files-found: error
+          retention-days: 7

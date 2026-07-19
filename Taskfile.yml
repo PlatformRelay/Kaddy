@@ -465,6 +465,54 @@ tasks:
     cmds:
       - bash tests/smoke/e13-offline.sh
 
+  test:smoke:e14:
+    desc: E14 — OFFLINE gate for the Nix golden image (flake.lock committed + nixpkgs-fmt + nix flake check in a nixos/nix container; skip-not-fail if docker/nix absent). The emulated image build is the live proof (task e14:build).
+    cmds:
+      - bash tests/smoke/e14-offline.sh
+
+  e14:lock:
+    desc: E14 — (re)generate nix/flake.lock inside a nixos/nix container (commit the result)
+    cmds:
+      - |
+        set -eu
+        command -v docker >/dev/null 2>&1 || { echo "docker not installed — E14 nix runs in a nixos/nix container"; exit 1; }
+        docker run --rm \
+          -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false' \
+          -v "$PWD/nix":/work -w /work {{.KADDY_NIX_IMAGE | default "nixos/nix:latest"}} \
+          nix flake lock
+        echo "nix/flake.lock updated — commit it."
+
+  e14:fmt:
+    desc: E14 — format nix/*.nix with nixpkgs-fmt (in a nixos/nix container)
+    cmds:
+      - |
+        set -eu
+        command -v docker >/dev/null 2>&1 || { echo "docker not installed"; exit 1; }
+        docker run --rm \
+          -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false' \
+          -v "$PWD/nix":/work -w /work {{.KADDY_NIX_IMAGE | default "nixos/nix:latest"}} \
+          nix run nixpkgs#nixpkgs-fmt -- .
+
+  e14:build:
+    desc: "E14-S01 — LIVE build the x86_64 gridscale golden image (nixos-generators raw) in a --platform linux/amd64 nixos/nix container (rosetta/qemu emulation; SLOW). Output: nix/build/nixos.img."
+    cmds:
+      - |
+        set -euo pipefail
+        command -v docker >/dev/null 2>&1 || { echo "docker not installed — the Nix build runs in a nixos/nix container"; exit 1; }
+        mkdir -p nix/build
+        docker run --rm --platform linux/amd64 \
+          -e NIX_CONFIG=$'experimental-features = nix-command flakes\nfilter-syscalls = false\nmax-jobs = auto' \
+          -v "$PWD/nix":/work -w /work {{.KADDY_NIX_IMAGE | default "nixos/nix:latest"}} \
+          bash -c '
+            set -euo pipefail
+            nix build .#gridscale-image --print-build-logs
+            out=$(readlink -f result)
+            img=$(find "$out" -maxdepth 1 -type f | head -1)
+            echo "built image: $img ($(du -h "$img" | cut -f1))"
+            cp "$img" /work/build/nixos.img
+          '
+        echo "Nix golden image at nix/build/nixos.img — export + register via E14-S02 (see docs/runbooks/nix-golden-image.md)."
+
   e13:generate:
     desc: E13 — regenerate Terramate codegen (provider/backend/labels) into the marketplace stacks (offline, deterministic)
     cmds:
