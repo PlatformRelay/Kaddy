@@ -525,7 +525,7 @@ tasks:
         terramate generate
 
   e13:up:
-    desc: "E13 — LIVE Marketplace register + import (COSTS MONEY at export/deploy; needs real creds). Applies stacks/gridscale-marketplace/{caddy,nginx}. Build+export the golden image FIRST per the runbook."
+    desc: "E13/E14 — LIVE Marketplace register + import (COSTS MONEY at export/deploy; needs real creds). Applies stacks/gridscale-marketplace/{caddy,nginx,nix}. Build+export each golden image FIRST per the runbook (nix .gz via the e14-nix-image CI + upload, see docs/runbooks/nix-golden-image.md)."
     env:
       TF_VAR_gridscale_uuid: '{{.GRIDSCALE_USER_UUID}}'
       TF_VAR_gridscale_token: '{{.GRIDSCALE_API_KEY}}'
@@ -540,10 +540,10 @@ tasks:
         # Register + import per engine. object_storage_path is threaded in via
         # TF_VAR_object_storage_path (the exported .gz path); backend-config wires
         # the S3 remote state (see docs/runbooks/gridscale-marketplace-deploy.md).
-        for s in caddy nginx; do
+        for s in caddy nginx nix; do
           ( cd "stacks/gridscale-marketplace/${s}" && tofu init -input=false && tofu apply -auto-approve )
         done
-        echo "Marketplace apps registered + imported (private tenant). Deploy a gridscale_server from the template per the runbook."
+        echo "Marketplace apps registered + imported (private tenant). Deploy a gridscale_server from the template per the runbook (nix: hack/e14-s03-live-prove.sh)."
 
   e13:down:
     desc: "E13 — LIVE teardown: destroy the Marketplace apps/imports (+ any deploy-proof server). Run after EVERY live test (cost discipline)."
@@ -556,7 +556,7 @@ tasks:
         set -euo pipefail
         : "${GRIDSCALE_USER_UUID:?set GRIDSCALE_USER_UUID before teardown}"
         : "${GRIDSCALE_API_KEY:?set GRIDSCALE_API_KEY before teardown}"
-        for s in nginx caddy; do
+        for s in nix nginx caddy; do
           ( cd "stacks/gridscale-marketplace/${s}" && tofu destroy -auto-approve ) || true
         done
         echo "Marketplace teardown complete — verify in the gridscale panel that no template/import/VM lingers."

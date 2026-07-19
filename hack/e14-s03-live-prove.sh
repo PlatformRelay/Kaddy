@@ -179,14 +179,15 @@ teardown() {
   echo ""
   echo "=== TEARDOWN (ruthless — cost discipline) ==="
 
-  # --- server: power off then delete ---------------------------------------
+  # --- server: power OFF only here (delete is LAST, after its relations) -----
+  # A server DELETE while storage is still attached returns 409 and — guarded by
+  # `|| true` — was silently swallowed, leaving a powered-off orphan server (0
+  # storage / 0 IP but still listed + billable). Fix: detach by deleting storage
+  # + IP first, THEN delete the now-dependency-free server in a retry loop below.
   if [[ -n "$SERVER_UUID" ]]; then
-    echo "-> powering off + deleting server ${SERVER_UUID}"
-    # Best-effort power off (ignore 'already off' errors) so storage can detach.
+    echo "-> powering off server ${SERVER_UUID} (delete deferred until relations gone)"
     gs_quiet PATCH "/objects/servers/${SERVER_UUID}/power" '{"power":false}' >/dev/null 2>&1 || true
-    # Give the power-off request a moment; deletion of a running server can 409.
-    sleep 3
-    gs_quiet DELETE "/objects/servers/${SERVER_UUID}" >/dev/null 2>&1 || true
+    sleep 3   # let the power-off request settle so storage can detach cleanly
   fi
 
   # --- storage: retry delete (424/409 while in-provisioning or still linked) --
@@ -229,6 +230,31 @@ teardown() {
       fi
       if [[ $(date +%s) -ge $ideadline ]]; then
         echo "   WARNING: IPv4 ${IP_UUID} still not deleted (last HTTP ${ihttp}) — CHECK THE PANEL" >&2
+        break
+      fi
+      sleep "$POLL_INTERVAL_SECS"
+    done
+  fi
+
+  # --- server: delete LAST, now that storage + IP relations are gone ----------
+  # With no attached storage/IP the server has no dependencies, so DELETE returns
+  # 204 (or 404 if already gone). Retry to ride out a brief post-power-off
+  # "stopping" transient. This is the fix for the swallowed-409 orphan above.
+  if [[ -n "$SERVER_UUID" ]]; then
+    echo "-> deleting server ${SERVER_UUID} (retrying on 409 transient)"
+    local vdeadline vhttp
+    vdeadline=$(( $(date +%s) + POLL_TIMEOUT_SECS ))
+    while :; do
+      vhttp="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+        "${API}/objects/servers/${SERVER_UUID}" \
+        -H "X-Auth-UserId: ${GRIDSCALE_USER_UUID}" \
+        -H "X-Auth-Token: ${GRIDSCALE_API_KEY}" 2>/dev/null || echo 000)"
+      if [[ "$vhttp" == "204" || "$vhttp" == "404" ]]; then
+        echo "   server delete HTTP ${vhttp}"
+        break
+      fi
+      if [[ $(date +%s) -ge $vdeadline ]]; then
+        echo "   WARNING: server ${SERVER_UUID} still not deleted (last HTTP ${vhttp}) — CHECK THE PANEL" >&2
         break
       fi
       sleep "$POLL_INTERVAL_SECS"
@@ -437,6 +463,29 @@ fi
 # ------------------------------------------------------------------------------
 SERVE_RESULT="SERVE PROVEN"
 echo ""
-echo "RESULT: SERVE PROVEN"
+# NB: not "RESULT: ..." — the authoritative RESULT is printed once by the trap's
+# FINAL block AFTER any POST_SERVE_HOOK, so a log check can't misread a
+# hook-failed run as success by grepping an early "RESULT: SERVE PROVEN".
+echo "SERVE CHECKS PASSED (pre-hook)"
 echo "VM public IP (for the follow-up Prometheus ScrapeConfig, :2019/metrics, job=\"caddy\"): ${VM_IP}"
+
+# ------------------------------------------------------------------------------
+# 6. OPTIONAL post-serve hook — runs while the VM is STILL ALIVE, before the trap
+#    tears it down. This is how the E14-S03 Prometheus ScrapeConfig -> up=1 proof
+#    reuses the exact proven deploy + teardown: set POST_SERVE_HOOK to a command;
+#    it runs with VM_IP exported. The hook owns its own GSK cleanup (delete the
+#    ScrapeConfig it applied). A non-zero hook fails the run (trap still tears the
+#    VM down), so a leaked VM is impossible regardless of the hook's outcome.
+# ------------------------------------------------------------------------------
+if [[ -n "${POST_SERVE_HOOK:-}" ]]; then
+  echo ""
+  echo "=== POST-SERVE HOOK (VM still live at ${VM_IP}) ==="
+  if VM_IP="$VM_IP" bash -c "$POST_SERVE_HOOK"; then
+    echo "   POST-SERVE HOOK: PASS"
+  else
+    echo "   POST-SERVE HOOK: FAIL" >&2
+    SERVE_RESULT="SERVE PROVEN / HOOK FAILED"
+    exit 1
+  fi
+fi
 # Normal exit -> trap runs teardown, preserves rc=0.
