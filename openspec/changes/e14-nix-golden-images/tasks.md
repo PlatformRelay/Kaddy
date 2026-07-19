@@ -39,10 +39,9 @@ and — live, gated — `tests/smoke/e14-s0{2,3}-*.sh`.
 
 ## E14-S02 — Export the `.gz` + register/import as a Marketplace app
 
-- [ ] Add failing `tests/smoke/e14-s02-register.sh` (asserts `kaddy-nix` app registered + imported, `id` set; SKIPs without state)
-- [ ] Export the built image `.gz` to object storage (`s3://…/nix-golden.gz`) — direct S3 upload or `gridscale_snapshot.object_storage_export`
-- [ ] `stacks/gridscale-marketplace/nix` (reuse `modules/marketplace-template`; `name = "kaddy-nix"`, `meta_os = "NixOS 24.11"`, `meta_components = ["Caddy","/metrics","Nix flake-locked closure"]`)
-- [~] LIVE register + import (private, `is_publish_*` false) — evidence in `evidence/live/`
+- [x] `stacks/gridscale-marketplace/nix` (reuse `modules/marketplace-template`; `service="nix"` → name `kaddy-nix`, `meta_os = "NixOS 24.11"`) + `tests/nix.tftest.hcl` (mock-provider offline test) wired into `task test:smoke:e13` (`STACKS=(caddy nginx nix)`)
+- [x] Export the built image `.gz` to object storage — **LIVE-DONE 2026-07-19**: the `e14-nix-image` CI artifact (native KVM build, run `29675711347`) uploaded to `s3://kaddy-tfstate/marketplace/nix-golden.gz` (507 MiB, via `mc`)
+- [x] LIVE register + import (private, `is_publish_*` false) — **DONE 2026-07-19**: `kaddy-nix` app `191fed42-…` + import `3aa9777e-…` (`unique_hash f18c-29eb-62b8`), both active in tenant. Evidence: `evidence/live/e14-nix-marketplace-2026-07-19.md`
 
 ## E14-S03 — Deploy a VM from the Nix template + track in Prometheus
 

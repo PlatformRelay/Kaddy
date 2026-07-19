@@ -18,7 +18,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${DIR}/../.." && pwd)"
 MODULE="${ROOT}/modules/marketplace-template"
 STACKS_ROOT="${ROOT}/stacks/gridscale-marketplace"
-STACKS=(caddy nginx)
+STACKS=(caddy nginx nix)
 
 export TF_PLUGIN_CACHE_DIR="${TF_PLUGIN_CACHE_DIR:-${HOME}/.terraform.d/plugin-cache}"
 mkdir -p "${TF_PLUGIN_CACHE_DIR}"
