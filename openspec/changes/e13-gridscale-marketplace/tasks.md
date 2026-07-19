@@ -15,7 +15,7 @@
 
 - [x] Add failing `tests/smoke/e13-s01-export.sh` (asserts a `.gz` snapshot exists at the `s3://` bucket path; SKIPs without creds)
 - [x] Packer build (`packer/caddy.pkr.hcl`, `nginx.pkr.hcl`): Caddy/nginx + sample page + `/metrics` endpoint — **LIVE-PROVEN 2026-07-17** (caddy): `packer build` on gridscale built the Caddy golden image, enabled `caddy.service`, snapshotted → private template, then auto-destroyed all ephemeral resources (VM/IP/storage/snapshot/key); template deleted after capture; tenant clean. Evidence: `evidence/live/e13-golden-image-2026-07-17.md`.
-- [~] Snapshot storage → export as `.gz` to the E1g object-storage bucket (runbook step; live-proof pending — the packer build produces a template; the marketplace `.gz` export is the remaining sub-step)
+- [x] Snapshot storage → export as `.gz` to the E1g object-storage bucket — **LIVE-DONE 2026-07-18**: `s3://kaddy-tfstate/marketplace/caddy-golden.gz` (the `kaddy-caddy` Marketplace app registers from it; E13-S05 deployed a VM from the resulting import)
 - [x] Fallback (time-box): manual `gridscale_server` → configure → snapshot (documented in the runbook)
 
 ## E13-S02 — Register + import the Marketplace application (Terraform)
@@ -31,7 +31,7 @@
 ## E13-S03 — Deploy proof (serve → scrape → fire)
 
 - [x] Add failing `tests/smoke/e13-s03-deploy.sh` + `tests/promtool/gridscale-marketplace.test.yaml`
-- [~] `gridscale_server` from the imported template → serves the sample page (HTTP 200) + exposes `/metrics` (runbook step; live-proof pending)
+- [x] `gridscale_server` from the imported template → serves the sample page (HTTP 200) + exposes `/metrics` — **LIVE-PROVEN 2026-07-19** (E13-S05): storage from `template_uuid=752ef944…` (kaddy-caddy import) → VM on the Public Network → `GET /`=200 (sample page), `/healthz`=ok, `:2019/metrics`=`caddy_config_last_reload_successful 1` + `caddy_http_request_duration_seconds{code="200"}`; torn down clean. Evidence: `evidence/live/e13-marketplace-deploy-2026-07-19.md`
 - [x] Prometheus scrapes the VM `/metrics`; the parked `caddy_*` marshal alerts fire against a
       gridscale `job="caddy"` target (promtool fire + silent preserved) — closes D-026 on the Marketplace path (offline promtool green; live scrape pending)
 
@@ -43,9 +43,11 @@
 
 ## Exit
 
-- [~] One-click Marketplace deploy demonstrable end-to-end: register → import → deploy from template →
-      served page + `caddy_*` alert fires against the gridscale VM (offline-authored; live-proof pending, `task e13:up` + runbook).
-  - [ ] **E13-S05** (2026-07-18, operator request): live one-shot deploy validation — run the full
-        register→import→deploy→serve chain ONCE on real gridscale, capture evidence, then tear down.
-        Full story body in `agent-context/BACKLOG.md` § "Phase-2 gridscale Marketplace live validation".
+- [x] One-click Marketplace deploy demonstrable end-to-end: register → import → deploy from template →
+      served page + `caddy_*` metrics against the gridscale VM — **LIVE-PROVEN 2026-07-19** (E13-S05);
+      `caddy_*` alert-fire proven by promtool (offline) against the `job="caddy"` contract the live VM serves.
+  - [x] **E13-S05** (2026-07-18, operator request): live one-shot deploy validation — ran the full
+        deploy→serve chain ONCE on real gridscale (the register+import were already live), captured
+        evidence (`evidence/live/e13-marketplace-deploy-2026-07-19.md`), tore down clean. Deploy
+        mechanism resolved: storage `template_uuid = <consumer import object_uuid>` (no TF-provider deploy resource).
 - [x] Gate: `task test:spec` (structure) + `tofu test` + offline gate (`task test:smoke:e13`); live smoke gated on E1g credits.
