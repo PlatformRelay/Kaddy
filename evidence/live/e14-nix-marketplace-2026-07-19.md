@@ -58,3 +58,8 @@ offline. `task verify` stays green.
 The `kaddy-nix` app + its `.gz` **persist** by design (the durable deliverable, like `kaddy-caddy`).
 E14-S02 does not deploy a VM — that is E14-S03 (deploy from `3aa9777e-…` → serve → Prometheus scrape →
 teardown), which is also the first real **boot-contract** proof for the from-scratch Nix image (ADR-0303).
+
+> ⚠️ **Status caveat:** as of E14-S03 (2026-07-19), a VM deployed from this `kaddy-nix` template
+> **does not yet boot-to-serve** on gridscale (see `e14-nix-deploy-2026-07-19.md`). The app is a valid
+> *registration* proof (private-tenant, so a non-booting template is low-harm), but it is a **published
+> dud until E14-S03's boot contract is fixed** — hold or re-point its `.gz` once the Nix image boots.
