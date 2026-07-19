@@ -4,6 +4,33 @@ Format: **Decision** · date · context · operator choice · agent counterpoint
 
 ---
 
+## D-043 — 2026-07-19 (agent-loop-local): deliver E14-S01; live stories blocked on operator authorization
+
+**Context:** session goal = complete the remaining open stories (E10-S07, E13-S05, E14-S01/S02/S03). Two
+classifier gates apply to this background session: (1) `git push origin main` is denied; (2) live
+gridscale/GSK cloud writes are denied (a test storage POST was rejected).
+
+**Decision (decide-and-log, agent-chosen):** deliver the one story that needs neither a push nor live
+writes to prove — **E14-S01** (Nix golden image: flake + module + offline gate + openspec + runbook + CI
+build-of-record; the image builds green in a `nixos/nix` container; `task verify` EXIT 0; independently
+reviewed — round 1 REQUEST CHANGES, all findings fixed, re-review pending). Lane `lane/e14-s01-nix-golden`
+(`8403096` + fix `4335063`), ff-merged to LOCAL main on APPROVE; it cannot reach origin (block #1).
+
+Did **not** sink effort into offline scaffolding whose live payoff is authorization-blocked
+(E14-S02/S03 stacks, E13-S05 deploy). E13-S05's register+import is already live-done (both `kaddy-caddy`
+apps active, `unique_hash 9336-3196-7c80`); its deploy step additionally has no TF-provider resource
+(marketplace apps deploy via panel one-click / non-provider API), so it needs a mechanism decision too.
+
+**To finish the rest, operator must:** (1) add a Bash allow-rule for `git push origin main`; (2) authorize
+live gridscale/GSK writes. Then E13-S05 deploy, E14-S02/S03, and E10-S07's GSK redeploy become runnable.
+
+**Counterpoint (kept):** an alternative was to author the E14-S02 offline TF stack now (live-defer),
+matching the phase-2 "offline-author, live-defer" pattern — declined because that pattern assumed live
+was *later possible*, whereas live is now hard-blocked, making offline-only scaffolding lower-value for a
+P2 story than a clean hand-off. Revert E14-S01 if unwanted: `git branch -D lane/e14-s01-nix-golden`.
+
+---
+
 ## D-040 — agent-loop-local sprint: 5 offline lanes + GSK `:6443` capstone (2026-07-17, loop3)
 
 **Date:** 2026-07-17
@@ -554,3 +581,35 @@ concern; `gridscale_k8s ~>2.2` exposes no disable/firewall arg → tracked as th
 
 **Reversal:** run `task e1g:down` to tear down the standing substrate (stops billing). Releases/live
 infra remain operator-directed.
+
+**Reaffirmed 2026-07-19** (via `/open-questions`): after v0.5.0 shipped and the cloud-edge milestone
+landed, operator chose **KEEP STANDING** (the four live `.lab.platformrelay.dev` URLs stay up).
+Agent counterpoint restated — the milestone is released, so unless the demo recording is still
+outstanding the meter is now pure burn — operator accepted; billing continues until `task e1g:down`.
+
+## D-042 — 2026-07-18 — Cloud-edge Gateway API controller: Cilium→Traefik (go-live demo)
+
+**Status:** DECIDED (operator-chosen via AskUserQuestion). GSK's managed Cilium cannot serve Gateway
+API (kube-proxy-replacement=false, no cilium-operator; managed reconciler would revert flags). Deployed
+**Traefik v3** as a self-contained Gateway API controller (cloud-only; kind path keeps Cilium). Node
+pool scaled to 2×(2c/4Gi); demo hostnames `*.lab.platformrelay.dev`. Result: 3 live LE-prod HTTPS URLs
+(argocd/grafana/demo). Findings: GSK has a LoadBalancer CCM (S05c/S05d collapse); Traefik 3.7.6 needs
+v1 TLSRoute + the v1.5.1 CRD's `isIP` CEL stripped for k8s 1.30. Evidence:
+`evidence/live/e1g-cloud-edge-live-2026-07-18.md`.
+
+## 2026-07-19 — `/open-questions` inbox pass (operator answers)
+
+Four actionable inbox items surfaced (no formal D-…/ALERT- decision blocks were open — all prior
+decisions already logged). Operator's calls:
+
+1. **Kaddy session authorizations (push-to-main + live gridscale/GSK writes)** → **Grant both.**
+   Confirms the in-session grant the concurrent agent-loop-local session already acted on (INBOX
+   §2026-07-19; E14-S01 merged+pushed, E13-S05 + E14-S02 LIVE-PROVEN). No new action — reaffirmed.
+2. **DOC-10 roadmap-status guard follow-up** (assert epic commits are ancestors of the claimed release
+   tag) → **Hand to `/agent-loop`.** Left in the Kaddy INBOX Operator-tasks list, annotated QUEUED for
+   the next loop rather than done inline. Counterpoint (noted, not overruled): it's a small, self-contained
+   meta-test lane I could have done inline; operator preferred to batch it into the next loop.
+3. **"Phase 2 STARTED" operator-task checkbox** (stale — superseded by shipped v0.5.0 cloud-edge) →
+   **Mark done & remove.** Removed from the INBOX Operator-tasks list.
+4. **Reading backlog** (workspace harness-research report + mkurator 2026-07-11 health audit) →
+   **Summarize both now.** Digested in-session; source inbox items marked read.

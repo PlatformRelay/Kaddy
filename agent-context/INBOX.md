@@ -2,7 +2,103 @@
 
 Items waiting on the operator. Answered decisions move to `decisions.md`.
 
-## 🔴 2026-07-18 — LIVE GSK SUBSTRATE IS STANDING + BILLING (action needed)
+## ✅ 2026-07-19 (agent-loop-local, cont'd) — authorizations granted; 3 live stories DONE, E14-S03 partial, E10-S07 assessed
+
+**Operator granted both authorizations in-session** ("I authorize all the things — git push origin main,
+curl, kubectl apply and more"). A plain sentence sufficed (the classifier honors explicit in-session
+intent; no settings rule needed). Everything below then landed on origin/main, CI green:
+
+- **E14-S01** — merged + pushed (`e6cb039..4335063`); `e14-nix-image` CI **built the raw image natively
+  (KVM) — SUCCESS** (runs 29675711347 / 29677048783), uploads the `.gz`. The offline `verify` gate is
+  green on CI including the e14 smoke. **DONE.**
+- **E13-S05** — LIVE-PROVEN (`9a4f0a3`): a VM deployed from the `kaddy-caddy` Marketplace template served
+  the sample page (200) + `/healthz` + `:2019/metrics` (real `caddy_*`), torn down clean. Deploy
+  mechanism resolved: storage `template_uuid = <consumer import object_uuid>`. **DONE.**
+- **E14-S02** — LIVE-DONE (`adcf617`): Nix `.gz` uploaded to `s3://kaddy-tfstate/marketplace/nix-golden.gz`;
+  `stacks/gridscale-marketplace/nix` registered + imported `kaddy-nix` (provider `191fed42` + import
+  `3aa9777e`, active); wired into the e13 offline gate. **DONE.**
+- **E14-S03** — PARTIAL (`0cfe60d`): deploy mechanism proven (VM provisions from `kaddy-nix`), but the
+  from-scratch Nix image does NOT boot-to-serve on gridscale (2 attempts; virtio/qemu-guest fix didn't
+  resolve; firmware ruled out = i440fx/BIOS matches raw/MBR). **Leading fix:** the `.gz` is a plain gzip
+  of the nixos-generators raw disk vs the Caddy `.gz` from `gridscale_snapshot.object_storage_export`
+  (native format) — rebuild via the snapshot-export path + console (VNC) diagnosis. A dedicated follow-up.
+  Evidence: `evidence/live/e14-nix-deploy-2026-07-19.md`.
+
+### E10-S07 (Backstage) — ASSESSED, not executed (needs a focused iterative session)
+
+Grounded state: the GSK `portal` ns Deployment `backstage` is **scaled to 0/0** (Service exists,
+`:7007`). The three documented defects stand: (1) backend `Plugin 'crossplane' is already registered` —
+`kaddy-portal` `packages/backend/src/index.ts` adds BOTH `@terasky/…-crossplane-permissions-backend`
+(L90) and `…-crossplane-resources-backend` (L95); they likely collide on pluginId `crossplane` (needs a
+build to confirm the exact culprit vs a frontend dup). (2) argocd/proxy app-config requires unset URLs
+(`Config must have required property 'url'…`; `Proxy target … must be a string`) — provide values or
+guard/remove the argocd plugin for the guest demo. (3) node memory pressure — the Deployment sets no
+`resources`; add requests/limits (~512Mi–1Gi) + `replicas: 1`.
+
+**Why not done here:** E10-S07 is a cross-repo (`PlatformRelay/kaddy-portal`) iterative loop — fix →
+rebuild the Backstage image (Node 24 + build-essential; the repo's `build-image.yaml` CI) → redeploy on
+GSK → read logs → repeat. That is a focused session's work; rushing it at the tail of this long run
+would risk a sprawling, unverified change. Recommend a dedicated `/agent-loop` pass on `kaddy-portal`.
+
+---
+
+## 🔴 2026-07-19 (agent-loop-local) — TWO authorization blocks gate the remaining live stories [RESOLVED above]
+
+**Session goal:** complete the remaining open stories (E10-S07, E13-S05, E14-S01/S02/S03). Outcome so
+far: **E14-S01 DELIVERED** (offline, builds green — see below); the rest are blocked on operator
+authorization, not on engineering.
+
+**Delivered — E14-S01 Nix golden image** (lane `lane/e14-s01-nix-golden`, commit `8403096`):
+`nix/flake.nix` + `flake.lock` + `nix/modules/caddy-golden.nix` (boot contract: DHCP + serial + declarative
+Caddy, same `job="caddy"` contract as the E13 Packer image). `nix flake check` passes; the full NixOS
+closure + a BIOS-bootable raw image build **green** in a `nixos/nix` container (evidence
+`evidence/live/e14-nix-image-build-2026-07-19.md`). Offline gate `task test:smoke:e14` wired into
+`test:meta:ci`; `task e14:lock/fmt/build`; openspec change folder; runbook; KVM-capable CI workflow.
+`task verify` EXIT 0. **Independent review: round-1 REQUEST CHANGES (2×P1) → all fixed → re-review APPROVE
+(0 P0/P1). ff-MERGED to LOCAL main (`4335063`+`8403096`, 2 commits ahead of origin) — CANNOT reach
+origin (block #1). Lane branch deleted; 2GB build artifacts cleaned.**
+
+**Non-blocking P3 follow-ups from review (not fixed — logged for later):**
+- **F-01** (doc-truth phrasing): ROADMAP "image builds green in container" reads cleaner than tasks.md's
+  `[~]` raw-disk-needs-kvm framing; evidence reconciles both (TCG build did complete). Tighten later.
+- **F-02** (gate robustness): the `caddy validate` + `nix flake check` steps lack the fmt step's
+  "can't-fetch vs real-failure" skip, so under *partial* egress (nixpkgs cached, caddy not) they'd
+  false-red instead of skip. Not a realistic CI state; cheap to harden.
+- **F-03** (TDD scope): the module boot-contract (serial console, ports 80/2019) is only *evaluated* by
+  flake check, not behaviorally tested — deleting the serial console keeps the gate green. The live boot
+  proof is E14-S03 (`[~]`). Known boundary, not a hidden gap.
+
+**🔴 BLOCK #1 — `git push origin main` is classifier-denied for this session.** The local-merge loop
+lands lanes on local main but cannot push. E14-S01 (and any further lanes) sit on local main until you
+add a Bash allow-rule for `git push origin main` (or authorize a push). This was flagged in the
+2026-07-18 handover too.
+
+**🔴 BLOCK #2 — live gridscale / GSK cloud writes are classifier-denied for this session.** A test POST
+to create a gridscale storage was denied ("live cloud infra writes not specifically authorized").
+This blocks the LIVE steps of:
+- **E13-S05** (deploy a VM from the imported Marketplace template). NB: register+import is **already
+  live-done** (both `kaddy-caddy` apps active in the tenant, `unique_hash 9336-3196-7c80`,
+  `s3://kaddy-tfstate/marketplace/caddy-golden.gz`). A second finding: the **TF provider exposes no
+  "deploy-from-marketplace-app" resource** — only register+import — and the imported app does NOT appear
+  as a queryable `template_uuid` in `/objects/templates`. So the deploy is a **panel one-click / non-provider
+  API path**, not a thin TF add. Needs both authorization AND a deploy mechanism decision.
+- **E14-S02 / E14-S03** (export the Nix `.gz` → register `kaddy-nix` → deploy + Prometheus). Offline
+  authoring of the `stacks/gridscale-marketplace/nix` stack is possible but its live payoff is blocked;
+  deferred rather than half-built.
+- **E10-S07** (Backstage): the `kaddy-portal` backend code fixes are deterministic + authorable
+  (cross-repo), but the GSK redeploy + serve-proof needs live cluster writes (block #2) — deferred.
+
+**Decision (decide-and-log):** delivered the one story that needs no live writes / no push to prove
+(E14-S01), and **did not** sink effort into offline scaffolding whose live payoff is authorization-blocked.
+To finish the rest: (1) authorize `git push origin main`; (2) authorize live gridscale/GSK writes.
+Revert E14-S01 if unwanted: `git branch -D lane/e14-s01-nix-golden` (nothing pushed).
+
+## 🟡 2026-07-18 — LIVE GSK SUBSTRATE IS STANDING + BILLING (operator: KEEP STANDING)
+
+> **Reaffirmed 2026-07-19 via `/open-questions`:** operator chose **KEEP STANDING** after v0.5.0
+> shipped. Meter continues (~€0.16/hr); tear down with `task e1g:down` when the demo recording is
+> captured. Logged under D-041 in `decisions.md`. Kept here as the live-cost reminder, no longer an
+> open decision.
 
 **A live gridscale GSK substrate was left UP and is billing by the hour.** The operator opted
 into a "standing demo" then pivoted to stories + handover, so it was NOT torn down.
@@ -97,9 +193,7 @@ Do **not** hold.
 
 ## Operator tasks
 
-- [ ] **Follow-up (backlog):** DOC-10 roadmap-status guard doesn't assert release-provenance — 'E9 shipped in v0.1.1' (false) passed it. Extend `tests/meta/doc10-roadmap-status.yaml` to check an epic's commits are ancestors of the claimed tag. (retro-2026-07-16-eve)
-
-- [ ] **Phase 2 STARTED** (operator asked 2026-07-16 eve) — E1g→E6g→E8b; author IaC offline first; live gridscale provisioning PERMITTED but RUTHLESSLY cost-sensitive — smallest footprint, no parallel/idle resources, `tofu destroy` after every test (full lab ~€115/mo if left up). See memory `handover-2026-07-16-eve`.
+- [ ] **Follow-up (backlog) → QUEUED for `/agent-loop` (operator, 2026-07-19 via `/open-questions`):** DOC-10 roadmap-status guard doesn't assert release-provenance — 'E9 shipped in v0.1.1' (false) passed it. Extend `tests/meta/doc10-roadmap-status.yaml` to check an epic's commits are ancestors of the claimed tag. Pick up as a lane next agent-loop session. (retro-2026-07-16-eve)
 
 - [x] **Re-sync Argo apps `policies` + `workloads`** — DONE 2026-07-16 via D-036 land + sync.
       `policies`/`workloads`/`root` Synced+Healthy; mulligan NetPol×2 (+CNP); caddy-mvp NetPol×5 (+CNP).
@@ -307,3 +401,104 @@ supply-chain LGTM for E14-S03 when ready. The NixOS cloud-init boot-contract (E1
 this session live-proved cloud-init user_data DOES work on gridscale (E6g), so a NixOS image with
 `services.cloud-init` + the right datasource should boot+serve — and a NixOS VM serve-check on :80 is
 reachable from here (unlike the GSK API :6443). See ADR-0303 / ROADMAP E14.
+
+---
+
+## Loop (2026-07-18, background session) — LIVE demo URLs achieved 🎉
+
+**Three live public HTTPS URLs, real Let's Encrypt prod certs, HTTP 200 (trusted chain):**
+- <https://argocd.lab.platformrelay.dev> — Argo CD (GitOps UI)
+- <https://grafana.lab.platformrelay.dev> — Grafana (Prometheus data, anonymous read-only Viewer)
+- <https://demo.lab.platformrelay.dev> — Kaddy/Caddy demo app
+
+Evidence + full recipe: `evidence/live/e1g-cloud-edge-live-2026-07-18.md`.
+
+🔴 **DECIDED — D-042 — cloud-edge controller pivot Cilium→Traefik (operator-chosen).**
+   Context: GSK's managed Cilium v1.15.1 (kube-proxy-replacement=false, no cilium-operator) CANNOT
+   serve Gateway API, so the committed `gatewayClassName: cilium` edge is dead on GSK. Options:
+   HAProxy-Unified-Gateway (operator preference, but new/unproven cert-manager compat) / Traefik v3
+   (proven, lightest) / Envoy Gateway (heavy, needs K8s-1.30 pinning). Operator chose **Traefik** via
+   AskUserQuestion (reliability for a recorded demo). Also decided: node pool **2×(2c/4Gi)**;
+   hostnames **`*.lab.platformrelay.dev`**. Revert: `helm uninstall traefik cert-manager monitoring -n <ns>`
+   + `task e1g:down`.
+🟢 **Live findings that simplify the backlog:** GSK HAS a service-LoadBalancer CCM (auto public IP
+   185.241.34.187) → **S05c/S05d collapse** (no manual NodePort/LBaaS wiring). GSK nodes are publicly
+   reachable (S05h = accepted risk). Traefik 3.7.6 needs Gateway API **v1 TLSRoute**, but v1.5.1 CRDs
+   reject on GSK's k8s 1.30 (`isIP` CEL is 1.31+) → strip the `isIP`/`isCIDR`/`isURL` CEL rules, apply.
+
+**Operator tasks / coordination:**
+- ⚠️ **Git**: shared checkout was in DETACHED HEAD with a concurrent session integrating+pushing to
+  main. This session stayed OFF git (live-cluster work only). GitOps codification of the working edge
+  + a prominent README LINKS section is being authored on a lane branch (off origin/main) by a
+  worktree subagent — merge it once the concurrent session settles.
+- Push to `main` is classifier-blocked for this session — enable a `git push origin main` allow-rule
+  (or authorize explicitly) to let lanes land on main.
+- Meter is running (standing demo, per operator). Stop: `task e1g:down` (+ delete CCM loadbalancer +
+  node pool). Cluster `e2ac442d-...`, LB IP 185.241.34.187.
+
+**Remaining toward "finished":** GitOps codification (in flight) · deploy full caddy-mvp (Rollouts)
++ remaining workloads via app-of-apps · integrate S05h/S05f/S06 lanes · audit findings (audit still
+running in another session).
+
+### Codification lane READY TO MERGE (2026-07-18)
+
+`worktree-agent-a3db0a79ee44eccf4` @ `1378faf` (pushed to origin) — GitOps codification of the live
+cloud-edge: Traefik App, `deploy/gateway/cloud-only/` + `deploy/cert-manager/cloud-only/`, `hack/gsk/`
+scripts, README "Live demo" section, S05b/e/f/g ticked (S05c/d COLLAPSED). Independent review = **APPROVE
+(no P0/P1)**; two P2s (G1 kind-guard on the CRD script, G2 AppProject-before-App in edge-up) FIXED in
+1378faf. Gates green, gitleaks clean, no token literals, kind path unchanged.
+
+**To land (operator / the session that owns main — this bg session's push to main is classifier-blocked):**
+`git fetch && git checkout main && git merge --ff-only 1378faf` (rebase onto main first if diverged),
+re-run `task verify`, `git push origin main`. Also mergeable: S05h lane `worktree-agent-a14ea3455300814f4`
+(security spike, APPROVE-equivalent, gates green).
+
+**Not yet codified (incremental follow-ups):** the demo *backends* (the `caddy-demo` Deployment/Service
++ Grafana cloud `root_url`/anonymous-viewer values — the lane covered the edge only); a controlled
+live-verify of the ArgoCD App-form sync (live proof used imperative helm/kubectl). Audit findings pending
+(audit running in another session).
+
+### Integrated to main (2026-07-18) — main @ fcd4f18
+
+Landed via integration worktree (operator enabled `git push origin main`):
+- **E1g-S06** (cost-governance doc-truth + `tests/meta/e1g-standing-policy.yaml`) — 11e0c9e.
+- **Codification lane** (Traefik GitOps app, `deploy/gateway/cloud-only/` + `deploy/cert-manager/cloud-only/`,
+  `hack/gsk/` scripts, README "Live demo" section, evidence) — 957799e + G1/G2 hardening fcd4f18.
+  `task verify` EXIT 0 on the rebased head. Pushed `3092429..fcd4f18`.
+- S05a already on main (ancestor). tasks.md rebase conflict (S06 vs codification ticks) resolved (kept both).
+
+**Still to integrate:** S05h security spike (`worktree-agent-a14ea3455300814f4` @ c22f28a — independent review
+in flight) + the caddy-mvp cloud overlay lane (in flight). Both merge to main once reviewed.
+
+### ALL cloud-edge lanes landed on main (2026-07-18) — origin/main @ 63be77e
+
+Backlog exhausted for the gridscale cloud-edge. Landed + independently reviewed (APPROVE, 0 P0/P1) +
+`task verify` EXIT 0 at each integration step:
+- E1g-S05a (bootstrap GSK opt-in) · S06 (cost-governance doc-truth + guard) · codification lane
+  (Traefik GitOps app + cloud-only overlays + hack/gsk + README "Live demo") · S05h (node public-IP
+  accepted-risk spike) · S05i (full caddy-mvp Rollouts canary cloud overlay + amd64 plugin override).
+- S05c/S05d COLLAPSED (GSK LoadBalancer CCM). S05b/S05e/S05f/S05g LIVE-PROVEN + codified.
+
+**Demo LIVE (recordable):** argocd / grafana / caddy / demo `.lab.platformrelay.dev` — all HTTP 200,
+LE prod certs. **Audit (2026-07-18) worked:** READY (0 P0/P1); WIP-D1/WIP-S1 remediated (S06/S05h);
+remaining P2/P3 all accept/blocked/advisory (no defect).
+
+**Follow-ups (not blockers):** E1g-S07 (cost-visibility `task e1g:status` + soft time-box WARN — now
+unblocked by S06; the cluster is standing/billing so this is worth doing next). Optionally cut a
+release (operator enabled git-cliff/tag tooling) once main CI is confirmed green. The local main
+checkout is on a detached HEAD with pre-existing uncommitted docs/agent-context changes (concurrent
+session) — origin/main @ 63be77e is the source of truth; reconcile the local checkout when convenient.
+
+### 🔴 DECIDED — RELEASED v0.5.0 (2026-07-18)
+
+<https://github.com/PlatformRelay/Kaddy/releases/tag/v0.5.0> — gridscale cloud-edge LIVE
+(Traefik Gateway-API + LE certs; argocd/grafana/caddy-mvp/demo public URLs). Natural release
+point: phase-2 cloud-edge milestone landed, main CI green. Scope: E1g-S05a–i + S06 (all
+independently reviewed, 0 P0/P1). Minor bump v0.4.1→v0.5.0. Revert:
+`git push origin :refs/tags/v0.5.0` + delete the GitHub release + `git revert f087540`.
+
+**Branches:** all open-branch CONTENT merged to main (origin/main @ f087540); local lane
+branches + agent worktrees removed. Remote lane branches (origin/gsk-cloud-edge,
+lane/e1g-s06-standing-policy, worktree-agent-a3db0a79…, -a6c1d2a1…) left in place — their
+content is fully on main; delete at will with `git push origin --delete <branch>` (was
+classifier-blocked here as out-of-scope).
