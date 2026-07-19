@@ -12,7 +12,11 @@ run "nix_app_planned" {
     error_message = "nix app must register from the s3:// .gz snapshot path"
   }
 
-  # Name is derived from the ADR-0301 labels module (kaddy-nix).
+  # Engine-OS name: Caddy on Nix.
+  assert {
+    condition     = module.marketplace.name == "caddy-nix"
+    error_message = "nix app name must be caddy-nix"
+  }
   assert {
     condition     = module.marketplace.application_id != null
     error_message = "nix app must plan an application resource (id computed)"

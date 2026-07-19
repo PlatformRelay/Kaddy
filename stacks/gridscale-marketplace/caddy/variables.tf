@@ -7,7 +7,7 @@
 variable "object_storage_path" {
   description = "s3:// .gz path of the exported Caddy golden-image snapshot (E13-S01 output)."
   type        = string
-  default     = "s3://kaddy-images/caddy-golden.gz"
+  default     = "s3://kaddy-tfstate/marketplace/caddy-golden.gz"
 
   validation {
     condition     = can(regex("^s3://.+\\.gz$", var.object_storage_path))

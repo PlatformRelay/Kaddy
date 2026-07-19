@@ -9,9 +9,12 @@
 module "marketplace" {
   source = "../../../modules/marketplace-template"
 
-  name                = module.labels.name
+  # Named by engine-OS ("caddy" = the web server, "ubuntu" = the Packer base) so
+  # the tenant Marketplace reads caddy-ubuntu / caddy-nix, not the kaddy-<label> form.
+  name                = "caddy-ubuntu"
   object_storage_path = var.object_storage_path
   category            = "Adminpanel" # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
+  icon_path           = "${path.module}/caddy-512.png" # Caddy logo (Simple Icons, CC0)
 
   meta_os         = "Ubuntu 24.04"
   meta_components = ["Caddy", "Prometheus /metrics endpoint", "sample landing page"]

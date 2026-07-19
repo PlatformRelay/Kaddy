@@ -8,11 +8,15 @@ run "caddy_app_planned" {
   command = plan
 
   assert {
-    condition     = module.marketplace.object_storage_path == "s3://kaddy-images/caddy-golden.gz"
+    condition     = module.marketplace.object_storage_path == "s3://kaddy-tfstate/marketplace/caddy-golden.gz"
     error_message = "caddy app must register from the s3:// .gz snapshot path"
   }
 
-  # Name is derived from the ADR-0301 labels module (kaddy-market-caddy).
+  # Engine-OS name: Caddy on Ubuntu.
+  assert {
+    condition     = module.marketplace.name == "caddy-ubuntu"
+    error_message = "caddy app name must be caddy-ubuntu"
+  }
   assert {
     condition     = module.marketplace.application_id != null
     error_message = "caddy app must plan an application resource (id computed)"
@@ -23,7 +27,7 @@ run "rejects_bad_path" {
   command = plan
 
   variables {
-    object_storage_path = "s3://kaddy-images/caddy.tar" # not .gz
+    object_storage_path = "s3://kaddy-tfstate/marketplace/caddy.tar" # not .gz
   }
 
   expect_failures = [
