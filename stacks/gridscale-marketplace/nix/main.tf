@@ -14,7 +14,7 @@ module "marketplace" {
   # tenant Marketplace reads caddy-ubuntu / caddy-nix, not the kaddy-<label> form.
   name                = "caddy-nix"
   object_storage_path = var.object_storage_path
-  category            = "Adminpanel" # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
+  category            = "Adminpanel"                   # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
   icon_path           = "${path.module}/nixos-512.png" # NixOS snowflake (Simple Icons, CC0)
 
   meta_os         = "NixOS 24.11"
