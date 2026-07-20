@@ -10,9 +10,16 @@
 #      community plugin reads sync/health/history.
 #   4. Egress to Dex :5556 (namespace identity) — OIDC discovery + token
 #      exchange (ADR-0107). Port-scoped, identity ns only — NOT a world allow.
-#   5. Ingress: the clubhouse Gateway (Envoy) -> backstage :7007 (CNP; the
-#      Envoy proxy carries the reserved `ingress` identity, not selectable by a
-#      K8s NetworkPolicy peer — pattern: identity/allow-gateway-to-dex).
+#   5. Ingress (kind): clubhouse Gateway (Envoy/Cilium) -> backstage :7007 via
+#      CNP fromEntities:[ingress] (reserved identity; not a K8s NetPol peer).
+#   6. Ingress (GSK): Traefik (ns traefik) -> backstage :7007 via NetPol
+#      allow-traefik-to-backstage + CNP fromEndpoints (cloud edge is Traefik;
+#      fromEntities ingress alone misses it — live-proven 2026-07-20).
+#
+# LABEL SELECTOR: live Backstage pods carry `app=backstage` (not
+# `app.kubernetes.io/name=backstage`). matchLabels is AND — selecting both keys
+# would miss the live pod. Chart path must set the same via values.yaml
+# `backstage.podLabels.app: backstage` so Helm deploys stay selectable.
 #
 # TODO(live, F2): values.yaml enables metrics.serviceMonitor, so at the live
 # bring-up add an ingress allow for Prometheus (ns monitoring) -> backstage
@@ -114,7 +121,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: backstage
+      app: backstage
   policyTypes:
     - Egress
   egress:
@@ -145,7 +152,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: backstage
+      app: backstage
   policyTypes:
     - Egress
   egress:
@@ -186,7 +193,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: backstage
+      app: backstage
   policyTypes:
     - Egress
   egress:
@@ -201,10 +208,46 @@ spec:
         - protocol: TCP
           port: 5556
 ---
-# Cilium-specific: admit clubhouse Gateway (Envoy) traffic to backstage :7007.
-# The Envoy proxy carries the reserved `ingress` entity identity — not
-# selectable by a K8s NetworkPolicy peer, so this must be a CNP (pattern:
-# identity/allow-gateway-to-dex).
+# GSK cloud-edge: Traefik (ns traefik) -> backstage :7007.
+# Live-proven 2026-07-20 — without this, default-deny + CNP-only-ingress entity
+# times out portal.lab HTTPS even when DNS and the HTTPRoute are correct.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-backstage
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-traefik-to-backstage
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S01-01
+spec:
+  podSelector:
+    matchLabels:
+      app: backstage
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 7007
+---
+# Cilium: admit Gateway traffic to backstage :7007.
+# - fromEntities:[ingress] — kind clubhouse (Cilium Gateway / Envoy reserved identity)
+# - fromEndpoints traefik ns — GSK clubhouse (Traefik Gateway API controller)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -227,10 +270,17 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/name: backstage
+      app: backstage
   ingress:
     - fromEntities:
         - ingress
+      toPorts:
+        - ports:
+            - port: "7007"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: traefik
       toPorts:
         - ports:
             - port: "7007"

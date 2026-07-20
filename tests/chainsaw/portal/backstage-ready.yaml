@@ -38,6 +38,6 @@ spec:
               metadata:
                 namespace: portal
                 labels:
-                  app.kubernetes.io/name: backstage
+                  app: backstage
               status:
                 phase: Running

@@ -87,4 +87,34 @@ if grep -qE 'cidr:[[:space:]]*0\.0\.0\.0/0' "${NETPOL}" \
 fi
 ok "netpol default-deny + egress scoped to kube-apiserver + argocd-server"
 
+# --- 5) live GSK label + Traefik peer (portal.lab 2026-07-20) -----------------
+# Live Backstage pods carry `app=backstage` only — selectors that require
+# `app.kubernetes.io/name=backstage` never match, so default-deny alone wins.
+# Cloud edge is Traefik (ns traefik), not Cilium `ingress` entity alone.
+#
+# Assert the LIVE-WORKING shape: pod/endpoint selectors use `app: backstage`,
+# a Traefik->backstage NetworkPolicy exists, and the CNP also admits Traefik
+# via fromEndpoints (while keeping fromEntities ingress for kind).
+if grep -qE 'app\.kubernetes\.io/name:[[:space:]]*backstage' "${NETPOL}"; then
+  # Chart-style label may appear in metadata/comments; forbid it as a
+  # podSelector/endpointSelector matchLabels value that would miss live pods.
+  if grep -E 'podSelector:|endpointSelector:' -A6 "${NETPOL}" \
+       | grep -qE 'app\.kubernetes\.io/name:[[:space:]]*backstage'; then
+    fail "netpol/CNP must not select pods via app.kubernetes.io/name=backstage (live label is app=backstage)"
+  fi
+fi
+grep -qE '^[[:space:]]*app:[[:space:]]*backstage[[:space:]]*$' "${NETPOL}" \
+  || fail "netpol/CNP must select Backstage via app: backstage (live Deployment label)"
+grep -qE 'name:[[:space:]]*allow-traefik-to-backstage' "${NETPOL}" \
+  || fail "netpol must define allow-traefik-to-backstage (GSK Traefik -> :7007)"
+grep -qE 'kubernetes\.io/metadata\.name:[[:space:]]*traefik' "${NETPOL}" \
+  || fail "allow-traefik-to-backstage must peer to namespace traefik"
+grep -qE 'fromEndpoints:' "${NETPOL}" \
+  || fail "CNP allow-gateway-to-backstage must include fromEndpoints (Traefik); fromEntities ingress alone misses GSK"
+grep -qE 'k8s:io\.kubernetes\.pod\.namespace:[[:space:]]*traefik' "${NETPOL}" \
+  || fail "CNP fromEndpoints must select k8s:io.kubernetes.pod.namespace: traefik"
+grep -qE 'fromEntities:' "${NETPOL}" \
+  || fail "CNP must keep fromEntities ingress for kind Cilium Gateway"
+ok "netpol selects app=backstage + Traefik peer (NetPol + CNP fromEndpoints)"
+
 echo "PASS: read-path-rbac — portal read path is read-only + network-scoped (D-029)"

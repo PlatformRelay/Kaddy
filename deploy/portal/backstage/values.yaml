@@ -33,6 +33,13 @@ backstage:
 
   command: ['node', 'packages/backend']
 
+  # Live Deployment pods are labeled `app=backstage` — portal NetworkPolicies /
+  # CNPs select that key (see rbac/networkpolicy.yaml). Set it explicitly so a
+  # future Helm chart install stays reachable under default-deny; do NOT rely
+  # solely on app.kubernetes.io/name (live pods may omit it).
+  podLabels:
+    app: backstage
+
   extraEnvVarsSecrets:
     - backstage-oidc
     - backstage-github
