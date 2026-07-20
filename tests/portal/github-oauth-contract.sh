@@ -45,8 +45,6 @@ if command -v tofu >/dev/null; then
     cd "${ROOT}/stacks/github/portal-oauth"
     tofu init -backend=false -input=false >/dev/null
     tofu validate
-    # Outputs must not mention localhost as callback
-    out="$(tofu console -input=false <<<"local.oauth_callback_url" 2>/dev/null || true)"
   ) || fail "tofu validate failed"
   ok "tofu validate stacks/github/portal-oauth"
 else

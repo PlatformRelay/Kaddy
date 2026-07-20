@@ -16,12 +16,14 @@ ROOT="$(cd "${DIR}/../.." && pwd)"
 
 OVERRIDE="${ROOT}/deploy/portal/backstage/gsk/app-config-override.yaml"
 NETPOL="${ROOT}/deploy/portal/backstage/rbac/networkpolicy.yaml"
+ENV_CONTRACT="${ROOT}/deploy/portal/backstage/gsk/deployment-env.yaml"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "OK: $*"; }
 
 [[ -f "${OVERRIDE}" ]] || fail "missing ${OVERRIDE} (GSK lab Backstage ConfigMap)"
 [[ -f "${NETPOL}" ]]   || fail "missing ${NETPOL}"
+[[ -f "${ENV_CONTRACT}" ]] || fail "missing ${ENV_CONTRACT} (GSK Deployment env contract)"
 
 # --- 1) ConfigMap mounts as backstage-override (live Deployment volume) ------
 grep -qE 'kind:[[:space:]]*ConfigMap' "${OVERRIDE}" \
@@ -79,6 +81,13 @@ fi
 printf '%s\n' "${payload_nocomment}" | grep -qiE 'guest:[[:space:]]*null' \
   || fail "GSK lab override must set guest: null to delete base image guest provider"
 ok "GSK lab override disables guest (guest: null; no guest: {})"
+
+# --- 4a) Deployment env contract requires NODE_ENV=production ----------------
+# ConfigMap guest:null alone is not enough — kaddy-portal loads the guest
+# backend module whenever NODE_ENV !== production.
+grep -qF 'NODE_ENV=production' "${ENV_CONTRACT}" \
+  || fail "deployment-env.yaml must require NODE_ENV=production (guest module unload)"
+ok "GSK Deployment env contract pins NODE_ENV=production"
 
 # --- 4b) GitHub auth ONLY on GSK (no Dex OIDC — identity ns not on GSK) ------
 # Operator ASAP: portal.lab GitHub login only. Dex is unwired on GSK; do not
