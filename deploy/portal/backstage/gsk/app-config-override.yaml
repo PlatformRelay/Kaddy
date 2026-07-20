@@ -52,6 +52,21 @@ data:
   app-config.override.yaml: |
     app:
       baseUrl: https://portal.lab.platformrelay.dev
+      extensions:
+        # Full array — Backstage config merge REPLACES arrays, so this must
+        # include the base entries too. page:catalog keeps catalog as the root
+        # page (mirrors the baked base app-config.yaml).
+        - page:catalog:
+            config:
+              path: /
+        # Disable the default guest sign-in page; the image compiles the GitHub
+        # page at sign-in-page:app/github (kaddy-portal
+        # packages/app/src/modules/signin) and requires the default to be
+        # config-disabled (see that module's comment). The baked
+        # app-config.production.yaml does this, but the live --config chain
+        # does NOT load it — without this line BOTH sign-in-page extensions
+        # attach, frontend createApp throws, and portal.lab white-screens.
+        - sign-in-page:app: false
     backend:
       baseUrl: https://portal.lab.platformrelay.dev
       listen: ':7007'

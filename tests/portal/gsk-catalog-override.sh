@@ -164,6 +164,40 @@ printf '%s\n' "${last_config}" | grep -q '/cfg/app-config\.override\.yaml' \
   || fail "CONFIG_ORDER must list /cfg/app-config.override.yaml as the LAST --config (else the baked dangerous resolver wins)"
 ok "env contract pins GSK override as the LAST --config (resolver array replacement)"
 
+# --- 4f) app.extensions must disable the default guest sign-in page ----------
+# WHITE-SCREEN root cause (live, 2026-07-20): the image compiles a GitHub
+# sign-in page as extension `sign-in-page:app/github` whose module REQUIRES the
+# default guest page `sign-in-page:app` to be config-disabled. The baked
+# app-config.production.yaml does that, but the live args do NOT load it — the
+# override is the only mutable config in the chain, so it must carry the
+# disable itself. Backstage config merge REPLACES arrays, so the override's
+# app.extensions must ALSO restate the base entries (page:catalog) or the
+# catalog root page is lost.
+printf '%s\n' "${payload_nocomment}" | grep -qE '^[[:space:]]*extensions:' \
+  || fail "override must set app.extensions (production.yaml is not in the live --config chain)"
+printf '%s\n' "${payload_nocomment}" | grep -qE 'sign-in-page:app[[:space:]]*:[[:space:]]*false' \
+  || fail "override app.extensions must disable the default guest sign-in page (sign-in-page:app: false) — else two sign-in pages attach and the frontend white-screens"
+printf '%s\n' "${payload_nocomment}" | grep -qE 'page:catalog' \
+  || fail "override app.extensions must restate page:catalog (array REPLACEMENT drops base entries otherwise)"
+ok "override app.extensions disables default sign-in page and keeps page:catalog"
+
+# --- 4g) env contract documents the ACTUAL live --config chain ---------------
+# The live Deployment loads ONLY app-config.yaml + /cfg/app-config.override.yaml.
+# app-config.production.yaml is NOT loaded — the contract must not imply it is,
+# and the override must therefore be self-sufficient (auth AND app.extensions).
+# Inspect only the --config tokens (trailing prose may legitimately mention
+# production.yaml when explaining it is NOT loaded).
+config_order_line="$(grep -E 'CONFIG_ORDER=' "${ENV_CONTRACT}")"
+config_tokens="$(printf '%s\n' "${config_order_line}" | grep -oE -- '--config[[:space:]]+[^ ]+')"
+if printf '%s\n' "${config_tokens}" | grep -q 'app-config\.production\.yaml'; then
+  fail "CONFIG_ORDER must not list app-config.production.yaml as a --config (the live args do NOT load it; the override must be self-sufficient)"
+fi
+[[ "$(printf '%s\n' "${config_tokens}" | wc -l | tr -d ' ')" == "2" ]] \
+  || fail "CONFIG_ORDER must document exactly the two live --config files (app-config.yaml + /cfg/app-config.override.yaml)"
+printf '%s\n' "${config_tokens}" | head -1 | grep -qE 'app-config\.yaml$' \
+  || fail "CONFIG_ORDER first --config must be app-config.yaml (baked base)"
+ok "env contract pins the actual live --config chain (no production.yaml; override self-sufficient)"
+
 # --- 5) NetPol allows HTTPS egress for register + scaffolder -----------------
 # Register Existing Component only accepts type=url and fetches raw GitHub;
 # scaffolder publishPhase talks to api.github.com. Port-scoped :443 (same
