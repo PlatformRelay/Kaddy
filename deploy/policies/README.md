@@ -102,7 +102,7 @@ keep the live paths working:
 | Namespace | Deny | Allows |
 | --- | --- | --- |
 | `gateway` | ingress + egress | Cilium Gateway (Envoy) → clubhouse `:8080` (CNP, `ingress` entity); Prometheus (monitoring) → `:8080`; DNS egress → kube-system `:53`; smoke-probe pods (`run` label) → edge + clubhouse hairpin (CNP, below) |
-| `monitoring` | ingress | intra-namespace mesh (Grafana→Prometheus/Loki, Alloy→Loki, Prometheus→Alertmanager); kube-apiserver → operator webhook `:10250` (CNP); egress open (cluster-wide scrapes) |
+| `monitoring` | ingress | intra-namespace mesh (Grafana→Prometheus/Loki, Alloy→Loki, Prometheus→Alertmanager); kube-apiserver → operator webhook `:10250` (CNP); Traefik (ns traefik) → Grafana `:3000` (HTTPRoute grafana.lab); egress open (cluster-wide scrapes) |
 | `argocd` | ingress | upstream per-component policies remain the allow-list (argocd-server's allow-all keeps the Gateway path working); Prometheus → metrics ports; egress open (Git/Helm pulls) |
 | `identity` | ingress + egress | Cilium Gateway (Envoy) → dex `:5556` (CNP, `ingress` entity — carries both browser and argocd-server OIDC traffic via the 30443 listener); argocd ns → dex `:5556` (defense-in-depth); DNS egress; dex → GitHub OAuth `:443` (world, port-scoped — toFQDNs tightening is an E10 follow-up) |
 

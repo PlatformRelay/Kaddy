@@ -1,5 +1,5 @@
 # E1c default-deny baseline — `monitoring` namespace (SEC-6 / security
-# review P1-1). AUTHORED, NOT YET APPLIED — see deploy/policies/README.md.
+# review P1-1). LIVE — see deploy/policies/README.md.
 #
 # The monitoring namespace runs kube-prometheus-stack (Prometheus,
 # Alertmanager, Grafana, operator, kube-state-metrics, node-exporter), Loki

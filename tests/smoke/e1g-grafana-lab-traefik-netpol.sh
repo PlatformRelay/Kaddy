@@ -10,9 +10,10 @@
 # Asserts (no cluster, no API):
 #   1. deploy/policies/network/monitoring.yaml defines allow-traefik-to-grafana
 #      (K8s NetworkPolicy + CiliumNetworkPolicy).
-#   2. NetPol peers namespace traefik and port 3000.
-#   3. CNP fromEndpoints selects traefik ns and port 3000.
-#   4. Cloud HTTPRoute still targets monitoring-grafana :80 / grafana.lab host.
+#   2. NetPol/CNP select Grafana pods (app.kubernetes.io/name=grafana).
+#   3. NetPol peers namespace traefik and port 3000.
+#   4. CNP fromEndpoints selects traefik ns and port 3000.
+#   5. Cloud HTTPRoute still targets monitoring-grafana :80 / grafana.lab host.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,53 +33,55 @@ need_file "${ROUTES}"
 grep -qE 'name:[[:space:]]*allow-traefik-to-grafana' "${NETPOL}" \
   || fail "monitoring.yaml must define allow-traefik-to-grafana (GSK Traefik → Grafana :3000)"
 
-# K8s NetworkPolicy: peer ns traefik + port 3000
+# K8s NetworkPolicy: podSelector grafana + peer ns traefik + port 3000
 awk '
   /^kind:[[:space:]]*NetworkPolicy$/ { in_np=1; name=""; next }
   in_np && /^[[:space:]]*name:[[:space:]]*/ && name=="" { name=$2 }
+  in_np && name=="allow-traefik-to-grafana" && /app\.kubernetes\.io\/name:[[:space:]]*grafana/ { sel=1 }
   in_np && name=="allow-traefik-to-grafana" && /kubernetes\.io\/metadata\.name:[[:space:]]*traefik/ { peer=1 }
   in_np && name=="allow-traefik-to-grafana" && /port:[[:space:]]*3000/ { port=1 }
   in_np && /^---$/ {
-    if (name=="allow-traefik-to-grafana") { found=1; if (!peer||!port) exit 2 }
-    in_np=0; name=""; peer=0; port=0
+    if (name=="allow-traefik-to-grafana") { found=1; if (!sel||!peer||!port) exit 2 }
+    in_np=0; name=""; sel=0; peer=0; port=0
   }
   END {
-    if (name=="allow-traefik-to-grafana") { found=1; if (!peer||!port) exit 2 }
+    if (name=="allow-traefik-to-grafana") { found=1; if (!sel||!peer||!port) exit 2 }
     if (!found) exit 3
   }
 ' "${NETPOL}" || {
   rc=$?
   case ${rc} in
-    2) fail "allow-traefik-to-grafana NetworkPolicy must peer traefik ns and port 3000" ;;
+    2) fail "allow-traefik-to-grafana NetworkPolicy must select grafana pods, peer traefik ns, and port 3000" ;;
     3) fail "allow-traefik-to-grafana NetworkPolicy block not found" ;;
     *) fail "NetworkPolicy parse failed (rc=${rc})" ;;
   esac
 }
-ok "NetworkPolicy allow-traefik-to-grafana peers traefik :3000"
+ok "NetworkPolicy allow-traefik-to-grafana selects grafana, peers traefik :3000"
 
-# CiliumNetworkPolicy: fromEndpoints traefik + port 3000
+# CiliumNetworkPolicy: endpointSelector grafana + fromEndpoints traefik + port 3000
 awk '
   /^kind:[[:space:]]*CiliumNetworkPolicy$/ { in_c=1; name=""; next }
   in_c && /^[[:space:]]*name:[[:space:]]*/ && name=="" { name=$2 }
+  in_c && name=="allow-traefik-to-grafana" && /app\.kubernetes\.io\/name:[[:space:]]*grafana/ { sel=1 }
   in_c && name=="allow-traefik-to-grafana" && /k8s:io\.kubernetes\.pod\.namespace:[[:space:]]*traefik/ { peer=1 }
   in_c && name=="allow-traefik-to-grafana" && /port:[[:space:]]*"?3000"?/ { port=1 }
   in_c && /^---$/ {
-    if (name=="allow-traefik-to-grafana") { found=1; if (!peer||!port) exit 2 }
-    in_c=0; name=""; peer=0; port=0
+    if (name=="allow-traefik-to-grafana") { found=1; if (!sel||!peer||!port) exit 2 }
+    in_c=0; name=""; sel=0; peer=0; port=0
   }
   END {
-    if (name=="allow-traefik-to-grafana") { found=1; if (!peer||!port) exit 2 }
+    if (name=="allow-traefik-to-grafana") { found=1; if (!sel||!peer||!port) exit 2 }
     if (!found) exit 3
   }
 ' "${NETPOL}" || {
   rc=$?
   case ${rc} in
-    2) fail "allow-traefik-to-grafana CNP must fromEndpoints traefik and port 3000" ;;
+    2) fail "allow-traefik-to-grafana CNP must select grafana, fromEndpoints traefik, and port 3000" ;;
     3) fail "allow-traefik-to-grafana CiliumNetworkPolicy block not found" ;;
     *) fail "CNP parse failed (rc=${rc})" ;;
   esac
 }
-ok "CiliumNetworkPolicy allow-traefik-to-grafana fromEndpoints traefik :3000"
+ok "CiliumNetworkPolicy allow-traefik-to-grafana selects grafana, fromEndpoints traefik :3000"
 
 grep -q "${HOST}" "${ROUTES}" \
   || fail "httproutes.yaml missing hostname ${HOST}"
