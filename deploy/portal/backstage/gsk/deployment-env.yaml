@@ -1,0 +1,44 @@
+# REQ-E10-S05 / GSK lab — Backstage Deployment env invariants (documented patch).
+#
+# The live `Deployment/backstage` is still out-of-band (chart bring-up deferred;
+# see deploy/apps/portal.yaml). This file is the canonical env contract the live
+# Deployment MUST match so Argo/operators do not reintroduce guest login:
+#
+#   - NODE_ENV=production — kaddy-portal loads the guest auth module whenever
+#     NODE_ENV !== production (packages/backend/src/index.ts). ConfigMap
+#     `guest: null` alone is not enough.
+#   - AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET from Secret
+#     `backstage-github` (SOPS: deploy/secrets/portal/backstage-github.enc.yaml).
+#   - BACKEND_AUTH_SECRET from Secret `backstage-backend-auth` (already live).
+#
+# Apply with: kubectl -n portal patch deploy backstage --type strategic -p ...
+# (or re-apply the live Deployment with these env entries). NOT synced by the
+# directory App today (no kind:Deployment under deploy/portal) — selfHeal cannot
+# reclobber it; keep this file as the source of truth for the next chart cutover.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-gsk-env-contract
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: backstage-gsk-env-contract
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E10-S05-01
+data:
+  contract.txt: |
+    NODE_ENV=production
+    AUTH_GITHUB_CLIENT_ID <- secret/backstage-github:AUTH_GITHUB_CLIENT_ID
+    AUTH_GITHUB_CLIENT_SECRET <- secret/backstage-github:AUTH_GITHUB_CLIENT_SECRET
+    BACKEND_AUTH_SECRET <- secret/backstage-backend-auth:BACKEND_AUTH_SECRET
+    OAuth callback URL (GitHub OAuth App, ONE callback per app):
+      https://portal.lab.platformrelay.dev/api/auth/github/handler/frame

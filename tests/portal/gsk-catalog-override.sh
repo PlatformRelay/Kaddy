@@ -70,8 +70,8 @@ ok "override pins cwd-relative platform + Template catalog locations"
 # --- 4) guest MUST NOT be enabled (ADR-0107 / operator ASAP) -----------------
 # Base image app-config.yaml still carries guest for local NODE_ENV=development.
 # The GSK override must DELETE it via `guest: null` (Backstage config merge)
-# and must NOT enable `guest: {}`. Dex OIDC for portal.lab may still be unwired —
-# fail closed (no anonymous) beats guest; document the Dex blocker separately.
+# and must NOT enable `guest: {}`. Live Deployment must also run
+# NODE_ENV=production so the guest backend module is not loaded.
 payload_nocomment="$(printf '%s\n' "${payload}" | sed 's/#.*//')"
 if printf '%s\n' "${payload_nocomment}" | grep -qiE 'guest:[[:space:]]*\{\}'; then
   fail "GSK lab override must NOT enable guest: {} (anonymous portal.lab forbidden)"
@@ -79,6 +79,28 @@ fi
 printf '%s\n' "${payload_nocomment}" | grep -qiE 'guest:[[:space:]]*null' \
   || fail "GSK lab override must set guest: null to delete base image guest provider"
 ok "GSK lab override disables guest (guest: null; no guest: {})"
+
+# --- 4b) GitHub auth ONLY on GSK (no Dex OIDC — identity ns not on GSK) ------
+# Operator ASAP: portal.lab GitHub login only. Dex is unwired on GSK; do not
+# leave a misconfigured oidc provider that 404s /api/auth/oidc/start.
+printf '%s\n' "${payload_nocomment}" | grep -qiE 'signInPage:[[:space:]]*github' \
+  || fail "GSK override must set signInPage: github (not oidc/guest)"
+printf '%s\n' "${payload_nocomment}" | grep -qiE 'providers:' \
+  || fail "GSK override must declare auth.providers"
+# github.production.clientId/secret via env (never plaintext in git)
+printf '%s\n' "${payload}" | grep -qE 'AUTH_GITHUB_CLIENT_ID' \
+  || fail "GSK override github provider must reference \${AUTH_GITHUB_CLIENT_ID}"
+printf '%s\n' "${payload}" | grep -qE 'AUTH_GITHUB_CLIENT_SECRET' \
+  || fail "GSK override github provider must reference \${AUTH_GITHUB_CLIENT_SECRET}"
+printf '%s\n' "${payload_nocomment}" | grep -qiE 'github:' \
+  || fail "GSK override must enable auth.providers.github"
+# oidc must be deleted (null) or absent — not left as a broken empty provider
+if printf '%s\n' "${payload_nocomment}" | grep -qiE 'oidc:[[:space:]]*$|oidc:[[:space:]]*\{'; then
+  fail "GSK override must not leave a bare oidc provider (use oidc: null or omit)"
+fi
+printf '%s\n' "${payload_nocomment}" | grep -qiE 'oidc:[[:space:]]*null' \
+  || fail "GSK override must set oidc: null (Dex unwired on GSK; GitHub-only)"
+ok "GSK override is GitHub-only (signInPage github; AUTH_GITHUB_*; oidc/guest null)"
 
 # --- 5) NetPol allows HTTPS egress for register + scaffolder -----------------
 # Register Existing Component only accepts type=url and fetches raw GitHub;
@@ -102,4 +124,4 @@ awk '
   || fail "allow-https-egress must select app: backstage"
 ok "NetPol allow-https-egress selects backstage and allows :443"
 
-echo "PASS: gsk-catalog-override — locations preserved + portal.lab URL + HTTPS egress + guest disabled"
+echo "PASS: gsk-catalog-override — locations + portal.lab URL + HTTPS egress + GitHub-only (no guest)"

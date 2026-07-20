@@ -15,12 +15,13 @@
 # MUST pin cwd-relative `./catalog/...` and `./examples/...` paths so file
 # locations actually load under the GSK Deployment command.
 #
-# AUTH: guest DISABLED on GSK (operator ASAP / ADR-0107). The image's baked
-# app-config.yaml still enables guest for local development — this override MUST
-# set `guest: null` so Backstage config merge deletes that provider. Dex OIDC for
-# portal.lab is NOT wired yet (dex.platformrelay.dev unreachable; no Dex client
-# for portal.lab callback) — fail closed: signInPage oidc with no anonymous path.
-# Production target remains deploy/portal/backstage/app-config.yaml OIDC→Dex.
+# AUTH (operator ASAP): GitHub provider ONLY on GSK. Dex is not deployed on this
+# cluster (no identity ns / dex.platformrelay.dev unreachable from lab), so OIDC
+# must be deleted (`oidc: null`). Guest must be deleted (`guest: null`) AND the
+# Deployment must run NODE_ENV=production — the kaddy-portal image loads the
+# guest backend module whenever NODE_ENV !== production (config merge alone
+# cannot unload the module). Secrets: AUTH_GITHUB_* from Secret `backstage-github`
+# (env-expanded; never commit plaintext).
 #
 # Secrets: backend auth key is env-expanded from Deployment env
 # BACKEND_AUTH_SECRET (Secret `backstage-backend-auth` on the cluster — never
@@ -60,11 +61,22 @@ data:
         client: better-sqlite3
         connection: ':memory:'
     auth:
-      # Guest deleted via null (merge). Dex for portal.lab not wired — fail closed.
+      # GitHub-only on GSK. guest + oidc deleted via null (merge).
       environment: production
       providers:
         guest: null
-      signInPage: oidc
+        oidc: null
+        github:
+          production:
+            clientId: ${AUTH_GITHUB_CLIENT_ID}
+            clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+            signIn:
+              resolvers:
+                # Lab catalog may not list every org member — allow sign-in and
+                # synthesize a user entity when no catalog match exists.
+                - resolver: usernameMatchingUserEntityName
+                  dangerouslyAllowSignInWithoutUserInCatalog: true
+      signInPage: github
     kubernetes:
       serviceLocatorMethod:
         type: multiTenant
