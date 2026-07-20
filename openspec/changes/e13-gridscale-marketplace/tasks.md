@@ -58,5 +58,5 @@
       stack has `icon_path` → present PNG, ≤8-bit, distinct from module default kaddy logo
 - [x] Convert `caddy-512.png` / `nixos-512.png` from 16-bit RGBA → 8-bit RGB; add `nginx-512.png` +
       `icon_path` on the nginx stack
-- [ ] Live re-apply `meta_icon` for `caddy-ubuntu` / `caddy-nix` (+ nginx if registered); evidence
-      `evidence/live/e13-marketplace-icons-<date>.md`
+- [x] Live re-apply `meta_icon` for `caddy-ubuntu` / `caddy-nix` (+ nginx if registered); evidence
+      `evidence/live/e13-marketplace-icons-2026-07-20.md` (API PATCH 204; nginx not registered live)
