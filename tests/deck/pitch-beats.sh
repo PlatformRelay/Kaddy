@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# REQ-E12d-S02..S05 — content anchors for the five-minute spoken pitch and
+# its checkable honesty appendix.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+DECK="${ROOT}/slides/slides.md"
+fail() { echo "FAIL: $*" >&2; exit 1; }
+[ -f "${DECK}" ] || fail "slides/slides.md missing"
+grep -qF '<!-- APPENDIX -->' "${DECK}" || fail "no <!-- APPENDIX --> sentinel"
+
+MAIN="$(mktemp "${TMPDIR:-/tmp}/deck-pitch-main.XXXXXX")"
+APPX="$(mktemp "${TMPDIR:-/tmp}/deck-pitch-appx.XXXXXX")"
+trap 'rm -f "${MAIN}" "${APPX}"' EXIT
+sed '/<!-- APPENDIX -->/,$d' "${DECK}" > "${MAIN}"
+sed -n '/<!-- APPENDIX -->/,$p' "${DECK}" > "${APPX}"
+
+main_has() { grep -Eqi "$1" "${MAIN}" || fail "MAIN missing: $2"; }
+appx_has() { grep -Eqi "$1" "${APPX}" || fail "APPENDIX missing: $2"; }
+main_lacks() { grep -Eqi "$1" "${MAIN}" && fail "MAIN must not contain: $2" || true; }
+
+main_has 'Caddy.*Prometheus|Prometheus.*Caddy' "exercise opening"
+main_has 'platform engineer|built a platform' "platform framing"
+main_has 'provider-gridscale' "early provider contribution"
+main_has 'marketplace\.upbound\.io' "Marketplace link"
+main_has 'pull/(509|510|511)' "upstream PR links"
+main_has 'contribution|customer value|value' "positive contribution framing"
+main_has 'filed.*open|open.*review|not merged' "PR honesty"
+main_lacks 'D-042' "D-042 spoken arc"
+main_lacks 'Known cloud risk|GSK node public exposure' "cloud-exposure card"
+main_has 'teardown|time-boxed|cost' "cost-governance language"
+main_has 'Website (claim|intent)|Website intent' "Website input"
+main_has 'Composition' "composition"
+main_has 'HTTPRoute|ServiceMonitor' "concrete governed resource"
+main_has 'portal.*designed|designed.*portal' "portal design"
+main_has 'platform API|XRD' "portal API"
+main_lacks 'runtime remains open|not running yet' "stale portal runtime wording"
+main_has 'Prometheus|metrics' "delivery signal"
+main_has 'blue-green|canary' "delivery mode"
+main_has 'promote|rollback' "delivery outcome"
+main_has 'AI|assistant|agent' "AI working method"
+main_has 'OpenSpec|spec-to-test|REQ-|Verify:' "spec-to-test loop"
+
+appx_has 'Nix.*build|build.*Nix' "Nix build honesty"
+appx_has 'boot-to-serve.*(open|remain)|boot proof' "Nix boot gap"
+appx_has 'filed.*open|open.*not merged|filed.*not merged' "upstream PR honesty"
+appx_has 'Backstage.*(narrative|talk).*(proof|E10)|E10.*(proof|runtime)' "Backstage narrative/proof boundary"
+
+echo "OK: E12d pitch and honesty anchors are present"

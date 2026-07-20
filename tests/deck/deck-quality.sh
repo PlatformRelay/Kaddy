@@ -29,9 +29,11 @@ grep -qE '#slidev-goto-dialog[[:space:]]*\{' "${STYLE}" \
 grep -A3 -E '#slidev-goto-dialog[[:space:]]*\{' "${STYLE}" | grep -qE 'display:[[:space:]]*none' \
   || fail "go-to-slide picker must be hidden with display:none"
 
+# E12d's short spoken path may use fewer than the five available visual
+# dividers; deeper cover-led sections remain valid in the appendix.
 covers="$(grep -c '<CoverArt' "${MAIN}" || true)"
-[ "${covers}" -eq 5 ] \
-  || fail "main deck must contain exactly five meaningful CoverArt slides (found ${covers})"
+[ "${covers}" -ge 1 ] && [ "${covers}" -le 5 ] \
+  || fail "main deck must contain 1-5 CoverArt dividers (found ${covers})"
 
 EXPECTED_COVERS=(
   /covers/section-00-first-tee.png
@@ -55,8 +57,8 @@ PY
 }
 
 for cover in "${EXPECTED_COVERS[@]}"; do
-  [ "$(grep -cF "src=\"${cover}\"" "${MAIN}" || true)" -eq 1 ] \
-    || fail "expected cover path exactly once in main: ${cover}"
+  [ "$(grep -cF "src=\"${cover}\"" "${DECK}" || true)" -eq 1 ] \
+    || fail "expected cover path exactly once in deck: ${cover}"
   asset="${ROOT}/slides/public${cover}"
   [ -f "${asset}" ] || fail "referenced cover asset missing: ${asset}"
   read -r width height < <(png_dims "${asset}")
@@ -66,9 +68,9 @@ done
 
 # shellcheck source=tests/deck/lib.sh
 . "${ROOT}/tests/deck/lib.sh"
-main_slides="$(extract_notes "${MAIN}" | wc -l | tr -d ' ')"
-[ "${main_slides}" -ge 20 ] && [ "${main_slides}" -le 24 ] \
-  || fail "main deck must stay concise at 20-24 slides (found ${main_slides})"
+main_slides="$(extract_notes "${MAIN}" | awk '$2 == "content" { count++ } END { print count + 0 }')"
+[ "${main_slides}" -ge 8 ] && [ "${main_slides}" -le 12 ] \
+  || fail "main spoken path must contain 8-12 content slides (found ${main_slides})"
 
 if grep -Eq '✅|🧭|🚧|🚗|☸|❄' "${DECK}"; then
   fail "status and decorative emoji must use semantic icons/chips"

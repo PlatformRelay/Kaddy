@@ -15,8 +15,10 @@ GATES=(
   deck-quality.sh
   speaker-notes-coverage.sh
   script-wordcount.sh
+  spoken-path.sh
   iframe-surfaces.sh
   narrative-beats.sh
+  pitch-beats.sh
 )
 
 for g in "${GATES[@]}"; do

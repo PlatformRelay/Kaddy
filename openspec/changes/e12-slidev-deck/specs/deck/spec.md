@@ -54,15 +54,15 @@ tests/deck/speaker-notes-coverage.sh   # asserts note-block count == slide count
 **Then** it falls in a range consistent with the recorded walkthrough at ~130–150 wpm —
 not so short it is thin, not so long it overruns the window
 
-> **Reconciled by E12c-S01 (2026-07-17):** the operator raised the target to a **~15-minute main
-> deck plus a gate-exempt appendix**. The MAIN spoken-word sum is now **[1400, 2200]** and only counts
-> slides **before** the `<!-- APPENDIX -->` sentinel; appendix slides carry notes but are exempt. See
-> `openspec/changes/e12c-deck-docs-refresh/specs/deck/spec.md` REQ-E12c-S01-01/02.
+> **Reconciled by E12d-S01 (2026-07-20):** the stakeholder pitch supersedes E12c's longer narrative
+> budget. The MAIN spoken-word sum is **[450, 900]** and only counts slides before the
+> `<!-- APPENDIX -->` sentinel; appendix slides carry notes but are exempt. See
+> `openspec/changes/e12d-five-minute-pitch/specs/deck/spec.md` REQ-E12d-S01-01/02.
 **Test:** `tests/deck/script-wordcount.sh`
 **Verify:**
 
 ```bash
-tests/deck/script-wordcount.sh   # sums MAIN (pre-APPENDIX) note words; asserts 1400 <= total <= 2200 (E12c-S01)
+tests/deck/script-wordcount.sh   # sums MAIN (pre-APPENDIX) note words; asserts 450 <= total <= 900 (E12d-S01)
 ```
 
 ---

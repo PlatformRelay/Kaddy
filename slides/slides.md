@@ -17,7 +17,7 @@ mdc: true
 editor: false
 contextMenu: false
 beat: pitch
-sectionTime: 140
+sectionTime: 80
 ---
 
 <!-- markdownlint-disable MD025 MD041 MD033 MD024 MD013 MD036 MD001 MD003 MD022 MD023 -->
@@ -108,14 +108,14 @@ layout: default
       <li>Dex GitHub OIDC; dashboards-as-code</li>
       <li>Kyverno Enforce and default-deny baseline</li>
       <li>scorecard HTML generation and Pages workflow</li>
-      <li>two dated audits; public GSK HTTPS proofs</li>
+      <li>two dated audits; public GSK HTTPS showcase edge</li>
       <li>Packer serving proof; Nix image build</li>
     </ul>
   </div>
   <div class="kd-card kd-card-warn">
     <h3><KdIcon name="material-symbols:pending-actions-rounded" /> Still open</h3>
     <ul>
-      <li>Backstage runtime</li>
+      <li>Backstage public Gateway API route</li>
       <li>external Alertmanager receiver</li>
       <li>Loki ruler alert</li>
       <li>Nix boot-to-serve</li>
@@ -125,7 +125,7 @@ layout: default
 </div>
 
 <!--
-This is the status line I use for the rest of the walkthrough. The Website API, including its ephemeral gridscale VM proof, identity, dashboards, enforced policy, scorecard publishing, audits, cloud edge, Packer path, and Nix build are present at their documented scope. The open work is narrower: portal runtime, external alert delivery, Loki ruler, Nix boot, and upstream merges.
+This is the status line I use for the rest of the walkthrough. The Website API, including its ephemeral gridscale VM proof, identity, dashboards, enforced policy, scorecard publishing, audits, cloud edge, Packer path, and Nix build are present at their documented scope. The open work is narrower: the public portal route, external alert delivery, Loki ruler, Nix boot, and upstream merges.
 That separation matters because several artifacts are complete at one layer but not at the next. A committed configuration is not automatically a running service, an image build is not a successful boot, and an open pull request is not an upstream merge. I use those boundaries consistently.
 -->
 
@@ -164,17 +164,17 @@ layout: default
 
 <div class="kd-kicker">How I worked</div>
 
-# A spec-to-test loop I can replay
+# Built with AI, bounded by a spec-to-test loop
 
 <div class="kd-flow mt-7">
-  <div class="kd-step"><span>1</span><strong>Epic</strong><code>e5-monitoring-marshal</code></div>
-  <div class="kd-step"><span>2</span><strong>Plan</strong><code>proposal.md</code></div>
-  <div class="kd-step"><span>3</span><strong>Story</strong><code>tasks.md</code> + <code>REQ-…</code></div>
-  <div class="kd-step"><span>4</span><strong>Test</strong><code>promtool</code> + gate matrix</div>
+  <div class="kd-step"><span>1</span><strong>OpenSpec</strong><code>proposal.md</code></div>
+  <div class="kd-step"><span>2</span><strong>REQ</strong><code>Given / When / Then</code></div>
+  <div class="kd-step"><span>3</span><strong>Test</strong><code>Test:</code> + <code>Verify:</code></div>
+  <div class="kd-step"><span>4</span><strong>Review</strong><code>gate matrix</code></div>
 </div>
 
 <div class="kd-callout mt-8">
-  OpenSpec records intent; the named test demonstrates behavior; the gate keeps both connected.
+AI accelerates implementation; OpenSpec, tests, and review keep every claim checkable.
 </div>
 
 <div class="kd-small kd-muted mt-4">
@@ -182,15 +182,14 @@ layout: default
 </div>
 
 <!--
-I used the same loop for each meaningful change. The OpenSpec change folder names the epic. Proposal dot md explains scope and trade-offs. Tasks dot md and the requirement blocks define testable slices. The requirement names a concrete test and verify command, and the gate matrix checks that connection. I avoid putting a fast-changing requirement count on a slide.
-This gives a reviewer three useful entry points: the decision and scope, the expected behavior, and the executable proof. It also made course corrections safer, because a changed cloud assumption could be reflected in the spec and tests instead of being hidden in an ad hoc script.
+I built with AI, but not on trust alone. OpenSpec records the decision and the expected behavior; each requirement names a test and a verification command; review gates keep those pieces connected. That loop lets me move quickly while still giving a reviewer a small, reproducible path from intent to proof.
 -->
 
 ---
 layout: none
 title: Shared platform applications, different edges
 beat: architecture
-sectionTime: 170
+sectionTime: 110
 ---
 
 <CoverArt
@@ -201,98 +200,6 @@ sectionTime: 170
 
 <!--
 The architecture reuses the platform applications and manifests, while allowing each substrate to use the edge it can actually support.
--->
-
----
-layout: default
----
-
-<div class="kd-kicker">Architecture</div>
-
-# One GitOps platform, two edge implementations
-
-```mermaid {scale: 0.72}
-flowchart LR
-  Git["GitOps applications<br/>and shared manifests"] --> Argo["Argo CD"]
-  Argo --> Core["Identity · policy · observability<br/>tenants · delivery"]
-  Core --> Kind["local kind"]
-  Core --> GSK["gridscale GSK"]
-  Kind --> Cilium["Cilium Gateway API<br/>LB-IPAM / local TLS"]
-  GSK --> Traefik["Traefik v3 Gateway API<br/>gridscale LoadBalancer / public TLS"]
-```
-
-<div class="kd-grid kd-grid-2 mt-4">
-  <div class="kd-card"><strong>Shared</strong><span class="kd-muted">platform applications, workload intent, policy, observability, and GitOps operating model</span></div>
-  <div class="kd-card kd-card-warn"><strong>Different by design</strong><span class="kd-muted">edge controller, certificates, hostnames, and substrate-specific overlays</span></div>
-</div>
-
-<!--
-The reusable part is the platform: Argo CD applications, workload intent, identity, controls, observability, and delivery. The edges differ. Local kind uses Cilium Gateway API. GSK uses Traefik version three behind the gridscale LoadBalancer because the managed Cilium installation cannot serve Gateway API. Promotion therefore includes an intentional edge overlay, not a simple repoint.
-That distinction keeps portability honest. I can reuse a large part of the operating model without claiming byte-for-byte identity. Hostnames, certificate issuers, controller installation, and some architecture-specific rollout settings remain explicit. Those differences are reviewable GitOps artifacts rather than undocumented steps applied to the cloud cluster.
--->
-
----
-layout: default
----
-
-<div class="kd-kicker">Cloud learning</div>
-
-# D-042 changed the edge, not the platform goal
-
-<div class="kd-grid kd-grid-3 mt-6">
-  <div class="kd-card">
-    <span class="kd-chip"><KdIcon name="mdi:laptop" /> local</span>
-    <h3>Cilium</h3>
-    <p>Gateway API, LB-IPAM/L2, local certificates, <code>.kaddy.local</code>.</p>
-  </div>
-  <div class="kd-card kd-card-warn">
-    <span class="kd-chip kd-chip-warn"><KdIcon name="material-symbols:rule-settings-rounded" /> constraint</span>
-    <h3>Managed Cilium</h3>
-    <p>GSK’s managed installation lacks the operator capability needed to serve Gateway API.</p>
-  </div>
-  <div class="kd-card kd-card-accent">
-    <span class="kd-chip kd-chip-ok"><KdIcon name="mdi:cloud-check-outline" /> live proof</span>
-    <h3>Traefik v3</h3>
-    <p>Gateway API, gridscale LoadBalancer, DNS-01, and publicly trusted HTTPS.</p>
-  </div>
-</div>
-
-<div class="kd-callout mt-7">D-042 records the limitation and the GSK-specific Traefik choice.</div>
-
-<!--
-The first cloud deployment disproved an assumption in the early design. GSK does ship managed Cilium, but that installation cannot provide the Gateway API edge used locally. I recorded the constraint in D-zero-four-two and introduced a cloud-only Traefik controller and overlays. The platform contract stayed stable while the substrate integration changed based on evidence.
--->
-
----
-layout: default
----
-
-<div class="kd-kicker">GitOps control plane</div>
-
-# Shared applications, explicit cloud overlays
-
-<div class="kd-grid kd-grid-2 mt-5">
-  <div>
-    <div class="kd-card">
-      <h3><KdIcon name="mdi:source-branch-sync" /> Argo CD app-of-apps</h3>
-      <ul>
-        <li>root application discovers platform children</li>
-        <li>automated prune and self-heal</li>
-        <li>mandatory ownership and classification labels</li>
-        <li>cloud-only edge kept outside the local root</li>
-      </ul>
-    </div>
-  </div>
-  <div class="kd-surface">
-    <div class="kd-surface-label"><KdIcon name="mdi:application-brackets-outline" /> Live surface · Argo CD</div>
-    <iframe src="https://127.0.0.1:30443/applications" title="Argo CD applications" data-surface="argocd" data-surface-mode="live"></iframe>
-  </div>
-</div>
-
-<div class="kd-small kd-muted mt-4">The UI is supporting evidence; Git remains the source of truth.</div>
-
-<!--
-Argo CD is the common operating model. A root application discovers the platform children and reconciles them with prune and self-heal enabled. The GSK Traefik application is intentionally outside the local root so kind never installs a competing controller. This is shared GitOps with explicit substrate boundaries, rather than pretending every object is portable.
 -->
 
 ---
@@ -313,66 +220,46 @@ layout: default
   <div class="kd-node">ServiceMonitor</div>
 </div>
 
-<div class="kd-grid kd-grid-2 mt-7">
-  <div class="kd-card kd-card-ok"><strong>Landed</strong><span class="kd-muted">Website XRD, Composition, demo claim, route, TLS, and monitor at documented local scope</span></div>
-  <div class="kd-card kd-card-ok"><strong>Cloud proof</strong><span class="kd-muted">a gridscale variant provisioned a real nginx VM, served <code>/legacy</code>, <code>/healthz</code>, and <code>/metrics</code>, then cleaned up</span></div>
+<div class="kd-grid kd-grid-2 mt-5">
+  <div class="kd-card kd-card-ok"><strong>Simple request</strong><span class="kd-muted">a team declares a Website rather than assembling every resource by hand</span></div>
+  <div class="kd-card kd-card-ok"><strong>Governed output</strong><span class="kd-muted">delivery, TLS, monitoring, policy, and evidence are part of the composition</span></div>
 </div>
 
 <!--
-Crossplane provides the platform API. A namespaced Website claim is composed into the in-cluster workload, service, route, certificate relationship, and monitor. That local path and demo claim are landed. The gridscale variant was also exercised end to end: it provisioned a real nginx VM, served the legacy page, health endpoint, and metrics over its public address, and then deleted every composed resource.
--->
-
----
-layout: none
-title: Secure defaults, enforced in layers
-beat: security
-sectionTime: 165
----
-
-<CoverArt
-  src="/covers/section-08-gatehouse-inspection.png"
-  kicker="Platform controls"
-  title="Secure defaults, enforced in layers"
-/>
-
-<!--
-Next are the platform controls: practical defaults that are visible in manifests, admission behavior, CI, and audit evidence.
+A Website claim is the platform contract. Crossplane Composition turns it into a workload, Service, HTTPRoute, TLS relationship, and ServiceMonitor. The important pitch is static and simple: a team declares intent once, while the platform supplies the governed resources needed to deliver and operate it.
 -->
 
 ---
 layout: default
+beat: security
 ---
 
-<div class="kd-kicker">Security and governance</div>
+<div class="kd-kicker">Controls and cost</div>
 
-# Controls close to the change
+# Secure defaults, with a time-boxed cloud lab
 
-<div class="kd-grid kd-grid-3 mt-5">
+<div class="kd-grid kd-grid-3 mt-6">
   <div class="kd-card">
     <KdIcon name="material-symbols:key-vertical-rounded" size="1.5em" />
     <h3>Secrets</h3>
-    <p>SOPS + age in Git, rendered through KSOPS; private key stays outside the repository.</p>
+    <p>SOPS + age keep credentials encrypted in Git; rendered values stay out of source.</p>
   </div>
-  <div class="kd-card kd-card-ok">
+  <div class="kd-card kd-card-warn">
     <KdIcon name="material-symbols:policy-rounded" size="1.5em" />
-    <h3>Admission and network</h3>
-    <p>Kyverno policies in <strong>Enforce</strong>; default-deny baselines with explicit allows.</p>
+    <h3>Guardrails</h3>
+    <p>Kyverno Enforce, default-deny networking, identity, and dated audits make defaults visible.</p>
   </div>
-  <div class="kd-card">
-    <KdIcon name="material-symbols:shield-lock-rounded" size="1.5em" />
-    <h3>Identity and supply chain</h3>
-    <p>Dex GitHub OIDC, no guest portal actions, pinned tooling, gitleaks, and policy tests.</p>
+  <div class="kd-card kd-card-accent">
+    <KdIcon name="mdi:cash-clock" size="1.5em" />
+    <h3>Cost governance</h3>
+    <p>The GSK lab is time-boxed: bring it up for proof, capture evidence, then tear it down.</p>
   </div>
 </div>
 
-<div class="kd-grid kd-grid-2 mt-6">
-  <div class="kd-card"><strong>Audit trail</strong><span class="kd-muted">two dated security/compliance audits plus a data-flow security review</span></div>
-  <div class="kd-card kd-card-warn"><strong>Known cloud risk</strong><span class="kd-muted">GSK node public exposure is documented with compensating controls and time-boxed operation</span></div>
-</div>
+<div class="kd-callout mt-7">Controls fail close to the change; cloud spend stays an explicit operator decision.</div>
 
 <!--
-The controls are layered and testable. Secrets stay encrypted in Git and are rendered by KSOPS. Kyverno rejects nonconforming workloads in Enforce mode, while default-deny network policies require explicit traffic paths. Dex provides GitHub-backed identity. CI checks secrets and policy artifacts. Two dated audits make the remaining findings visible, including the accepted GSK node exposure risk.
-I chose controls that fail close to the change. A bad image tag or security context should fail admission; a missing label should fail the relevant policy gate; an unintended connection should meet a deny rule. The cloud-node risk cannot be removed through the current provider API, so the mitigation and time boundary are documented instead of implied away.
+The platform starts from secure defaults: encrypted secrets, enforced admission and network policy, identity, and audit evidence. I apply the same discipline to cost. The GSK lab is a deliberate, time-boxed proof environment: create, verify, capture evidence, and tear down when the demo does not need to remain live.
 -->
 
 ---
@@ -386,6 +273,121 @@ beat: portal-hero
 
 <div class="kd-grid kd-grid-2 mt-5">
   <div>
+    <div class="kd-card">
+      <h3><KdIcon name="mdi:view-dashboard-outline" /> Backstage on GSK</h3>
+      <ul>
+        <li>Website XRD projects a self-service form</li>
+        <li>the form opens a GitOps change</li>
+        <li>the portal shows reconciliation state</li>
+        <li><code>portal.lab.platformrelay.dev</code> joins the shared HTTPRoute edge</li>
+      </ul>
+    </div>
+  </div>
+    <div class="kd-surface kd-surface-fallback" data-surface="backstage" data-surface-mode="fallback">
+    <div class="kd-surface-label"><KdIcon name="mdi:application-brackets-outline" /> Backstage · GSK showcase</div>
+    <p>Public route: Gateway listener + DNS-01 certificate + HTTPRoute → <code>backstage:7007</code>.</p>
+  </div>
+</div>
+
+<div class="kd-small kd-muted mt-4">The portal is the experience layer; Git and the platform API remain the source of truth.</div>
+
+<!--
+The portal is designed around the platform API rather than around a second source of truth. Backstage runs on GSK and turns the Website XRD into a guided self-service path: request a site, open a GitOps change, and inspect the resulting resources. Its public showcase route follows the same Gateway API HTTPRoute pattern as the other GSK services.
+-->
+
+---
+layout: default
+beat: mulligan
+---
+
+<div class="kd-kicker">mulligan</div>
+
+# Metrics decide whether a canary promotes or rolls back
+
+<div class="kd-diagram mt-6">
+  <div class="kd-node kd-node-primary">Canary release</div>
+  <div class="kd-arrow">→</div>
+  <div class="kd-node">Prometheus metrics</div>
+  <div class="kd-arrow">→</div>
+  <div class="kd-node">analysis gate</div>
+  <div class="kd-node">promote</div>
+  <div class="kd-node">rollback</div>
+</div>
+
+<div class="kd-grid kd-grid-2 mt-7">
+  <div class="kd-card kd-card-ok"><strong>Canary</strong><span class="kd-muted">progressively shift traffic only while observed behavior stays healthy</span></div>
+  <div class="kd-card kd-card-ok"><strong>Automatic recovery</strong><span class="kd-muted">a failed analysis stops promotion and rolls the route back safely</span></div>
+</div>
+
+<!--
+Mulligan is stakeholder-readable progressive delivery. Prometheus metrics feed an analysis gate while traffic shifts through a canary. Healthy behavior promotes the release; an unhealthy result automatically rolls it back through the same declared route. The point is not an animation of percentages: releases are connected to observed behavior and recover safely.
+-->
+
+---
+layout: none
+title: Evidence turns delivery into confidence
+beat: marshal
+sectionTime: 110
+---
+
+<CoverArt
+  src="/covers/section-08-gatehouse-inspection.png"
+  kicker="Operations and evidence"
+  title="Evidence turns delivery into confidence"
+/>
+
+<!--
+Operations make the platform credible: measure service behavior, capture the result, and use it to decide the next action.
+-->
+
+---
+layout: default
+beat: scorecard
+---
+
+<div class="kd-kicker">GSK showcase</div>
+
+# What runs on GSK, with evidence
+
+<div class="kd-grid kd-grid-3 mt-5">
+  <div class="kd-card">
+    <KdIcon name="mdi:web" size="1.5em" />
+    <h3>Public services</h3>
+    <p>Argo CD, Grafana, Caddy demo and canary, plus Backstage on the shared GSK edge.</p>
+  </div>
+  <div class="kd-card kd-card-ok">
+    <KdIcon name="mdi:source-branch-sync" size="1.5em" />
+    <h3>Route and images</h3>
+    <p><code>portal.lab</code> adds the Backstage HTTPRoute; Caddy rolls to showcase <code>:0.6.0</code> and <code>2.11.4-alpine</code>.</p>
+  </div>
+  <div class="kd-card">
+    <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.5em" />
+    <h3>scorecard</h3>
+    <p>Capture k6, metrics, alerts, logs, and rollout state as one reviewable HTML report.</p>
+  </div>
+</div>
+
+<div class="kd-grid kd-grid-2 mt-6">
+  <div class="kd-card"><strong>Route proof</strong><span class="kd-muted">the Backstage public route is a listener, certificate, and HTTPRoute to <code>backstage:7007</code></span></div>
+  <div class="kd-card kd-card-ok"><strong>Honest evidence</strong><span class="kd-muted">the deck separates live proof, rollout targets, and remaining work</span></div>
+</div>
+
+<!--
+The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage receives the same listener, certificate, and HTTPRoute pattern as the other services. In parallel, the Caddy canary moves to the versioned showcase image and the demo moves to the current Caddy Alpine base. Scorecard turns the result into evidence instead of relying on selected screenshots.
+-->
+
+---
+layout: default
+---
+
+<!-- APPENDIX -->
+
+<div class="kd-kicker">Experience layer</div>
+
+# Backstage runs on GSK; its public route joins the showcase
+
+<div class="kd-grid kd-grid-2 mt-5">
+  <div>
     <div class="kd-card kd-card-accent">
       <h3><KdIcon name="material-symbols:dynamic-form-rounded" /> Intended flow</h3>
       <ol>
@@ -393,14 +395,19 @@ beat: portal-hero
         <li>Generate the scaffolder form</li>
         <li>Open a GitOps change</li>
         <li>Show Crossplane, Argo CD, and workload status</li>
+        <li>Expose the portal through the shared Gateway API edge</li>
       </ol>
     </div>
-    <p class="kd-muted mt-4">Backstage configuration and tests are present. Runtime deployment remains open.</p>
+    <p class="kd-muted mt-4">Backstage serves on GSK. The showcase route is <code>portal.lab.platformrelay.dev</code>: a fifth Gateway listener, TLS certificate, and HTTPRoute to <code>backstage:7007</code> are being landed.</p>
   </div>
   <div class="kd-stack">
+    <div data-surface="argocd" data-surface-mode="static" class="kd-surface kd-surface-fallback">
+      <div class="kd-surface-label"><KdIcon name="mdi:source-branch-sync" /> Argo CD · static</div>
+      <p>Public GSK GitOps surface retained for deep-dive recording, not required by the spoken pitch.</p>
+    </div>
     <div data-surface="backstage" data-surface-mode="fallback" class="kd-surface kd-surface-fallback">
-      <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage · fallback</div>
-      <p>Reserved for the generated Website form once runtime proof lands.</p>
+      <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage · GSK route in flight</div>
+      <p>The portal is running; this surface becomes live after the shared HTTPRoute returns 200 on <code>portal.lab.platformrelay.dev</code>.</p>
     </div>
     <div data-surface="crossplane-graph" data-surface-mode="fallback" class="kd-surface kd-surface-fallback">
       <div class="kd-surface-label"><KdIcon name="mdi:graph-outline" /> Crossplane graph · fallback</div>
@@ -410,7 +417,7 @@ beat: portal-hero
 </div>
 
 <!--
-The portal is the experience layer, not the source of truth. The intended flow derives a form from the Website XRD, opens a GitOps change, and renders reconciliation status. The configuration, schema annotations, RBAC, and tests are in the repository. Backstage itself is not running yet, so these are explicit fallback surfaces rather than simulated screenshots.
+The portal is the experience layer, not the source of truth. The intended flow derives a form from the Website XRD, opens a GitOps change, and renders reconciliation status. Backstage now serves on GSK; the remaining showcase integration is its public Gateway API HTTPRoute. The route uses the same pattern as the other cloud surfaces: a dedicated listener, a DNS-01 certificate, and an HTTPRoute to the portal Service on port 7007. Until that URL returns 200, this remains an explicit fallback rather than a simulated screenshot.
 -->
 
 ---
@@ -505,7 +512,7 @@ layout: default
 
 <div class="kd-kicker">Demo surfaces</div>
 
-# Three compact views, one evidence path
+# GSK showcase: every service has an edge
 
 <div class="kd-grid kd-grid-3 mt-5">
   <div class="kd-surface">
@@ -517,16 +524,16 @@ layout: default
     <iframe src="http://127.0.0.1:3000/alerting/list" title="Grafana alerting" data-surface="grafana" data-surface-mode="live"></iframe>
   </div>
   <div class="kd-card kd-card-accent">
-    <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.7em" />
-    <h3>Capture</h3>
-    <p>Run the behavior, collect k6, metrics, alerts, logs, and rollout state, then render one HTML report.</p>
+    <KdIcon name="mdi:view-dashboard-outline" size="1.7em" />
+    <h3>Backstage</h3>
+    <p>Running on GSK; the public <code>portal.lab.platformrelay.dev</code> HTTPRoute is the final showcase edge integration.</p>
   </div>
 </div>
 
-<div class="kd-small kd-muted mt-5">Live frames are optional recording aids; the evidence artifacts remain reviewable without them.</div>
+<div class="kd-callout mt-5">The Caddy rollout is being updated to the newest showcase images: <code>kaddy-showcase:0.6.0</code> for caddy-mvp and <code>caddy:2.11.4-alpine</code> for caddy-demo.</div>
 
 <!--
-These compact surfaces support a demonstration without taking over the explanatory slides. I can show the website response, inspect Grafana, and connect both to the same scorecard capture. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
+These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is deliberately called out until its public 200 is recorded. In parallel, the Caddy rollout is updated to the versioned kaddy-showcase image for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
 -->
 
 ---
@@ -603,13 +610,13 @@ layout: default
 
 <div class="kd-flow kd-flow-vertical mt-5">
   <div class="kd-step"><span>1</span><strong>Operations</strong>external Alertmanager receiver and Loki ruler</div>
-  <div class="kd-step"><span>2</span><strong>Experience</strong>deploy Backstage and prove the generated form and graph</div>
+  <div class="kd-step"><span>2</span><strong>Showcase edge</strong>prove Backstage at <code>portal.lab.platformrelay.dev</code> and capture the HTTPRoute 200</div>
   <div class="kd-step"><span>3</span><strong>Image proof</strong>boot the Nix image on gridscale and verify serve → scrape → alert</div>
   <div class="kd-step"><span>4</span><strong>Upstream</strong>respond to review and land the three provider fixes</div>
 </div>
 
 <!--
-My next work would close operational loops before adding breadth. First I would deliver alerts to an external receiver and add the Loki ruler. Then I would run Backstage and prove the generated experience. After that I would complete the Nix boot-to-serve proof. Upstream review continues in parallel because merge timing is not fully mine to control.
+My next work would close operational loops before adding breadth. First I would deliver alerts to an external receiver and add the Loki ruler. Then I would complete the public Backstage route on the GSK showcase edge and prove the generated experience. After that I would complete the Nix boot-to-serve proof. Upstream review continues in parallel because merge timing is not fully mine to control.
 -->
 
 ---
@@ -640,8 +647,6 @@ The implementation is intentionally more complete than a single installation scr
 layout: default
 ---
 
-<!-- APPENDIX -->
-
 <div class="kd-kicker">Appendix A</div>
 
 # Golden images: Packer and Nix
@@ -659,8 +664,13 @@ layout: default
 
 <div class="kd-callout mt-7">Build proof is not boot proof; the deck keeps that boundary explicit.</div>
 
+<div class="kd-card mt-5">
+  <strong>Pitch honesty boundary</strong>
+  <span class="kd-muted">Upstream PRs are filed and open, not merged. Backstage is assumed in the talk; E10 HTTPRoute proof remains a separately recorded live step.</span>
+</div>
+
 <!--
-For image questions, Packer and Nix are parallel paths. Packer provisions a familiar base image and has the serving proof. The Nix flake and module now build an image reproducibly. That corrects the old appendix wording: flake dot nix does exist. What is still missing is boot-to-serve on gridscale, so Nix is built but not fully proven.
+For image questions, Packer and Nix are parallel paths. Packer provisions a familiar base image and has the serving proof. The Nix flake and module now build an image reproducibly. That corrects the old appendix wording: flake dot nix does exist. What is still missing is boot-to-serve on gridscale, so Nix is built but not fully proven. The pitch treats Backstage as the experience layer while keeping the public-route proof separate, and it never turns filed upstream pull requests into claimed merges.
 -->
 
 ---

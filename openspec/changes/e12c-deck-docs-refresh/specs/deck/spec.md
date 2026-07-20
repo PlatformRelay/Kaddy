@@ -14,6 +14,12 @@ visual identity) · E14/ADR-0303 (NixOS path, designed)
 > (new non-canonical section markers are ignored by the beats test) — adding sections does NOT break
 > it. The real ceilings are `sectionTime` and word-count sums; this change **raises them for the main
 > deck and exempts the appendix**.
+>
+> **Superseded for the spoken pitch by E12d-S01 (2026-07-20):** E12c's `[600,1000]` s /
+> `[1400,2200]` word budget and conflicting narrative REQs yield to the five-minute
+> `[240,360]` s / `[450,900]` word envelope in
+> `openspec/changes/e12d-five-minute-pitch/specs/deck/spec.md`. The appendix mechanism and
+> orthogonal E12c polish remain in force.
 
 ---
 

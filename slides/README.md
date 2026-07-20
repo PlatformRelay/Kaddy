@@ -53,14 +53,15 @@ Five compact surfaces are tagged for the deck gates:
 
 | Surface | Mode | Purpose |
 | --- | --- | --- |
-| `argocd` | live | GitOps application view |
-| `grafana` | live | alerts and dashboards |
-| `clubhouse` | live | served website |
-| `backstage` | fallback | portal runtime remains open |
+| `argocd` | static | GitOps application view for appendix/recording |
+| `grafana` | live | alerts and dashboards (appendix only) |
+| `clubhouse` | live | served website (appendix only) |
+| `backstage` | fallback | GSK portal narrative; public `portal.lab` HTTPRoute is in flight |
 | `crossplane-graph` | fallback | live portal graph remains open |
 
-Live frames are optional recording aids. The evidence artifacts, manifests, and tests must remain
-enough to evaluate a claim when a local endpoint is unavailable.
+The five-minute spoken path contains no localhost iframes; live frames are optional appendix/recording
+aids. The evidence artifacts, manifests, and tests must remain enough to evaluate a claim when a
+surface is unavailable.
 
 ## Commands
 
@@ -86,8 +87,16 @@ Keep the main deck aligned with current evidence:
 - the Website XRD/demo claim, Dex GitHub OIDC, dashboards-as-code, Kyverno Enforce/default-deny,
   scorecard HTML/Pages, dated audits, public GSK HTTPS edge, Packer proof, the ephemeral Crossplane
   gridscale VM serve cycle, and the Nix image build are landed at their documented scope;
-- Backstage runtime, an external Alertmanager receiver, Loki ruler, Nix boot-to-serve, and upstream
-  merges remain open.
+- Backstage runs on GSK through a transitional HTTP endpoint; its public
+  `portal.lab.platformrelay.dev` Gateway API HTTPRoute (fifth listener, DNS-01 certificate, and
+  `backstage:7007` backend) is in flight. An external Alertmanager receiver, Loki ruler, Nix
+  boot-to-serve, and upstream merges remain open.
+- The GSK showcase image roll updates caddy-mvp to
+  `ghcr.io/platformrelay/kaddy-showcase:0.6.0` and caddy-demo to
+  `caddy:2.11.4-alpine`; call it a rollout target until GitOps and live verification land.
+- E12d is a deck-only narrative change: it may assume Backstage for the talk, but does not claim the
+  E10 live runtime/HTTPRoute proof as an E12d outcome. Upstream PRs remain filed and open, not
+  merged; the Nix image build is landed while boot-to-serve remains open.
 
 Do not turn fast-changing application or requirement totals into headline claims unless they are
 derived from the authoritative repository script during the same refresh.

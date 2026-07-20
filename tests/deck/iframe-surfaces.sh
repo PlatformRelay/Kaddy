@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# REQ-E12-S03-01 — the deck embeds the five platform surfaces (L1).
+# REQ-E12d-S04-02 — the deck retains five tagged platform surfaces without
+# making the short spoken pitch depend on localhost iframes (L1).
 #
 # Asserts embed INTENT in slides/slides.md, not live endpoint reachability
 # (per the spec's fallback clause). Every surface must be tagged:
-#   data-surface="<name>" data-surface-mode="live|fallback"
-# where `live` marks a real <iframe> at the documented local URL and
-# `fallback` marks a GIF/screenshot placeholder for a surface that is not
-# running yet (spec fallback clause). At least three surfaces must be live
-# <iframe> embeds (argocd, grafana, clubhouse are running today).
+#   data-surface="<name>" data-surface-mode="live|fallback|static"
+# where `live` marks a public URL, and `fallback`/`static` marks an
+# intentionally pitch-safe placeholder or capture. Appendix demos may still
+# use live frames; the spoken path must not contain localhost iframes.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -22,12 +22,16 @@ for s in "${SURFACES[@]}"; do
   grep -q "data-surface=\"${s}\"" "${DECK}" || fail "surface '${s}' not embedded (data-surface tag missing)"
   mode="$(grep -o "data-surface=\"${s}\" data-surface-mode=\"[a-z]*\"" "${DECK}" | head -1 | sed 's/.*data-surface-mode="//;s/"$//')"
   case "${mode}" in
-    live|fallback) echo "surface ${s}: ${mode}" ;;
-    *) fail "surface '${s}' has no live|fallback mode annotation" ;;
+    live|fallback|static) echo "surface ${s}: ${mode}" ;;
+    *) fail "surface '${s}' has no live|fallback|static mode annotation" ;;
   esac
 done
 
-live_iframes=$(grep -c '<iframe[^>]*data-surface=' "${DECK}" || true)
-[ "${live_iframes}" -ge 3 ] || fail "expected >= 3 live <iframe> surface embeds, found ${live_iframes}"
+MAIN="$(mktemp "${TMPDIR:-/tmp}/deck-iframe-main.XXXXXX")"
+trap 'rm -f "${MAIN}"' EXIT
+sed '/<!-- APPENDIX -->/,$d' "${DECK}" > "${MAIN}"
+if grep -Eqi '<iframe[^>]+(127\.0\.0\.1|localhost)' "${MAIN}"; then
+  fail "spoken path contains a localhost iframe"
+fi
 
-echo "OK: all five surfaces embedded with live/fallback annotations (${live_iframes} live iframes)"
+echo "OK: five surfaces are tagged and the spoken path is pitch-safe"

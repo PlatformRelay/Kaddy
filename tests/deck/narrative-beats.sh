@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# REQ-E12-S04-01 (ranges raised by REQ-E12c-S01-02) — the MAIN deck covers the
+# REQ-E12d-S01-01 (superseding E12c-S01-02 for the spoken pitch) — the MAIN deck covers the
 # required narrative beats, in order, with a per-section time budget (L1).
 #
 # Beat markers are slide-frontmatter keys (`beat: <name>`) on the section
@@ -9,7 +9,7 @@
 #      pitch -> architecture -> security -> portal-hero -> mulligan ->
 #      marshal -> scorecard (new, non-canonical section markers are ignored).
 #   2. every MAIN section divider's `sectionTime: <seconds>` budgets sum to
-#      600..1000 s (a ~11-15 minute walkthrough).
+#      240..360 s (a ~5-minute walkthrough).
 # Appendix sections MUST NOT carry `sectionTime`/canonical `beat:` markers so
 # the pre-sentinel sum is unambiguous.
 set -euo pipefail
@@ -48,7 +48,7 @@ for f in "${found[@]:-}"; do
 done
 [ "${i}" -eq "${#BEATS[@]}" ] || fail "beats out of order: got '${found[*]:-}', want subsequence '${BEATS[*]}'"
 
-# Per-section time budget over the MAIN deck sums to a ~11-15 minute walkthrough.
+# Per-section time budget over the MAIN deck sums to a ~5-minute walkthrough.
 total=0 sections=0
 while read -r secs; do
   total=$((total + secs))
@@ -57,7 +57,7 @@ done < <(grep -E '^sectionTime: [0-9]+$' "${MAIN}" | sed 's/^sectionTime: //')
 
 [ "${sections}" -gt 0 ] || fail "no sectionTime budgets found in main"
 echo "main beats in order: ${found[*]} · sections budgeted: ${sections} · total: ${total}s"
-[ "${total}" -ge 600 ] || fail "time budget too short: ${total}s < 600s"
-[ "${total}" -le 1000 ] || fail "time budget overruns: ${total}s > 1000s"
+[ "${total}" -ge 240 ] || fail "time budget too short: ${total}s < 240s"
+[ "${total}" -le 360 ] || fail "time budget overruns: ${total}s > 360s"
 
-echo "OK: main narrative arc ordered (7 beats) and time budget ${total}s in [600, 1000]"
+echo "OK: main narrative arc ordered (7 beats) and time budget ${total}s in [240, 360]"

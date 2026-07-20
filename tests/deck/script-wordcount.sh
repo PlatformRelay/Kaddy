@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# REQ-E12-S02-02 (ranges raised by REQ-E12c-S01-02) — the MAIN presenter notes
-# form a coherent ~15-minute spoken script (L1). Sums the words of every MAIN
+# REQ-E12d-S01-01 (superseding E12c-S01-02 for the spoken pitch) — the MAIN
+# presenter notes form a coherent ~5-minute spoken script (L1). Sums the words of every MAIN
 # slide's presenter note (the LAST `<!-- ... -->` block per slide — same
 # extraction rule as speaker-notes-coverage.sh) and asserts the total lands in
-# 1400..2200 words, i.e. ~11-15 minutes at ~130-150 wpm.
+# 450..900 words, i.e. ~3-7 minutes at ~130-150 wpm.
 #
 # APPENDIX exemption (E12c-S01): slides AFTER the `<!-- APPENDIX -->` sentinel
 # are gate-exempt — the sum stops at the sentinel. Appendix slides still carry
@@ -16,8 +16,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 . "${ROOT}/tests/deck/lib.sh"
 
 DECK="${ROOT}/slides/slides.md"
-MIN_TOTAL=1400
-MAX_TOTAL=2200
+MIN_TOTAL=450
+MAX_TOTAL=900
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 [ -f "${DECK}" ] || fail "slides/slides.md missing"
