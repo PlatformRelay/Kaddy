@@ -57,10 +57,22 @@ cost governance — URLs are live only while the edge is up
 | Surface | URL | Probe (2026-07-20) |
 | --- | --- | --- |
 | ✅ Argo CD | <https://argocd.lab.platformrelay.dev> | HTTPS **200** (UI) |
-| ⚠️ Grafana | <https://grafana.lab.platformrelay.dev> | probe **timed out** this run — do not invent green |
+| ✅ Grafana | <https://grafana.lab.platformrelay.dev> | HTTPS **200** |
 | ✅ Demo site | <https://demo.lab.platformrelay.dev> | HTTPS **200** |
 | ✅ Caddy tenant | <https://caddy.lab.platformrelay.dev> | HTTPS **200** (HTTPRoute `caddy-lab`) |
 | ✅ Portal | <https://portal.lab.platformrelay.dev> | HTTPS **200** (Backstage) |
+
+### Showcase captures
+
+Still captures shipped under [`slides/public/surfaces/`](slides/public/surfaces/) (used by the
+deck; paths work on GitHub):
+
+| Surface | Capture |
+| --- | --- |
+| Argo CD app-of-apps | <a href="slides/public/surfaces/argocd-app-of-apps.png"><img src="slides/public/surfaces/argocd-app-of-apps.png" alt="Argo CD root app-of-apps" width="480" /></a> |
+| Backstage portal | <a href="slides/public/surfaces/backstage-portal.png"><img src="slides/public/surfaces/backstage-portal.png" alt="Backstage portal" width="480" /></a> |
+| Grafana (node pods) | <a href="slides/public/surfaces/grafana-alerting.png"><img src="slides/public/surfaces/grafana-alerting.png" alt="Grafana compute resources" width="480" /></a> |
+| Upbound Marketplace | <a href="slides/public/surfaces/marketplace-listing.png"><img src="slides/public/surfaces/marketplace-listing.png" alt="provider-gridscale on Upbound Marketplace" width="480" /></a> |
 
 Edge overlays: [`deploy/gateway-controller/traefik/`](deploy/gateway-controller/traefik/) ·
 [`deploy/gateway/cloud-only/`](deploy/gateway/cloud-only/).
@@ -70,7 +82,6 @@ Edge overlays: [`deploy/gateway-controller/traefik/`](deploy/gateway-controller/
 
 - **Argo sync ≠ UI up.** The Argo CD UI can return 200 while individual apps (e.g. `backstage`)
   are OutOfSync / sync-failed under GSK MemoryPressure — do not claim cluster-wide Synced.
-- **Grafana** timed out from an external probe in this refresh; treat as unverified until re-probed.
 - Bring-up / teardown: `task e8b:up` → demo → `task e8b:down` (see the live-demo runbook).
 
 </details>
@@ -127,7 +138,7 @@ delivery, enforcing security baseline, GitOps. Releases: **[v0.1.0](https://gith
 | ✅ Cloud edge | Live (time-boxed) | Traefik Gateway + LE on `*.lab.platformrelay.dev` |
 | ✅ Portal (E10) | Live route | `portal.lab` HTTPS 200; NetPol selectors on `main` |
 | ✅ Caddy lab route | Live | `caddy.lab` HTTPS 200 via HTTPRoute `caddy-lab` (no Argo name collision) |
-| ⚠️ Grafana public | Unverified | External probe timed out (2026-07-20) |
+| ✅ Grafana public | Live | `grafana.lab` HTTPS 200 |
 | ⚠️ Argo app sync | Partial | UI up; some apps may be OutOfSync under MemoryPressure |
 | ⚠️ E6g / E13 live | Cost-gated | Provider install + Marketplace deploy follow-ups |
 | 🔒 Security review | Filed | [docs/security/security-review-2026-07-16.md](docs/security/security-review-2026-07-16.md) |

@@ -162,6 +162,10 @@ Walk the reviewer through the read-only surfaces behind the platform Gateway
 Optionally run the E8-S04 demo choreography (`task demo`, `task demo:fire`,
 `task demo:chaos`) against the GSK cluster.
 
+Standing lab edge stills (Argo CD, Backstage, Grafana, Upbound Marketplace) live in
+[`slides/public/surfaces/`](../../slides/public/surfaces/) and are linked from the root
+README Live demo gallery.
+
 ### 4. Teardown (do NOT skip)
 
 ```bash

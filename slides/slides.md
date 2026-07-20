@@ -3,13 +3,13 @@ theme: seriph
 fonts:
   sans: 'Inter'
   mono: 'JetBrains Mono'
-title: kaddy — Website-as-a-Service
+title: Kaddy — a simple two-VM monitoring exercise, gone wildly overboard into platform engineering
 info: |
   A factual interview walkthrough of kaddy: what I built, what I proved, and what remains open.
 favicon: '/branding/favicon-32.png'
 seoMeta:
-  ogTitle: kaddy — a caddie for your websites
-  ogDescription: Security-first, spec-driven, Kubernetes-native Website-as-a-Service.
+  ogTitle: Kaddy — a simple two-VM monitoring exercise, gone wildly overboard into platform engineering
+  ogDescription: From a hiring brief about two VMs with monitoring to a security-first Website-as-a-Service platform.
   ogImage: https://raw.githubusercontent.com/PlatformRelay/Kaddy/main/slides/public/branding/og-image.png
 layout: none
 transition: slide-left
@@ -25,11 +25,11 @@ sectionTime: 80
 <CoverArt
   src="/covers/section-00-first-tee.png"
   kicker="The first tee"
-  title="kaddy — a caddie for your websites"
+  title="Kaddy — a simple two-VM monitoring exercise, gone wildly overboard into platform engineering"
 />
 
 <!--
-Hi, I am Konrad. I built kaddy as a practical answer to a platform engineering exercise: a Website-as-a-Service product with repeatable delivery, controls, operations, and evidence. I will separate what is built and proven from what is still open.
+Hi, I am Konrad. I built kaddy from a simple hiring exercise — two VMs with monitoring — and then went wildly overboard into a Website-as-a-Service platform with repeatable delivery, controls, operations, and evidence. I will separate what is built and proven from what is still open.
 -->
 
 ---
@@ -142,6 +142,7 @@ layout: default
     <h3><code>provider-gridscale</code></h3>
     <p>An Upjet-generated Crossplane provider exposing <strong>32 gridscale resources</strong> as Kubernetes APIs.</p>
     <p class="kd-small"><a href="https://marketplace.upbound.io/providers/platformrelay/provider-gridscale">marketplace.upbound.io/providers/platformrelay/provider-gridscale</a></p>
+    <img class="mt-4" src="/surfaces/marketplace-listing.png" alt="Upbound Marketplace listing for provider-gridscale" />
   </div>
   <div class="kd-card">
     <KdIcon name="mdi:source-pull" size="1.7em" />
@@ -282,9 +283,10 @@ beat: portal-hero
       </ul>
     </div>
   </div>
-    <div class="kd-surface kd-surface-live" data-surface="backstage" data-surface-mode="live">
+    <div class="kd-surface kd-surface-static" data-surface="backstage" data-surface-mode="static">
     <div class="kd-surface-label"><KdIcon name="mdi:application-brackets-outline" /> Backstage · GSK showcase</div>
-    <p>Live public route (200): Gateway listener + Let's Encrypt certificate + HTTPRoute → <code>backstage:7007</code>.</p>
+    <img src="/surfaces/backstage-portal.png" alt="Backstage portal on portal.lab.platformrelay.dev" />
+    <p class="kd-small kd-muted mt-2">Public route returns HTTPS 200: Gateway listener + Let's Encrypt certificate + HTTPRoute → <code>backstage:7007</code>.</p>
   </div>
 </div>
 
@@ -357,7 +359,7 @@ beat: scorecard
   <div class="kd-card kd-card-ok">
     <KdIcon name="mdi:source-branch-sync" size="1.5em" />
     <h3>Route and images</h3>
-    <p><code>portal.lab.platformrelay.dev</code> Backstage HTTPRoute is live; Caddy images are live-proven on GSK — showcase <code>:0.6.0</code> (caddy-mvp) and <code>caddy:2.11.4-alpine</code> (caddy-demo). <code>caddy.lab.platformrelay.dev</code> currently returns HTTPS 404 at <code>/</code>; <code>demo.lab.platformrelay.dev</code> returns HTTPS 200.</p>
+    <p><code>portal.lab.platformrelay.dev</code> Backstage HTTPRoute is live; Caddy images are live-proven on GSK — showcase <code>:0.6.0</code> (caddy-mvp) and <code>caddy:2.11.4-alpine</code> (caddy-demo). <code>caddy.lab.platformrelay.dev</code>, <code>demo.lab.platformrelay.dev</code>, and <code>grafana.lab.platformrelay.dev</code> return HTTPS 200.</p>
   </div>
   <div class="kd-card">
     <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.5em" />
@@ -372,7 +374,7 @@ beat: scorecard
 </div>
 
 <!--
-The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage's public route is live through the same listener, certificate, and HTTPRoute pattern as the other services. The Caddy image roll is live-proven on GSK: caddy-mvp serves the versioned kaddy-showcase image and caddy-demo serves the current Caddy Alpine base. <code>caddy.lab.platformrelay.dev</code> currently returns HTTPS 404 at `/`; demo.lab returns HTTPS 200. Fresh route evidence remains pending in agent-context. Scorecard turns the result into evidence instead of relying on selected screenshots.
+The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage's public route is live through the same listener, certificate, and HTTPRoute pattern as the other services. The Caddy image roll is live-proven on GSK: caddy-mvp serves the versioned kaddy-showcase image and caddy-demo serves the current Caddy Alpine base. portal.lab, caddy.lab, demo.lab, and grafana.lab return HTTPS 200. Scorecard turns the result into evidence instead of relying on selected screenshots alone.
 -->
 
 ---
@@ -402,7 +404,8 @@ layout: default
   <div class="kd-stack">
     <div data-surface="argocd" data-surface-mode="static" class="kd-surface kd-surface-fallback">
       <div class="kd-surface-label"><KdIcon name="mdi:source-branch-sync" /> Argo CD · static</div>
-      <p>Public GSK GitOps surface retained for deep-dive recording, not required by the spoken pitch.</p>
+      <img src="/surfaces/argocd-app-of-apps.png" alt="Argo CD root app-of-apps tree on GSK" />
+      <p class="kd-small kd-muted mt-2">Public GSK GitOps surface retained for deep-dive recording, not required by the spoken pitch.</p>
     </div>
     <div data-surface="backstage" data-surface-mode="live" class="kd-surface kd-surface-live">
       <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage · GSK route live</div>
@@ -520,19 +523,20 @@ layout: default
   </div>
   <div class="kd-surface">
     <div class="kd-surface-label"><KdIcon name="mdi:chart-line" /> Grafana</div>
-    <iframe src="https://grafana.lab.platformrelay.dev/alerting/list" title="Grafana alerting" data-surface="grafana" data-surface-mode="live"></iframe>
+    <img src="/surfaces/grafana-alerting.png" alt="Grafana compute resources dashboard on GSK" data-surface="grafana" data-surface-mode="static" />
+    <p class="kd-small kd-muted mt-2">Live UI also at <a href="https://grafana.lab.platformrelay.dev/">grafana.lab.platformrelay.dev</a> (HTTPS 200).</p>
   </div>
-  <div class="kd-card kd-card-accent">
-    <KdIcon name="mdi:view-dashboard-outline" size="1.7em" />
-    <h3>Backstage</h3>
-    <p>Running on GSK; the public <code>portal.lab.platformrelay.dev</code> HTTPRoute is live and returns 200.</p>
+  <div class="kd-surface">
+    <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage</div>
+    <img src="/surfaces/backstage-portal.png" alt="Backstage portal on GSK" />
+    <p class="kd-small kd-muted mt-2"><code>portal.lab.platformrelay.dev</code> HTTPRoute returns HTTPS 200.</p>
   </div>
 </div>
 
-<div class="kd-callout mt-5">Caddy images are live-proven on GSK: <code>kaddy-showcase:0.6.0</code> for caddy-mvp (Healthy) and <code>caddy:2.11.4-alpine</code> for caddy-demo; <code>caddy.lab.platformrelay.dev</code> currently returns HTTPS 404 at <code>/</code>, while <code>demo.lab.platformrelay.dev</code> returns HTTPS 200. Fresh caddy-mvp route evidence is pending in <code>agent-context</code>.</div>
+<div class="kd-callout mt-5">Caddy images are live-proven on GSK: <code>kaddy-showcase:0.6.0</code> for caddy-mvp (Healthy) and <code>caddy:2.11.4-alpine</code> for caddy-demo; <code>caddy.lab.platformrelay.dev</code>, <code>demo.lab.platformrelay.dev</code>, <code>portal.lab.platformrelay.dev</code>, and <code>grafana.lab.platformrelay.dev</code> return HTTPS 200.</div>
 
 <!--
-These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. Caddy images are live-proven on GSK at the versioned kaddy-showcase pin for the full canary and the current Caddy Alpine base for the landing page. Live frames use public *.lab.platformrelay.dev URLs; if a public frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
+These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; portal, caddy, demo, and grafana routes return public 200. Caddy images are live-proven on GSK at the versioned kaddy-showcase pin for the full canary and the current Caddy Alpine base for the landing page. Still captures and live URLs both support review; manifests, tests, and generated evidence remain enough when a tab is unavailable.
 -->
 
 ---

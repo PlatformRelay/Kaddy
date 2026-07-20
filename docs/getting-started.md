@@ -13,6 +13,7 @@ Website claims: [website-self-service.md](runbooks/website-self-service.md).
 | --- | --- |
 | Slidev deck (`task deck:build`) | Available locally / CI `deck` workflow — **deck Pages URL unavailable** / not yet published |
 | Scorecard GitHub Pages (`https://platformrelay.github.io/Kaddy/`) | **Live** — HTTP 200 (fixture scorecard HTML via `scorecard-pages` workflow) |
+| GSK showcase stills | [`slides/public/surfaces/`](../slides/public/surfaces/) — Argo CD, Backstage, Grafana, Upbound Marketplace (also linked from the root README Live demo) |
 | This guide + `task demo*` | Available after the bring-up below |
 
 ---

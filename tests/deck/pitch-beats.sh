@@ -46,20 +46,34 @@ appx_has 'boot-to-serve.*(open|remain)|boot proof' "Nix boot gap"
 appx_has 'filed.*open|open.*not merged|filed.*not merged' "upstream PR honesty"
 appx_has 'Backstage.*(narrative|talk).*(proof|E10)|E10.*(proof|runtime)' "Backstage narrative/proof boundary"
 
-# Deck/slides honesty for caddy.lab may lag the root README (parked deck refresh).
-# Root README must reflect the live sticky HTTPS 200 after HTTPRoute caddy-lab rename
-# — stale 404 claims here fail the gate.
-main_has 'caddy-mvp.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "caddy-mvp current 404 status"
-grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${DECK}" \
-  || fail "deck must record caddy-mvp's current HTTPS 404 status"
-grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${ROOT}/slides/README.md" \
-  || fail "slides README must record caddy-mvp's current HTTPS 404 status"
+# Humorous deck title (frontmatter + opening CoverArt) — keep the joke, polish the wording.
+grep -Eq 'title:.*gone wildly overboard into platform engineering' "${DECK}" \
+  || fail "deck frontmatter title must use the overboard joke"
+grep -A6 '<CoverArt' "${DECK}" | head -8 | grep -Fq 'gone wildly overboard into platform engineering' \
+  || fail "opening CoverArt title must use the overboard joke"
+grep -Eqi 'two[- ]VM.*monitoring|monitoring.*two[- ]VM' "${DECK}" \
+  || fail "deck title must keep the two-VM monitoring exercise joke"
+
+# Live honesty after caddy-lab rename + portal NetPol + grafana route (2026-07-20 probes).
+# Stale 404 claims for caddy.lab must fail; deck + slides README + root README record 200s.
+if grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${DECK}"; then
+  fail "deck claims stale caddy.lab HTTPS 404 — expect sticky HTTPS 200"
+fi
+if grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${ROOT}/slides/README.md"; then
+  fail "slides README claims stale caddy.lab HTTPS 404 — expect sticky HTTPS 200"
+fi
 if grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${ROOT}/README.md"; then
   fail "root README must not claim stale caddy.lab HTTPS 404 (live sticky 200)"
 fi
+grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(HTTPS )?200|caddy\.lab.*(HTTPS )?200' "${DECK}" \
+  || fail "deck must record caddy.lab HTTPS 200"
+grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(HTTPS )?200|caddy\.lab.*(HTTPS )?200' "${ROOT}/slides/README.md" \
+  || fail "slides README must record caddy.lab HTTPS 200"
 grep -Eqi 'caddy\.lab\.platformrelay\.dev.*HTTPS \*\*200\*\*|caddy\.lab.*HTTPS \*\*200\*\*|caddy\.lab.*(HTTPS )?200' "${ROOT}/README.md" \
   || fail "root README must record caddy.lab HTTPS 200"
 grep -Eqi 'portal\.lab.*(HTTPS )?200|portal\.lab.*HTTPS \*\*200\*\*' "${ROOT}/README.md" \
   || fail "root README must record portal.lab HTTPS 200"
+grep -Eqi 'grafana\.lab.*(HTTPS )?200|grafana\.lab.*HTTPS \*\*200\*\*' "${ROOT}/README.md" \
+  || fail "root README must record grafana.lab HTTPS 200"
 
 echo "OK: E12d pitch and honesty anchors are present"

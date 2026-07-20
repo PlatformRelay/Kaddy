@@ -37,7 +37,7 @@ remain open — they stay as optional polish lanes.
 Spoken beat order (keep the seven canonical `beat:` markers as a *subsequence*; non-canonical
 slides may sit between them, but the **spoken path** is short):
 
-1. **Opening** — brief = Caddy VM + Prometheus; platform around it.
+1. **Opening** — brief = two VMs / Caddy + Prometheus monitoring; then gone wildly overboard into a platform around it.
 2. **Value early** — `provider-gridscale` + three upstream PRs to
    `terraform-provider-gridscale` (#509–#511) framed as **first contribution / customer value**,
    not “open leftovers”.

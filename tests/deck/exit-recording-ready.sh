@@ -17,6 +17,7 @@ GATES=(
   script-wordcount.sh
   spoken-path.sh
   iframe-surfaces.sh
+  surface-screenshots.sh
   narrative-beats.sh
   pitch-beats.sh
 )

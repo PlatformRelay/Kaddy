@@ -23,6 +23,8 @@ grep -F 'caddy.lab' "${README}" | grep -F '200' >/dev/null \
   || fail "README must record caddy.lab HTTPS 200"
 grep -F 'portal.lab' "${README}" | grep -F '200' >/dev/null \
   || fail "README must record portal.lab HTTPS 200"
+grep -F 'grafana.lab' "${README}" | grep -F '200' >/dev/null \
+  || fail "README must record grafana.lab HTTPS 200"
 
 # Deck is consumed from Releases, not a build-first reviewer path.
 grep -F 'github.com/PlatformRelay/Kaddy/releases' "${README}" >/dev/null \

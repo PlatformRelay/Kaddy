@@ -53,11 +53,14 @@ Five compact surfaces are tagged for the deck gates:
 
 | Surface | Mode | Purpose |
 | --- | --- | --- |
-| `argocd` | static | GitOps application view for appendix/recording |
-| `grafana` | live | public GSK alerts and dashboards at `grafana.lab.platformrelay.dev` (appendix only) |
+| `argocd` | static | GitOps app-of-apps capture (`public/surfaces/argocd-app-of-apps.png`) |
+| `grafana` | static | GSK compute dashboard capture (`public/surfaces/grafana-alerting.png`); live UI also at `grafana.lab` |
 | `clubhouse` | live | public GSK served website at `demo.lab.platformrelay.dev` (appendix only) |
-| `backstage` | live | GSK portal; public `portal.lab.platformrelay.dev` HTTPRoute is proven live (200) |
+| `backstage` | static / live | portal capture on the spoken path; live route note in appendix (`portal.lab` HTTPS 200) |
 | `crossplane-graph` | fallback | live portal graph remains open |
+
+Committed stills also include `marketplace-listing.png` (Upbound Marketplace) on the contribution slide.
+`stuff/screenshots/` is gitignored scratch — ship captures under `slides/public/surfaces/`.
 
 The five-minute spoken path contains no local or kind demo targets; live frames use public GSK
 upstream URLs and remain optional appendix/recording aids. The evidence artifacts, manifests, and
@@ -97,9 +100,8 @@ Keep the main deck aligned with current evidence:
   Loki ruler, Nix boot-to-serve, and upstream merges remain open.
 - The GSK showcase image roll is **live-proven** (2026-07-20): caddy-mvp serves
   `ghcr.io/platformrelay/kaddy-showcase:0.6.0` (Rollout Healthy) and caddy-demo serves
-  `caddy:2.11.4-alpine`; `caddy.lab.platformrelay.dev` currently returns HTTPS 404 at `/`, while
-  `demo.lab.platformrelay.dev` returns HTTPS 200. Fresh caddy-mvp route evidence is pending in
-  `agent-context`.
+  `caddy:2.11.4-alpine`. Live sticky HTTPS 200 probes: `caddy.lab.platformrelay.dev` HTTPS 200,
+  plus `demo.lab`, `portal.lab`, and `grafana.lab` on the same edge.
 - E12d is a deck-only narrative change: the E10 public HTTPRoute proof landed independently, while
   the portal form-to-PR and read-path smoke remain E10 follow-on work. Upstream PRs remain filed
   and open, not merged; the Nix image build is landed while boot-to-serve remains open.
