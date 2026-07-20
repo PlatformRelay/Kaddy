@@ -187,6 +187,13 @@ else
   echo "kubeconform not installed — skip schema validation (CI installs it)"
 fi
 
+# --- 11) GSK cloud-edge HTTPRoute for portal.lab (Traefik Gateway pattern) ---
+# Same shape as argocd/grafana/demo/caddy in deploy/gateway/cloud-only/. Kind
+# stays on portal.kaddy.local; this overlay is excluded-by-location + edge-up.sh.
+bash "${ROOT}/tests/smoke/e1g-portal-cloud-route.sh" \
+  || fail "e1g-portal-cloud-route.sh failed (portal.lab cloud-edge route)"
+ok "GSK cloud-edge portal.lab HTTPRoute + LE cert authored"
+
 # --- live bring-up is deferred + honestly flagged ---------------------------
 echo "SKIP: live Backstage bring-up + real form->PR->XR reconcile (live cycle; chainsaw specs skip-gated)"
 

@@ -3,13 +3,14 @@
 # README for the excluded-by-location rationale).
 #
 # Backed by the chart-owned `traefik` GatewayClass (deploy/gateway-controller/
-# traefik/). Four HTTPS listeners, one per demo host (the `https-caddy` listener
-# — E1g-S05i — fronts the caddy-mvp Argo Rollouts canary). Listener port is 8443
+# traefik/). Five HTTPS listeners, one per demo host (the `https-caddy` listener
+# — E1g-S05i — fronts the caddy-mvp Argo Rollouts canary; `https-portal` fronts
+# the Backstage IDP). Listener port is 8443
 # (NOT 443): Traefik matches a listener to its ENTRYPOINT port (websecure:8443),
 # and the type=LoadBalancer Service maps external 443 -> 8443. Each listener
 # terminates TLS with a per-host cert Secret in THIS (traefik) namespace and
 # admits routes from All namespaces (the app HTTPRoutes live in argocd /
-# monitoring / caddy-demo).
+# monitoring / caddy-demo / caddy-mvp / portal).
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
@@ -85,6 +86,24 @@ spec:
           - group: ""
             kind: Secret
             name: caddy-tls
+      allowedRoutes:
+        namespaces:
+          from: All
+    # E10 portal — Backstage IDP on the cloud-edge (portal.lab). Distinct from the
+    # kind-only portal.kaddy.local Certificate in deploy/portal/backstage/
+    # certificate.yaml (local-CA, ns portal). This listener terminates LE prod TLS
+    # with Secret portal-tls in THIS (traefik) namespace; the HTTPRoute in ns portal
+    # attaches by sectionName and backends Service backstage:7007.
+    - name: https-portal
+      hostname: portal.lab.platformrelay.dev
+      port: 8443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: portal-tls
       allowedRoutes:
         namespaces:
           from: All

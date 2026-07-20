@@ -5,7 +5,8 @@
 # (deploy/cert-manager/cloud-only/cluster-issuer-dns01-prod.yaml). cert-manager
 # writes each keypair into a Secret in THIS (traefik) namespace — the same ns as
 # the clubhouse Gateway, so its listener certificateRefs resolve. Proven live:
-# all three reached Ready=True and the served chains verify without -k.
+# argocd/grafana/demo/caddy reached Ready=True (2026-07-18); portal.lab added
+# for the E10 Backstage IDP (same issuer + pattern).
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -118,6 +119,39 @@ spec:
   secretName: caddy-tls
   dnsNames:
     - caddy.lab.platformrelay.dev
+  issuerRef:
+    name: letsencrypt-prod-dns01
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# E10 portal — cert for the Backstage IDP on the cloud-edge (portal.lab).
+# Same DNS-01 PROD issuer; keypair Secret `portal-tls` in ns traefik resolves the
+# clubhouse `https-portal` listener. Distinct from the kind-only Certificate of
+# the same name in ns portal (kaddy-local-ca, portal.kaddy.local) — different
+# namespace, never coexist on one cluster path (cloud-only vs kind App recurse:false).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: portal-tls
+  namespace: traefik
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal-tls
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E10-S01-01
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  secretName: portal-tls
+  dnsNames:
+    - portal.lab.platformrelay.dev
   issuerRef:
     name: letsencrypt-prod-dns01
     kind: ClusterIssuer

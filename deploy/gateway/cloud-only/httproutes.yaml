@@ -8,6 +8,8 @@
 #   argocd.lab   -> argocd-server        (ns argocd)      port 80
 #   grafana.lab  -> monitoring-grafana   (ns monitoring)  port 80
 #   demo.lab     -> caddy                (ns caddy-demo)  port 80
+#   caddy.lab    -> caddy-origin-*       (ns caddy-mvp)   port 8080 (S05i)
+#   portal.lab   -> backstage            (ns portal)      port 7007 (E10)
 #
 # NOTE (argocd): argocd-server must run with server.insecure=true
 # (argocd-cmd-params-cm) behind this TLS-terminating gateway, else it 307-loops
@@ -195,3 +197,51 @@ spec:
           name: caddy-origin-canary
           port: 8080
           weight: 0
+---
+# E10 portal — Backstage IDP on the cloud-edge (portal.lab).
+#
+# Backend is the standalone lab Service `backstage` (port 7007) in ns portal —
+# the same Service the temporary Traefik IngressRoute
+# `backstage.<LB-IP>.nip.io` targeted during E10-S07 bring-up. This HTTPRoute
+# is the durable GitOps path (matches argocd/grafana/demo/caddy). Kind stays on
+# portal.kaddy.local via the local-CA Certificate in deploy/portal/backstage/;
+# this cloud route is applied only via edge-up.sh on GSK.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: portal
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: portal
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E10-S01-01
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  parentRefs:
+    - name: clubhouse
+      namespace: traefik
+      group: gateway.networking.k8s.io
+      kind: Gateway
+      sectionName: https-portal
+  hostnames:
+    - portal.lab.platformrelay.dev
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: backstage
+          port: 7007
+          weight: 1

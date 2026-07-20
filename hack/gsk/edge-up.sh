@@ -14,8 +14,8 @@
 #     cert-manager (key: api-token). NEVER committed — created out-of-band from
 #     $CLOUDFLARE_TOKEN, or populated by the ExternalSecret in
 #     deploy/cert-manager/cloud-only/ once ESO is wired.
-#   - Cloudflare A records argocd/grafana/demo.lab.platformrelay.dev -> the
-#     Traefik LoadBalancer public IP (proxied=false so the cert is end-to-end).
+#   - Cloudflare A records {argocd,grafana,demo,caddy,portal}.lab.platformrelay.dev
+#     -> the Traefik LoadBalancer public IP (proxied=false so the cert is end-to-end).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -74,4 +74,5 @@ echo "==> Edge applied. Watch cert issuance + LB IP:"
 echo "    kubectl get certificate -n traefik"
 echo "    kubectl get svc -n traefik traefik -o wide   # EXTERNAL-IP = the public LB IP"
 echo "    kubectl get gateway clubhouse -n traefik"
-echo "Point Cloudflare A records {argocd,grafana,demo,caddy}.lab.platformrelay.dev at that IP (proxied=false)."
+echo "Point Cloudflare A records {argocd,grafana,demo,caddy,portal}.lab.platformrelay.dev at that IP (proxied=false)."
+echo "    (includes portal.lab for the Backstage IDP HTTPRoute)"
