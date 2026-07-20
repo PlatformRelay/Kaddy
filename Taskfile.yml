@@ -111,6 +111,7 @@ tasks:
       - bash tests/meta/verify-fetch-depth.yaml
       - bash tests/meta/batch2-smoke-wired.yaml
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
+      - bash tests/smoke/argocd-autosync-defaults-offline.sh
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e1g-traefik-gitops-offline.sh
       - bash tests/smoke/e1g-caddy-lab-cloud-route.sh

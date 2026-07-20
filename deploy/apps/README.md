@@ -19,15 +19,17 @@ app-of-apps pattern). It is one of the two **control-plane apps** that self-heal
 | `gateway` | `deploy/gateway` | off | placeholder; CRDs/GatewayClass owned by E1e |
 | `workloads` | `deploy/workloads` | off | placeholder; sample apps, later Rollouts-managed |
 | `crossplane` | `deploy/crossplane` | off | E6: Crossplane v2 (nested pinned Helm app) + Website XRD/Composition |
-| `identity` | `deploy/identity` | n/a (manual) | **deferred** — needs KSOPS (REQ-E3-S01-03) |
+| `identity` | `deploy/identity` | **on** | KSOPS decrypt at render time (ADR-0110); prune+selfHeal |
+| `policies` | `deploy/policies` | off | ClusterPolicies + NetPol baseline; autosync ON (D-046), selfHeal OFF |
+| `kyverno` | `deploy/kyverno` | off | admission engine install only |
 
 ## selfHeal policy (REQ-E3-S01-02)
 
 `syncPolicy.automated.selfHeal: true` is set on the **control-plane apps
-(`root` + `platform-core`)** only. Both manage exclusively declarative Argo/config
-CRs (child Applications; cluster-scoped ACME ClusterIssuers) that are idempotent,
-so live drift snaps straight back to Git without a human. Workload-facing children
-keep selfHeal **off**.
+(`root` + `platform-core` + `identity`)** only. They manage declarative
+Argo/config/KSOPS CRs (child Applications; ACME ClusterIssuers; Dex/OIDC
+secrets) that are idempotent, so live drift snaps straight back to Git without
+a human. Workload-facing children keep selfHeal **off**.
 
 Documented exceptions (selfHeal **off**, auto create/update still on):
 
@@ -37,7 +39,13 @@ Documented exceptions (selfHeal **off**, auto create/update still on):
   Argo Rollouts-managed in E7, which needs `ignoreDifferences` on Rollouts-owned
   HTTPRoute weight labels (ADR-0103). Enabling selfHeal before that lands would
   fight the Rollouts controller.
-- **identity** — manual sync only; deferred until KSOPS decrypts its secrets.
+- **policies / kyverno** — admission + network controls (and the engine install)
+  auto-sync create/update so Git is the delivery path; selfHeal stays **off** so
+  a human reviews live drift before Argo forcibly reverts (D-046).
+
+**Default:** every `deploy/apps/*.yaml` Application declares `syncPolicy.automated`
+(prune on). Manual-sync exceptions must be allow-listed in
+`tests/smoke/argocd-autosync-defaults-offline.sh` and documented here.
 
 ## Live proof before merge
 

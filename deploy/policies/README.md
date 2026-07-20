@@ -17,11 +17,12 @@ default-deny NetworkPolicies (P1-1) and the unrestricted ArgoCD
 | Offline policy tests | `tests/kyverno/` | **Enforced** locally/CI via `kyverno test tests/kyverno/` (28 cases) |
 | Live admission/netpol tests | `tests/chainsaw/{labeling,security}/` | labeling un-skipped (CI + live); security suites live-verified, CI-skipped (no Cilium) |
 
-The `policies` Application (`deploy/apps/policies.yaml`) **stays
-manual-sync by design**: admission + network controls are high blast
-radius, so a human syncs every policy change deliberately
-(`argocd app sync policies --core`). The Kyverno ENGINE app is automated —
-installing the engine enforces nothing by itself.
+The `policies` Application (`deploy/apps/policies.yaml`) uses **automated
+create/update sync** (prune on, selfHeal **off** — D-046): NetPol +
+ClusterPolicies ship with `main` like other platform children. selfHeal
+stays off so a human reviews admission/network drift before Argo forcibly
+reverts. The Kyverno ENGINE app (`deploy/apps/kyverno.yaml`) is likewise
+automated for install/upgrade only.
 
 ## Enforcement matrix (`kyverno/`) — live, verified 2026-07-16
 

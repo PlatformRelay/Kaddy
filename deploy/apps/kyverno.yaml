@@ -7,10 +7,10 @@
 # documented exception as rollouts/observability).
 #
 # The engine is separate from the policies it evaluates: ClusterPolicies +
-# the netpol baseline sync via the MANUAL-sync `policies` Application
-# (deploy/apps/policies.yaml). This app carries no policy content, so
-# automated create/update sync is safe — installing the engine enforces
-# nothing by itself.
+# the netpol baseline sync via the `policies` Application
+# (deploy/apps/policies.yaml; automated create/update, selfHeal OFF — D-046).
+# This app carries no policy content, so automated create/update sync is
+# safe — installing the engine enforces nothing by itself.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

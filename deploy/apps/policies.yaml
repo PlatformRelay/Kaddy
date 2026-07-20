@@ -1,12 +1,11 @@
 # E1c: policies child Application — syncs deploy/policies/ (Kyverno
 # ClusterPolicies + the default-deny NetworkPolicy baseline).
 #
-# Registration vs apply: the root app discovers this file (flat sibling), so
-# Argo CD REGISTERS the Application — but syncPolicy is MANUAL (no
-# `automated` block) and STAYS manual after the cutover: policies are
-# high-blast-radius admission/network controls, so every policy change is
-# human-synced deliberately (first sync performed 2026-07-16, Kyverno
-# v1.18.2 installed via deploy/apps/kyverno.yaml). Runbook + enforcement
+# Automated sync ON (D-046): NetPol + ClusterPolicies are on main and
+# already live-proven; keeping this app manual caused drift vs Git and
+# blocked GitOps delivery of selector/NetPol fixes. selfHeal OFF (same
+# blast-radius exception as kyverno/rollouts — human in the loop before
+# Argo forcibly reverts admission/network drift). Runbook + enforcement
 # matrix: deploy/policies/README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -27,7 +26,7 @@ metadata:
   annotations:
     kaddy.io/adr: "0106"
     kaddy.io/req: REQ-E1c-S01-01
-    kaddy.io/status: live-manual-sync-only
+    kaddy.io/status: live-autosync
 spec:
   project: platform
   source:
@@ -43,7 +42,9 @@ spec:
     # namespace; `kyverno` is only the default for any un-namespaced
     # namespaced resource (there are none today).
     namespace: kyverno
-  # NO syncPolicy.automated — manual, human-triggered syncs only (see header).
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
     syncOptions:
       - CreateNamespace=false
