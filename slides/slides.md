@@ -410,7 +410,7 @@ class: text-center
 <div class="kd-footer-link">github.com/PlatformRelay/Kaddy</div>
 
 <!--
-That is kaddy: the two-VM exercise answered literally, and a platform built around it — live edge, evidence-gated delivery, tested monitoring, and an honest open list: external alert delivery, the Nix boot proof, and the upstream merges. The repository link has everything, including this deck.
+That is kaddy: the two-VM exercise answered literally, and a platform built around it — live edge, evidence-gated delivery, tested monitoring, and an honest open list: external alert delivery, the Nix boot proof, and the upstream merges. The repository link has everything, including this deck. Thank you for listening — I would be glad to walk through any of it live, and I hope to hear from you soon in the interview.
 -->
 
 ---
