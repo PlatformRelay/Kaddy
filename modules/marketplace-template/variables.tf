@@ -87,7 +87,7 @@ variable "meta_overview" {
 }
 
 variable "icon_path" {
-  description = "Path to the icon PNG, base64-encoded into meta_icon. Defaults to the module's bundled kaddy logo."
+  description = "Path to the icon PNG; encoded as data:image/png;base64,… into meta_icon (panel <img src>). Defaults to the module's bundled kaddy logo."
   type        = string
   default     = ""
 }

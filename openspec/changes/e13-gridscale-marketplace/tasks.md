@@ -52,11 +52,13 @@
         mechanism resolved: storage `template_uuid = <consumer import object_uuid>` (no TF-provider deploy resource).
 - [x] Gate: `task test:spec` (structure) + `tofu test` + offline gate (`task test:smoke:e13`); live smoke gated on E1g credits.
 
-## E13-S06 — Vendor logos render in the panel (≤8-bit meta_icon)
+## E13-S06 — Vendor logos render in the panel (data-URI meta_icon)
 
-- [x] Offline gate `tests/smoke/e13-marketplace-icons.sh` (wired into `e13-offline.sh`): every engine
-      stack has `icon_path` → present PNG, ≤8-bit, distinct from module default kaddy logo
+- [x] Offline gate `tests/smoke/e13-marketplace-icons.sh` (wired into `e13-offline.sh`): module
+      `meta_icon` is `data:image/png;base64,…`; every engine stack has `icon_path` → present ≤8-bit
+      PNG ≤200 KiB, distinct from module default kaddy logo
 - [x] Convert `caddy-512.png` / `nixos-512.png` from 16-bit RGBA → 8-bit RGB; add `nginx-512.png` +
       `icon_path` on the nginx stack
-- [x] Live re-apply `meta_icon` for `caddy-ubuntu` / `caddy-nix` (+ nginx if registered); evidence
-      `evidence/live/e13-marketplace-icons-2026-07-20.md` (API PATCH 204; nginx not registered live)
+- [x] Root cause v2: raw base64 blanks in panel (`<img src>`); prefix data URI. Live re-register
+      `caddy-ubuntu` / `caddy-nix` after operator delete; evidence
+      `evidence/live/e13-marketplace-icons-v2-2026-07-20.md` (nginx skipped — no `nginx-golden.gz`)

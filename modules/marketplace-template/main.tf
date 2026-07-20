@@ -11,8 +11,14 @@
 locals {
   # Prefer the caller-supplied icon; otherwise the module's bundled kaddy logo.
   # filebase64() runs at plan time (works under mock_provider) so meta_icon is
-  # always a non-empty base64 image — the marketplace API requires an icon.
+  # always a non-empty image payload — the marketplace API requires an icon.
+  #
+  # Panel contract (E13-S06): official apps store CDN paths in metadata.icon;
+  # the API accepts raw base64 but does NOT rewrite it to a CDN path. The panel
+  # uses the string as <img src>, so raw base64 renders blank. Prefix with a
+  # data URI so the browser can decode the PNG.
   icon_path = var.icon_path != "" ? var.icon_path : "${path.module}/assets/icon.png"
+  meta_icon = "data:image/png;base64,${filebase64(local.icon_path)}"
 }
 
 resource "gridscale_marketplace_application" "app" {
@@ -27,7 +33,7 @@ resource "gridscale_marketplace_application" "app" {
   meta_os         = var.meta_os
   meta_components = var.meta_components
   meta_overview   = var.meta_overview
-  meta_icon       = filebase64(local.icon_path)
+  meta_icon       = local.meta_icon
 
   # Private-tenant only (D-032): the writable `publish` arg (Optional, default
   # false) is deliberately left UNSET, so no global publication is requested —

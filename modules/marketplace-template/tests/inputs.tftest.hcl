@@ -5,7 +5,7 @@
 # imposes (see references/.../marketplaceApp.html.md):
 #   1. object_storage_path MUST be `.gz` and start with `s3://`
 #   2. category MUST be one of the fixed enum (there is NO "Web Server")
-#   3. meta_icon MUST be non-empty (a base64 image is required)
+#   3. meta_icon MUST be a non-empty data:image/…;base64,… URI (panel <img src>)
 #
 # The gridscale provider is mocked — no API call, no credential. We assert the
 # planned resource carries the values we expect, and that invalid inputs are
@@ -36,11 +36,16 @@ run "registers_and_imports" {
     error_message = "category must be the configured enum value"
   }
 
-  # A base64 icon is required by the marketplace API; filebase64() runs under
-  # mock_provider, so we can assert it is present (never assert exact bytes).
+  # Panel uses metadata.icon as <img src>; raw base64 blanks. filebase64() runs
+  # under mock_provider — assert the data-URI prefix (never assert exact bytes).
   assert {
-    condition     = length(gridscale_marketplace_application.app.meta_icon) > 0
-    error_message = "meta_icon must be a non-empty base64 image"
+    condition     = startswith(gridscale_marketplace_application.app.meta_icon, "data:image/png;base64,")
+    error_message = "meta_icon must be a data:image/png;base64,… URI for panel render"
+  }
+
+  assert {
+    condition     = length(gridscale_marketplace_application.app.meta_icon) > length("data:image/png;base64,")
+    error_message = "meta_icon must carry non-empty base64 image bytes after the data-URI prefix"
   }
 
   # The import is wired to the app's unique_hash → private tenant import.

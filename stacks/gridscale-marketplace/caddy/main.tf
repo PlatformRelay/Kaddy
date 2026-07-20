@@ -14,7 +14,7 @@ module "marketplace" {
   name                = "caddy-ubuntu"
   object_storage_path = var.object_storage_path
   category            = "Adminpanel"                   # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
-  icon_path           = "${path.module}/caddy-512.png" # Caddy logo (Simple Icons, CC0); ≤8-bit for panel (E13-S06)
+  icon_path           = "${path.module}/caddy-512.png" # Caddy logo (Simple Icons, CC0); data-URI + ≤8-bit (E13-S06)
 
   meta_os         = "Ubuntu 24.04"
   meta_components = ["Caddy", "Prometheus /metrics endpoint", "sample landing page"]

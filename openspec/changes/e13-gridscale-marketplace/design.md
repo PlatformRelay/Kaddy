@@ -35,8 +35,11 @@ tests/promtool/gridscale-marketplace.test.yaml   # caddy_* fires against the dep
 ```
 
 Each stack passes `icon_path` → a committed **≤8-bit** vendor PNG; the module
-`filebase64`s it into `meta_icon`. 16-bit RGBA uploads but renders blank in the
-panel (E13-S06).
+wraps `filebase64` in a **`data:image/png;base64,`** prefix for `meta_icon`.
+Official Marketplace apps store CDN paths (`/img/assets/logos_marketplace/…`);
+the API accepts raw base64 but does not rewrite it, and the panel uses the
+string as `<img src>` — raw base64 therefore renders blank. Keep PNGs ≤8-bit
+and modest size so the data URI stays panel-friendly (E13-S06).
 
 ## Test levels (gridscale API — no k8s cluster)
 
