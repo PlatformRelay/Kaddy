@@ -17,13 +17,12 @@
   <a href="https://github.com/PlatformRelay/Kaddy/releases"><img alt="release" src="https://img.shields.io/github/v/release/PlatformRelay/Kaddy?label=release&logo=github" /></a>
   <a href="https://platformrelay.github.io/Kaddy/"><img alt="docs / Pages" src="https://img.shields.io/website?url=https%3A%2F%2Fplatformrelay.github.io%2FKaddy%2F&label=docs%20%C2%B7%20Pages&up_message=live&down_message=pending" /></a>
   <img alt="Go" src="https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white" />
-  <img alt="license" src="https://img.shields.io/badge/license-see%20repo-lightgrey" />
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-green" /></a>
 </p>
 
 <!-- Badge caveats (REQ-E12c-S07-01): CI/deck/chainsaw/trivy badges map to real workflows
      on PlatformRelay/Kaddy. The docs/Pages badge points at the published GitHub Pages URL
-     (E8-S03); it renders "pending" if Pages is down. LICENSE is not yet committed — the
-     license badge stays a neutral "see repo" placeholder until an SPDX license lands. -->
+     (E8-S03); it renders "pending" if Pages is down. LICENSE is MIT (Platform Relay). -->
 
 kaddy is an internal developer platform for **monitored, TLS-terminated websites**. One
 self-service claim provisions a site behind Caddy with observability, alerting, and

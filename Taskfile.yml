@@ -100,6 +100,7 @@ tasks:
       - bash tests/smoke/e8-s04-demo.sh
       - bash tests/smoke/readme-live-status.sh
       - bash tests/deck/readme-badges.sh
+      - bash tests/meta/mit-license.yaml
       - bash tests/smoke/caddy-mvp-s02-offline.sh
       - bash tests/smoke/caddy-mvp-s02-03.sh
       - bash tests/smoke/caddy-mvp-s05-03-offline.sh

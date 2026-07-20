@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# REQ-E12c-S07 — SPDX MIT license at repo root (offline meta).
+#
+# Asserts LICENSE exists, is the MIT License text, carries a 2026 Platform Relay
+# copyright (matches kubernetes-workshop / PlatformRelay org convention), and
+# that README.md exposes an MIT license badge (not the pre-SPDX "see repo"
+# placeholder).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+LICENSE="${ROOT}/LICENSE"
+README="${ROOT}/README.md"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+[ -f "${LICENSE}" ] || fail "LICENSE missing at repo root (expected MIT SPDX)"
+
+head -1 "${LICENSE}" | grep -qx 'MIT License' \
+  || fail "LICENSE first line is not 'MIT License'"
+
+grep -qE '^Copyright \(c\) 2026 Platform Relay$' "${LICENSE}" \
+  || fail "LICENSE missing 'Copyright (c) 2026 Platform Relay' line"
+
+grep -q 'Permission is hereby granted, free of charge' "${LICENSE}" \
+  || fail "LICENSE missing MIT grant clause"
+
+grep -q 'THE SOFTWARE IS PROVIDED "AS IS"' "${LICENSE}" \
+  || fail "LICENSE missing MIT disclaimer clause"
+
+[ -f "${README}" ] || fail "README.md missing"
+
+# Prefer a real MIT shields badge (not the grey "see repo" placeholder).
+grep -qE 'img\.shields\.io/badge/license-MIT' "${README}" \
+  || fail "README.md missing MIT license badge (img.shields.io/badge/license-MIT…)"
+
+# Placeholder must be gone once SPDX lands.
+grep -qiE 'license-see%20repo|license-see.repo' "${README}" \
+  && fail "README.md still has the pre-SPDX 'see repo' license placeholder"
+
+echo "OK: MIT LICENSE present (Platform Relay 2026) + README MIT badge"
