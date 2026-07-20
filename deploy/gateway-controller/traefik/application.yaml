@@ -69,6 +69,12 @@ spec:
           # No classic Ingress — Gateway API only.
           kubernetesIngress:
             enabled: false
+        # Chart still defaults to minting IngressClass `traefik`. That is
+        # cluster-scoped and not on the gsk-cloud-edge AppProject whitelist
+        # (Gateway API only). Disable so Argo sync succeeds without widening
+        # the project ACL; keep any pre-existing IngressClass on the cluster.
+        ingressClass:
+          enabled: false
         # Do NOT let the chart mint its own Gateway; the clubhouse Gateway +
         # listeners are owned as GitOps manifests (deploy/gateway/cloud-only/).
         gateway:

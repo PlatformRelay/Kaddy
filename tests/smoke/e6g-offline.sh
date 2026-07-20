@@ -29,6 +29,7 @@ PROVIDER="${CP}/provider-gridscale.yaml"
 PROVIDERCONFIG="${CP}/providerconfig-gridscale.yaml"
 COMPO_GS="${CP}/composition-website-gridscale.yaml"
 APP="${ROOT}/deploy/apps/crossplane.yaml"
+PLATFORM_PROJ="${ROOT}/deploy/apps/projects/platform.yaml"
 
 # The sibling provider-gridscale repo holds the GENERATED CRD schemas (E6g-S01).
 # Discover it whether kaddy is a normal checkout (../provider-gridscale) or a
@@ -56,6 +57,41 @@ need_file "${PROVIDER}"
 need_file "${PROVIDERCONFIG}"
 need_file "${COMPO_GS}"
 need_file "${APP}"
+need_file "${PLATFORM_PROJ}"
+
+# --- 0) platform AppProject must permit Provider (+ ClusterProviderConfig) ---
+# Live GSK (D-044/D-045): crossplane sync fails with
+#   pkg.crossplane.io:Provider is not permitted in project platform
+# without this whitelist entry. ClusterProviderConfig is also cluster-scoped and
+# lives in deploy/crossplane/, so it must be listed too (closed list, not */*).
+# ProviderRevision is Crossplane-owned (not in git) — do NOT whitelist it here.
+awk '
+  /clusterResourceWhitelist:/ { in_w=1; next }
+  in_w && /^[[:space:]]*-[[:space:]]*group:/ {
+    g=$0; sub(/^[[:space:]]*-[[:space:]]*group:[[:space:]]*/, "", g)
+    getline
+    if ($0 ~ /kind:/) {
+      k=$0; sub(/^[[:space:]]*kind:[[:space:]]*/, "", k)
+      print g "/" k
+    }
+  }
+  in_w && /^[^[:space:]#]/ && $0 !~ /^[[:space:]]/ { in_w=0 }
+' "${PLATFORM_PROJ}" | grep -qx 'pkg.crossplane.io/Provider' \
+  || fail "platform AppProject clusterResourceWhitelist must include pkg.crossplane.io/Provider"
+awk '
+  /clusterResourceWhitelist:/ { in_w=1; next }
+  in_w && /^[[:space:]]*-[[:space:]]*group:/ {
+    g=$0; sub(/^[[:space:]]*-[[:space:]]*group:[[:space:]]*/, "", g)
+    getline
+    if ($0 ~ /kind:/) {
+      k=$0; sub(/^[[:space:]]*kind:[[:space:]]*/, "", k)
+      print g "/" k
+    }
+  }
+  in_w && /^[^[:space:]#]/ && $0 !~ /^[[:space:]]/ { in_w=0 }
+' "${PLATFORM_PROJ}" | grep -qx 'gridscale.m.platformrelay.io/ClusterProviderConfig' \
+  || fail "platform AppProject clusterResourceWhitelist must include gridscale.m.platformrelay.io/ClusterProviderConfig"
+ok "platform AppProject whitelists Provider + ClusterProviderConfig (D-045)"
 
 # --- 1) Provider references the provider-gridscale package -------------------
 grep -qE '^kind:[[:space:]]*Provider[[:space:]]*$' "${PROVIDER}" \

@@ -110,6 +110,7 @@ tasks:
       - bash tests/meta/batch2-smoke-wired.yaml
       - bash tests/smoke/caddy-mvp-monitoring-gitops.sh
       - bash tests/smoke/e1g-offline.sh
+      - bash tests/smoke/e1g-traefik-gitops-offline.sh
       - bash tests/smoke/e6g-offline.sh
       - bash tests/smoke/e8b-offline.sh
       - bash tests/smoke/e13-offline.sh
@@ -360,6 +361,7 @@ tasks:
     desc: E1g — OFFLINE gate for gridscale day-0 IaC (terramate codegen + fmt + validate + tofu test + conftest; no cluster/API/creds)
     cmds:
       - bash tests/smoke/e1g-offline.sh
+      - bash tests/smoke/e1g-traefik-gitops-offline.sh
       - bash tests/smoke/bootstrap-guard.sh
 
   e1g:generate:

@@ -91,3 +91,11 @@ spec:
       kind: Function
     - group: pkg.crossplane.io
       kind: DeploymentRuntimeConfig
+    # D-045: Provider package CR (deploy/crossplane/provider-gridscale.yaml).
+    # Without this, Argo denies sync: pkg.crossplane.io:Provider not permitted.
+    # ProviderRevision is Crossplane-owned (not GitOps) — intentionally omitted.
+    - group: pkg.crossplane.io
+      kind: Provider
+    # ClusterProviderConfig for provider-gridscale (cluster-scoped; same sync).
+    - group: gridscale.m.platformrelay.io
+      kind: ClusterProviderConfig
