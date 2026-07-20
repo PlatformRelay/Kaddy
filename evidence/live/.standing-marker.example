@@ -1,0 +1,7 @@
+# E1g-S07 standing marker — EXAMPLE (copy to .standing-marker or let `task e1g:up` write it).
+# Local cost-visibility record only; gitignored when named `.standing-marker`.
+# Surfaced by `task e1g:status` (soft WARN past teardown-by / ~14-day window; always exit 0).
+what=gridscale GSK day-0 substrate
+since=2026-07-18
+teardown-by=2026-08-01
+owner=operator

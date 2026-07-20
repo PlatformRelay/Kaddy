@@ -104,6 +104,7 @@ tasks:
       - bash tests/smoke/e8-s03-01.sh
       - bash tests/meta/doc10-roadmap-status.yaml
       - bash tests/meta/e1g-standing-policy.yaml
+      - bash tests/meta/e1g-standing-ttl.yaml
       - bash tests/meta/release-provenance.yaml
       - bash tests/meta/verify-fetch-depth.yaml
       - bash tests/meta/batch2-smoke-wired.yaml
@@ -365,6 +366,11 @@ tasks:
         fi
         terramate generate
 
+  e1g:status:
+    desc: "E1g — OFFLINE standing-substrate status (E1g-S07). Reads evidence/live/.standing-marker only; soft WARN past ~14d / teardown-by; always exit 0. No creds."
+    cmds:
+      - bash hack/e1g/standing-status.sh status
+
   e1g:up:
     desc: "E1g — LIVE gridscale day-0 provisioning (COSTS MONEY; needs real creds). Bootstraps object-storage anchor, then network → k8s → lbaas."
     # Auth mapping (KEY-FACT): the provider wants GRIDSCALE_UUID/_TOKEN but .envrc
@@ -388,6 +394,8 @@ tasks:
         # See docs/runbooks/gridscale-day0.md for the exact backend-config + the
         # output→input wiring (network IPs → lbaas, GSK kubeconfig → ArgoCD).
         echo "object-storage anchor up. Provision network/k8s/lbaas per the runbook (backend-config wiring)."
+        # E1g-S07: record the standing substrate so cost meter is visible (soft TTL).
+        bash hack/e1g/standing-status.sh write
 
   e1g:down:
     desc: "E1g — LIVE ruthless teardown (destroy lbaas → k8s → network → object-storage). Run after EVERY live test (cost discipline)."
@@ -410,6 +418,8 @@ tasks:
         for s in lbaas k8s network object-storage; do
           rm -rf "stacks/gridscale/${s}/.terraform"
         done
+        # E1g-S07: clear the standing marker so status becomes a silent no-op.
+        bash hack/e1g/standing-status.sh clear
         echo "teardown complete — verify in the gridscale panel that nothing lingers."
 
   test:smoke:e8b:

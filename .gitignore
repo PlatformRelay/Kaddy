@@ -50,6 +50,8 @@ __pycache__/
 
 # --- Evidence: generated run artifacts (keep README + templates) ---
 evidence/runs/
+# E1g-S07: local standing-substrate cost marker (written by e1g:up; never commit)
+evidence/live/.standing-marker
 
 # --- OS / editor ---
 .DS_Store
