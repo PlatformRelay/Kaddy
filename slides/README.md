@@ -54,14 +54,14 @@ Five compact surfaces are tagged for the deck gates:
 | Surface | Mode | Purpose |
 | --- | --- | --- |
 | `argocd` | static | GitOps application view for appendix/recording |
-| `grafana` | live | alerts and dashboards (appendix only) |
-| `clubhouse` | live | served website (appendix only) |
+| `grafana` | live | public GSK alerts and dashboards at `grafana.lab.platformrelay.dev` (appendix only) |
+| `clubhouse` | live | public GSK served website at `demo.lab.platformrelay.dev` (appendix only) |
 | `backstage` | live | GSK portal; public `portal.lab` HTTPRoute is proven live (200) |
 | `crossplane-graph` | fallback | live portal graph remains open |
 
-The five-minute spoken path contains no localhost iframes; live frames are optional appendix/recording
-aids. The evidence artifacts, manifests, and tests must remain enough to evaluate a claim when a
-surface is unavailable.
+The five-minute spoken path contains no local or kind demo targets; live frames use public GSK
+upstream URLs and remain optional appendix/recording aids. The evidence artifacts, manifests, and
+tests must remain enough to evaluate a claim when a surface is unavailable.
 
 ## Commands
 

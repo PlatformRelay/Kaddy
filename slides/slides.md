@@ -516,11 +516,11 @@ layout: default
 <div class="kd-grid kd-grid-3 mt-5">
   <div class="kd-surface">
     <div class="kd-surface-label"><KdIcon name="mdi:web" /> Website</div>
-    <iframe src="https://clubhouse.kaddy.local:8443/" title="Clubhouse website" data-surface="clubhouse" data-surface-mode="live"></iframe>
+    <iframe src="https://demo.lab.platformrelay.dev/" title="Clubhouse website" data-surface="clubhouse" data-surface-mode="live"></iframe>
   </div>
   <div class="kd-surface">
     <div class="kd-surface-label"><KdIcon name="mdi:chart-line" /> Grafana</div>
-    <iframe src="http://127.0.0.1:3000/alerting/list" title="Grafana alerting" data-surface="grafana" data-surface-mode="live"></iframe>
+    <iframe src="https://grafana.lab.platformrelay.dev/alerting/list" title="Grafana alerting" data-surface="grafana" data-surface-mode="live"></iframe>
   </div>
   <div class="kd-card kd-card-accent">
     <KdIcon name="mdi:view-dashboard-outline" size="1.7em" />

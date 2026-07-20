@@ -6,8 +6,9 @@
 # (per the spec's fallback clause). Every surface must be tagged:
 #   data-surface="<name>" data-surface-mode="live|fallback|static"
 # where `live` marks a public URL, and `fallback`/`static` marks an
-# intentionally pitch-safe placeholder or capture. Appendix demos may still
-# use live frames; the spoken path must not contain localhost iframes.
+# intentionally pitch-safe placeholder or capture. Clickable deck demo targets
+# must use public upstream URLs; local-kind hostnames may be documented as
+# non-clickable implementation context.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -27,11 +28,8 @@ for s in "${SURFACES[@]}"; do
   esac
 done
 
-MAIN="$(mktemp "${TMPDIR:-/tmp}/deck-iframe-main.XXXXXX")"
-trap 'rm -f "${MAIN}"' EXIT
-sed '/<!-- APPENDIX -->/,$d' "${DECK}" > "${MAIN}"
-if grep -Eqi '<iframe[^>]+(127\.0\.0\.1|localhost)' "${MAIN}"; then
-  fail "spoken path contains a localhost iframe"
+if grep -Eqi '<(iframe|a)[^>]+(src|href)="[^"]*(127\.0\.0\.1|localhost|[[:alnum:].-]*\.kaddy\.local|[[:alnum:].-]*\.nip\.io|:30[0-9]{3})' "${DECK}"; then
+  fail "deck demo target uses a local, kind, nip.io, or NodePort URL"
 fi
 
-echo "OK: five surfaces are tagged and the spoken path is pitch-safe"
+echo "OK: five surfaces are tagged and demo targets use public upstream URLs"
