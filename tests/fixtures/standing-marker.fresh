@@ -1,0 +1,6 @@
+# E1g-S07 fixture — standing marker WITHIN the default ~14-day window.
+# Used by tests/meta/e1g-standing-ttl.yaml with E1G_STANDING_NOW=2026-07-20.
+what=gridscale GSK day-0 substrate (fixture-fresh)
+since=2026-07-18
+teardown-by=2026-08-01
+owner=fixture-owner

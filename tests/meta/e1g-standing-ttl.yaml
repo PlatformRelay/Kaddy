@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# E1g-S07 — soft standing TTL / cost-visibility guardrail (offline; WIP-D1 TTL half).
+#
+# Proves the SOFT contract for `task e1g:status` / hack/e1g/standing-status.sh:
+#   (a) absent marker  → silent no-op, exit 0
+#   (b) fresh marker   → OK report, exit 0
+#   (c) stale marker   → WARN (names teardown-by + owner + e1g:down), STILL exit 0
+#   (d) Taskfile wires e1g:status + this meta check into test:meta:ci
+#   (e) e1g:up writes / updates the marker; e1g:down clears it
+#
+# Creds-free: reads local marker files only. Controllable via
+# E1G_STANDING_MARKER + E1G_STANDING_NOW (+ optional E1G_STANDING_WINDOW_DAYS).
+# Asserts on behaviour STRINGS, never line numbers.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+STATUS_SH="$ROOT/hack/e1g/standing-status.sh"
+TASKFILE="$ROOT/Taskfile.yml"
+FIX="$ROOT/tests/fixtures"
+FRESH="$FIX/standing-marker.fresh"
+STALE="$FIX/standing-marker.stale"
+NOW=2026-07-20
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+ok()   { echo "OK: $*"; }
+
+# --- (d) wiring: task + meta + e1g:up/down marker contract must exist --------
+[ -f "$TASKFILE" ] || fail "Taskfile.yml missing"
+grep -qE '^[[:space:]]*e1g:status:' "$TASKFILE" \
+  || fail "Taskfile.yml must declare task e1g:status (E1g-S07)"
+grep -qF 'e1g-standing-ttl.yaml' "$TASKFILE" \
+  || fail "test:meta:ci must wire tests/meta/e1g-standing-ttl.yaml"
+grep -qF 'standing-status.sh' "$TASKFILE" \
+  || fail "Taskfile e1g:* must invoke hack/e1g/standing-status.sh"
+# e1g:up must emit/update the marker; e1g:down must clear it (stop-the-meter).
+grep -A80 -E '^[[:space:]]*e1g:up:' "$TASKFILE" | grep -qE 'standing-status.*(write|mark)|write.*standing' \
+  || fail "e1g:up must write/update the standing marker via standing-status.sh"
+grep -A50 -E '^[[:space:]]*e1g:down:' "$TASKFILE" | grep -qE 'standing-status.*(clear|rm|remove)|clear.*standing' \
+  || fail "e1g:down must clear the standing marker via standing-status.sh"
+
+[ -f "$STATUS_SH" ] || fail "missing $STATUS_SH (implement E1g-S07 standing-status)"
+[ -x "$STATUS_SH" ] || fail "$STATUS_SH must be executable"
+[ -f "$FRESH" ] || fail "missing fixture $FRESH"
+[ -f "$STALE" ] || fail "missing fixture $STALE"
+
+run_status() {
+  local marker="$1"
+  shift
+  E1G_STANDING_MARKER="$marker" E1G_STANDING_NOW="$NOW" \
+    bash "$STATUS_SH" "$@"
+}
+
+# --- (a) absent → silent no-op, exit 0 --------------------------------------
+ABSENT="$(mktemp -d)/no-such-marker"
+out="$(run_status "$ABSENT" 2>&1)" || rc=$?
+rc="${rc:-0}"
+[ "$rc" -eq 0 ] || fail "absent marker must exit 0 (got $rc)"
+# Silent: no WARN, no standing report noise that would redden operator attention.
+echo "$out" | grep -qiE 'WARN|standing|teardown' \
+  && fail "absent marker must be a silent no-op (got output: $out)"
+ok "absent marker → silent no-op exit 0"
+
+# --- (b) fresh → OK report, exit 0 ------------------------------------------
+out="$(run_status "$FRESH" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || fail "fresh marker must exit 0 (got $rc); output: $out"
+echo "$out" | grep -qiE 'WARN' \
+  && fail "fresh marker must NOT WARN (got: $out)"
+echo "$out" | grep -qF 'fixture-fresh' \
+  || fail "fresh status must print what=… (fixture-fresh); got: $out"
+echo "$out" | grep -qiE 'teardown-by|teardown by' \
+  || fail "fresh status must print teardown-by; got: $out"
+echo "$out" | grep -qF 'fixture-owner' \
+  || fail "fresh status must print owner; got: $out"
+echo "$out" | grep -qF 'e1g:down' \
+  || fail "fresh status must mention task e1g:down stop-the-meter; got: $out"
+ok "fresh marker → OK report exit 0"
+
+# --- (c) stale → WARN + exit 0 (softness teeth) -----------------------------
+out="$(run_status "$STALE" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || fail "stale marker must STILL exit 0 (soft WARN); got $rc; output: $out"
+echo "$out" | grep -qiE 'WARN' \
+  || fail "stale marker must WARN; got: $out"
+echo "$out" | grep -qF '2026-06-15' \
+  || fail "stale WARN must name teardown-by date; got: $out"
+echo "$out" | grep -qF 'fixture-owner' \
+  || fail "stale WARN must name owner; got: $out"
+echo "$out" | grep -qF 'e1g:down' \
+  || fail "stale WARN must name task e1g:down; got: $out"
+ok "stale marker → WARN + exit 0 (soft)"
+
+# Softness proof against task verify: a stale marker in the default path must
+# not be able to redden this meta check (we already proved exit 0). Documented
+# in DEVELOPMENT / runbook; here we only re-assert the contract.
+ok "softness: status always exit 0 (absent/fresh/stale)"
+
+echo "OK: E1g-S07 standing TTL soft-WARN guardrail"

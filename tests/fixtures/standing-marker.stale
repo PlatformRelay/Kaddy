@@ -1,0 +1,6 @@
+# E1g-S07 fixture — standing marker PAST teardown-by (soft WARN expected).
+# Used by tests/meta/e1g-standing-ttl.yaml with E1G_STANDING_NOW=2026-07-20.
+what=gridscale GSK day-0 substrate (fixture-stale)
+since=2026-06-01
+teardown-by=2026-06-15
+owner=fixture-owner
