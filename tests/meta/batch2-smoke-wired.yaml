@@ -5,9 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF="$ROOT/Taskfile.yml"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 # Strip full-line / trailing comments so commented-out wiring cannot false-pass.
-stripped="$(sed -E 's/#.*$//' "$TF")"
-echo "$stripped" | grep -qE 'tests/smoke/caddy-mvp-s05-03-offline\.sh' \
+# Use a temp file + grep (not echo|grep -q): under pipefail, grep -q exits early
+# on match and can SIGPIPE a large echo of Taskfile.yml → false FAIL on CI.
+stripped="$(mktemp "${TMPDIR:-/tmp}/batch2-tf.XXXXXX")"
+trap 'rm -f "$stripped"' EXIT
+sed -E 's/#.*$//' "$TF" >"$stripped"
+grep -qE 'tests/smoke/caddy-mvp-s05-03-offline\.sh' "$stripped" \
   || fail "Taskfile test:meta:ci must invoke caddy-mvp-s05-03-offline.sh"
-echo "$stripped" | grep -qE 'tests/smoke/e8-s03-01\.sh' \
+grep -qE 'tests/smoke/e8-s03-01\.sh' "$stripped" \
   || fail "Taskfile test:meta:ci must invoke e8-s03-01.sh"
 echo "OK: batch2 smokes wired into Taskfile"
