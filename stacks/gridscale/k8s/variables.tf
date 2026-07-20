@@ -13,13 +13,13 @@ variable "gsk_release" {
 }
 
 variable "node_count" {
-  description = "Worker node count for the single pool. Standing go-live GSK uses 3 (MemoryPressure headroom); cost cap remains 1–3."
+  description = "Worker node count for the single pool. Standing go-live GSK uses 3; cost cap 1-4 — the 4th node is operator-approved MemoryPressure relief (2026-07-20, ~€46/node/mo)."
   type        = number
   default     = 3
 
   validation {
-    condition     = var.node_count >= 1 && var.node_count <= 3
-    error_message = "node_count must be 1-3 (cost cap for the day-0 demo)."
+    condition     = var.node_count >= 1 && var.node_count <= 4
+    error_message = "node_count must be 1-4 (cost cap; 4th node = operator-approved MemoryPressure relief 2026-07-20)."
   }
 }
 

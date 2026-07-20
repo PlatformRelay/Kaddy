@@ -1,5 +1,7 @@
 # REQ-E1g-S03: GSK cluster — offline plan, mocked provider. Asserts standing
-# sizing (node_count=3), concrete (non-latest) release, single node pool, labels.
+# sizing (node_count=3 default), concrete (non-latest) release, single node
+# pool, labels. Cap is 1-4: the 4th node is operator-approved MemoryPressure
+# relief (2026-07-20); anything above 4 must still be rejected.
 
 mock_provider "gridscale" {}
 
@@ -44,6 +46,20 @@ run "rejects_latest_release" {
   expect_failures = [
     var.gsk_release,
   ]
+}
+
+# 4th node explicitly allowed (operator-approved MemoryPressure relief 2026-07-20).
+run "accepts_fourth_node" {
+  command = plan
+
+  variables {
+    node_count = 4
+  }
+
+  assert {
+    condition     = one(gridscale_k8s.platform.node_pool).node_count == 4
+    error_message = "node_count=4 must be accepted (operator-approved MemoryPressure relief)"
+  }
 }
 
 run "rejects_oversized_pool" {
