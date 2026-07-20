@@ -19,6 +19,7 @@ spec-driven internal developer platform for monitored, TLS-terminated websites o
 | 📋 | [skills/README.md](skills/README.md) | Agent skills catalogue (loop, review, audit, handover, …) |
 | 📋 | [openspec/config.yaml](openspec/config.yaml) | OpenSpec conventions (OPSX workflow) |
 | 🎬 | [slides/README.md](slides/README.md) | Slidev interview deck |
+| 🎬 | [docs/runbooks/demo-video.md](docs/runbooks/demo-video.md) | Scene-by-scene run-sheet for the 5-10 min demo video (deliberately not linked from the slides) |
 | 📊 | [evidence/README.md](evidence/README.md) | Scorecard evidence harness |
 | 🌩️ | `agent-context/reference/gridscale/` | **gridscale cloud API + provider notes** (Phase 2). Curated offline docs — read before touching GSK/LBaaS/Upjet. Gitignored. |
 | 🌩️ | `references/README.md` | Cloned gridscale Terraform **examples** + **provider source/docs** (offline). Gitignored. |
