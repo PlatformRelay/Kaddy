@@ -1,22 +1,17 @@
-# Kaddy interview deck
+# Kaddy demo-video deck
 
-This is an independent Slidev package for a concise, personal walkthrough of Kaddy: what I built,
-what I proved, and what remains open. It uses the stronger card, chip, typography, diagram, and page
-chrome grammar established by `kubernetes-workshop`, but does not import that theme.
+This is an independent Slidev package: the 5-10 minute companion deck for the Kaddy submission
+video — the highlights, the live surfaces, and how AI built it. It uses the stronger card, chip,
+typography, diagram, and page chrome grammar established by `kubernetes-workshop`, but does not
+import that theme.
 
 ## Structure
 
-The main deck contains 20–24 slides and exactly five full-bleed `CoverArt` moments:
-
-1. opening — the first tee;
-2. architecture — shared platform applications, different edges;
-3. platform controls — security and governance;
-4. operations and delivery — mulligan and marshal;
-5. evidence and next steps — scorecard and remaining work.
-
-The seven ordered narrative markers remain `pitch → architecture → security → portal-hero →
-mulligan → marshal → scorecard`. Every slide carries speaker notes. The appendix is outside the
-main timing and script budgets and uses content layouts rather than more covers.
+The spoken path holds 12 content slides between four full-bleed `CoverArt` moments (opening,
+architecture, delivery & operations, evidence); a fifth cover opens the clearly-marked reviewer
+appendix (portal flow, delivery-path honesty, quickstart). The seven ordered narrative markers
+remain `pitch → architecture → security → portal-hero → mulligan → marshal → scorecard`. Every
+slide carries speaker notes. The appendix is outside the main timing and script budgets.
 
 ## Visual identity
 

@@ -28,7 +28,10 @@ main_has 'contribution|customer value|value' "positive contribution framing"
 main_has 'filed.*open|open.*review|not merged' "PR honesty"
 main_lacks 'D-042' "D-042 spoken arc"
 main_lacks 'Known cloud risk|GSK node public exposure' "cloud-exposure card"
-main_has 'teardown|time-boxed|cost' "cost-governance language"
+# Operator direction 2026-07-20 (video redo): the cost-governance beat is OUT of
+# the spoken pitch — the lab is standing during the submission window and lab
+# spend is not an audience concern. Cost language must not return to the main deck.
+main_lacks 'time-boxed|cost discipline|teardown' "cost-governance beat (removed by operator direction)"
 main_has 'Website (claim|intent)|Website intent' "Website input"
 main_has 'Composition' "composition"
 main_has 'HTTPRoute|ServiceMonitor' "concrete governed resource"
