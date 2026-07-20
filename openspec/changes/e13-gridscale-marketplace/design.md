@@ -37,6 +37,7 @@ tests/promtool/gridscale-marketplace.test.yaml   # caddy_* fires against the dep
 Each stack passes `icon_path` → a committed **≤8-bit** vendor PNG; the module
 `filebase64`s it into `meta_icon`. 16-bit RGBA uploads but renders blank in the
 panel (E13-S06).
+
 ## Test levels (gridscale API — no k8s cluster)
 
 This epic runs against the **gridscale cloud API + VMs**, not a Kubernetes cluster, so **L2 Chainsaw
