@@ -44,6 +44,12 @@ curl -sSI 'https://portal.lab.platformrelay.dev/api/auth/github/start?env=produc
 
 Then open `https://portal.lab.platformrelay.dev/login` and sign in with GitHub.
 
+> **Fail-closed bootstrap window:** the sign-in allowlist is ingested from the
+> raw `main` URL of `deploy/portal/backstage/gsk/org-users.yaml` — until this
+> lane is merged **and pushed to main**, that URL 404s and **nobody** (including
+> `konih`) can sign in. This is intentional (fail closed, no escape-hatch
+> resolver); merge to main before expecting login to work.
+
 ## TF limitation
 
 GitHub has **no API** to create classic OAuth Apps, so OpenTofu only owns the

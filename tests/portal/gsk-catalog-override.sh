@@ -17,6 +17,7 @@ ROOT="$(cd "${DIR}/../.." && pwd)"
 OVERRIDE="${ROOT}/deploy/portal/backstage/gsk/app-config-override.yaml"
 NETPOL="${ROOT}/deploy/portal/backstage/rbac/networkpolicy.yaml"
 ENV_CONTRACT="${ROOT}/deploy/portal/backstage/gsk/deployment-env.yaml"
+PORTAL_APP="${ROOT}/deploy/apps/portal.yaml"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "OK: $*"; }
@@ -134,6 +135,34 @@ if printf '%s\n' "${example_org_rules}" | grep -q 'User'; then
   fail "examples/org.yaml location must not allow User (its guest User would admit the GitHub 'guest' account)"
 fi
 ok "sign-in restricted to catalog User entities (no dangerous flag; org-users.yaml url location; example Users excluded)"
+
+# --- 4d) Argo directory sync must EXCLUDE org-users.yaml ---------------------
+# org-users.yaml carries apiVersion backstage.io/v1alpha1 (User/Group catalog
+# entities). The `backstage` Application recurses deploy/portal — without an
+# exclude, Argo applies it as a k8s resource, hits the unknown kind, and the
+# portal App goes SyncFailed on merge. The file must ride ONLY the url catalog
+# location, never the directory sync.
+[[ -f "${PORTAL_APP}" ]] || fail "missing ${PORTAL_APP} (backstage Application)"
+exclude_glob="$(grep -E '^[[:space:]]*exclude:' "${PORTAL_APP}" || true)"
+[[ -n "${exclude_glob}" ]] \
+  || fail "deploy/apps/portal.yaml must set directory.exclude (Backstage config files + org-users.yaml)"
+printf '%s\n' "${exclude_glob}" | grep -q 'org-users\.yaml' \
+  || fail "deploy/apps/portal.yaml directory.exclude must cover gsk/org-users.yaml (backstage.io kinds break the Argo sync)"
+ok "Argo directory sync excludes gsk/org-users.yaml (backstage.io entities never applied to the cluster)"
+
+# --- 4e) config-order invariant pinned (override must be LAST --config) ------
+# The image bakes dangerouslyAllowSignInWithoutUserInCatalog: true in
+# app-config.production.yaml; Backstage replaces ARRAYS with the later config
+# file's value, so ONLY an override loaded last replaces that resolver array.
+# The Deployment args are out-of-band (no in-repo k8s manifest declares them) —
+# the env contract is the in-repo pin; assert it documents the ordering.
+grep -qE 'CONFIG_ORDER=.*--config[[:space:]]+/cfg/app-config\.override\.yaml' "${ENV_CONTRACT}" \
+  || fail "deployment-env.yaml contract must pin CONFIG_ORDER with /cfg/app-config.override.yaml as a --config"
+config_order_line="$(grep -E 'CONFIG_ORDER=' "${ENV_CONTRACT}")"
+last_config="$(printf '%s\n' "${config_order_line}" | grep -oE -- '--config[[:space:]]+[^ ]+' | tail -1)"
+printf '%s\n' "${last_config}" | grep -q '/cfg/app-config\.override\.yaml' \
+  || fail "CONFIG_ORDER must list /cfg/app-config.override.yaml as the LAST --config (else the baked dangerous resolver wins)"
+ok "env contract pins GSK override as the LAST --config (resolver array replacement)"
 
 # --- 5) NetPol allows HTTPS egress for register + scaffolder -----------------
 # Register Existing Component only accepts type=url and fetches raw GitHub;

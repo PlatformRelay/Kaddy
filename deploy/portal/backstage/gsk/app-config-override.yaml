@@ -81,6 +81,10 @@ data:
                 # cannot restrict by org, so any relaxation here opens the
                 # scaffolder/register surface to EVERY GitHub account.
                 - resolver: usernameMatchingUserEntityName
+      # Declarative-only: the actual sign-in page is compiled into the
+      # kaddy-portal frontend (packages/app SignInPage). This key documents
+      # intent / keeps config-driven consumers honest but cannot switch the
+      # rendered page by itself.
       signInPage: github
     kubernetes:
       serviceLocatorMethod:
@@ -97,8 +101,16 @@ data:
     # image's ../../ relative targets either (they resolve to /catalog/... and
     # miss the files under /app/catalog and /app/examples).
     catalog:
+      # Global rules trimmed to the Backstage DEFAULT kinds (F3): runtime
+      # registration (Register Existing / scaffolder) can only create these.
+      # Group/Template/User are granted per-location below (location rules are
+      # ADDITIVE to this global set), so no static location loses entities:
+      #   kaddy-platform.yaml -> +Group; template.yaml -> +Template;
+      #   org.yaml -> +Group; org-users.yaml url -> +User,+Group;
+      #   entities.yaml ships only System/Component/API (verified in the
+      #   kaddy-portal image sources) — covered by the defaults.
       rules:
-        - allow: [Component, System, API, Resource, Location, Group, Template, User]
+        - allow: [Component, System, API, Resource, Location]
       locations:
         - type: file
           target: ./catalog/kaddy-platform.yaml

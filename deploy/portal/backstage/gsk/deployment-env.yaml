@@ -10,6 +10,19 @@
 #   - AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET from Secret
 #     `backstage-github` (SOPS: deploy/secrets/portal/backstage-github.enc.yaml).
 #   - BACKEND_AUTH_SECRET from Secret `backstage-backend-auth` (already live).
+#   - CONFIG ORDER (security-load-bearing): the container args MUST list the
+#     GSK override as the LAST `--config`, i.e.
+#       node packages/backend --config app-config.yaml \
+#         --config app-config.production.yaml --config /cfg/app-config.override.yaml
+#     Backstage replaces ARRAYS with the later file's value, so "override last"
+#     is what makes the override's signIn.resolvers array replace the image's
+#     baked resolver carrying dangerouslyAllowSignInWithoutUserInCatalog: true
+#     (kaddy-portal app-config.production.yaml). Override earlier in the list
+#     ⇒ the dangerous flag WINS ⇒ any GitHub account can sign in.
+#     HONEST: the args live only in the out-of-band Deployment / kaddy-portal
+#     image CMD — no in-repo k8s manifest declares them; this contract (asserted
+#     by tests/portal/gsk-catalog-override.sh) is the in-repo pin. Removing the
+#     baked flag upstream in kaddy-portal is tracked separately (out of scope).
 #
 # Apply with: kubectl -n portal patch deploy backstage --type strategic -p ...
 # (or re-apply the live Deployment with these env entries). NOT synced by the
@@ -37,6 +50,7 @@ metadata:
 data:
   contract.txt: |
     NODE_ENV=production
+    CONFIG_ORDER=--config app-config.yaml --config app-config.production.yaml --config /cfg/app-config.override.yaml (override LAST — its resolvers array must replace the baked dangerouslyAllowSignInWithoutUserInCatalog resolver)
     AUTH_GITHUB_CLIENT_ID <- secret/backstage-github:AUTH_GITHUB_CLIENT_ID
     AUTH_GITHUB_CLIENT_SECRET <- secret/backstage-github:AUTH_GITHUB_CLIENT_SECRET
     BACKEND_AUTH_SECRET <- secret/backstage-backend-auth:BACKEND_AUTH_SECRET

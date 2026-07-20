@@ -52,7 +52,12 @@ spec:
       recurse: true
       # Only render real k8s manifests; skip the Backstage config files (they
       # have no apiVersion/kind and are mounted into the pod at deploy time).
-      exclude: '{**/app-config.yaml,**/values.yaml,**/plugin-versions.md,**/catalog/catalog-info.yaml}'
+      # gsk/org-users.yaml IS excluded here even though it has apiVersion/kind:
+      # those are Backstage catalog entities (backstage.io/v1alpha1 User/Group),
+      # not k8s resources — Argo would fail the sync on the unknown kind. It is
+      # ingested by Backstage via its raw.githubusercontent.com url location
+      # (see gsk/app-config-override.yaml), never applied to the cluster.
+      exclude: '{**/app-config.yaml,**/values.yaml,**/plugin-versions.md,**/catalog/catalog-info.yaml,**/gsk/org-users.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: portal
