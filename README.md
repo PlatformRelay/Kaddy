@@ -243,10 +243,10 @@ Lab-sized footprint — **estimates** from public [gridscale pricing](https://gr
 
 | Resource | Size (typical lab) | Est. EUR / month |
 | --- | --- | --- |
-| GSK node pool | 2× 2C-4G workers (~€46/node) | ~92 |
+| GSK node pool | 3× 2C-4G workers (~€46/node, D-048 default) | ~138 |
 | LBaaS | 1 load balancer | ~22.50 |
 | Object Storage | evidence / marketplace `.gz` (per GB) | ~0.06 / GB |
-| **Total (indicative, excl. storage GB)** | | **~115 EUR / month** |
+| **Total (indicative, excl. storage GB)** | | **~161 EUR / month** |
 
 ## Documentation
 

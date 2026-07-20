@@ -146,7 +146,7 @@ Rough monthly-run cost if left up (order-of-magnitude, verify in the panel):
 
 | Resource                | Sizing                          | Cost driver     |
 | ----------------------- | ------------------------------- | --------------- |
-| GSK node pool           | 1 node × 2 cores / 4 GiB / 30 GB | dominant cost   |
+| GSK node pool           | 3 nodes × 2 cores / 4 GiB / 30 GB (D-048 default) | dominant cost   |
 | LBaaS                   | 1 load balancer                 | modest hourly   |
 | Public IPv4 + IPv6      | 1 each                          | small hourly    |
 | Object Storage (state)  | tiny bucket                     | negligible      |
