@@ -14,7 +14,7 @@
           "node_pool": [
             {
               "name": "pool-0",
-              "node_count": 1,
+              "node_count": 4,
               "cores": 2,
               "memory": 4,
               "storage": 30,

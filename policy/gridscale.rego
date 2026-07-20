@@ -24,15 +24,16 @@ deny contains msg if {
 	)
 }
 
-# --- Node-pool sizing cap: node_count <= 3 (day-0 cost discipline) -------------
+# --- Node-pool sizing cap: node_count <= 4 (cost cap 1-4; 4th node = ----------
+# --- operator-approved MemoryPressure relief 2026-07-20) ----------------------
 deny contains msg if {
 	some rc in input.resource_changes
 	rc.type == "gridscale_k8s"
 	_managed(rc)
 	some pool in object.get(rc.change.after, "node_pool", [])
-	pool.node_count > 3
+	pool.node_count > 4
 	msg := sprintf(
-		"gridscale_k8s %s node pool %q has node_count %d > 3 (cost cap for the day-0 demo)",
+		"gridscale_k8s %s node pool %q has node_count %d > 4 (cost cap 1-4; 4th node operator-approved 2026-07-20)",
 		[rc.address, object.get(pool, "name", "?"), pool.node_count],
 	)
 }

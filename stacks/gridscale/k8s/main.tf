@@ -1,5 +1,6 @@
 # GSK cluster stack — ONE node pool sized for the standing go-live substrate
-# (default node_count=3 after MemoryPressure scale; still capped at 3). The GSK
+# (default node_count=3 after MemoryPressure scale; capped at 4 — 4th node is
+# operator-approved MemoryPressure relief 2026-07-20). The GSK
 # control plane is managed by gridscale; we only size the worker pool.
 #
 # provider, required_providers, backend, and the labels module are injected by
