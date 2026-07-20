@@ -34,7 +34,7 @@ first appendix section) is present in `slides/slides.md`
 `narrative-beats.sh` sums `sectionTime` and requires all 7 beats only **before** the sentinel;
 appendix slides still satisfy `speaker-notes-coverage.sh` (they carry notes) but do not count toward
 either sum
-**Test:** `tests/deck/appendix-boundary.sh` (new) + edits to `script-wordcount.sh` + `narrative-beats.sh`
+**Test:** `tests/deck/appendix-boundary.sh`
 **Verify:**
 
 ```bash

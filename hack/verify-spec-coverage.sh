@@ -7,6 +7,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SPECS_DIR="${ROOT}/openspec/changes"
 STRICT_TEST_FILES="${STRICT_TEST_FILES:-0}"
 
+# shellcheck source=lib/spec-test-path.sh
+source "${ROOT}/hack/lib/spec-test-path.sh"
+
 req_count=0
 verify_count=0
 test_count=0
@@ -31,9 +34,11 @@ while IFS= read -r spec; do
     fi
     test_count=$((test_count + 1))
     if [[ "$STRICT_TEST_FILES" == "1" ]]; then
-      path="$(grep '^\*\*Test:\*\*' <<<"$block" | head -1 | sed 's/^\*\*Test:\*\* `//;s/`$//;s/ .*//')"
-      path="${path%%#*}"
-      [[ -e "${ROOT}/${path}" ]] || { echo "MISSING file: $path ($req)"; exit 1; }
+      test_line="$(grep '^\*\*Test:\*\*' <<<"$block" | head -1)"
+      # Non-path Test: prose (manual / existing / …) skips the on-disk check.
+      if path="$(spec_test_path_from_line "$test_line")"; then
+        [[ -e "${ROOT}/${path}" ]] || { echo "MISSING file: $path ($req)"; exit 1; }
+      fi
     fi
   done < <(grep '^## REQ-' "$spec" | sed 's/^## //')
 done < <(find "$SPECS_DIR" -path '*/specs/*/*.md' | sort)

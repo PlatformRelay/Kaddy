@@ -93,6 +93,7 @@ tasks:
     desc: WS3/E12/E8 — offline CI-wiring + Getting Started docs guards
     cmds:
       - bash tests/meta/ws3-test1-strict-advisory.yaml
+      - bash tests/meta/verify-spec-test-path-parse.sh
       - bash tests/meta/ws3-sha-pinned-actions.yaml
       - bash tests/meta/e12-deck-ci-wired.yaml
       - bash tests/meta/e8-s04-getting-started.sh
