@@ -45,7 +45,12 @@ curl -sSI 'https://portal.lab.platformrelay.dev/api/auth/github/start?env=produc
 Then open `https://portal.lab.platformrelay.dev/login` and sign in with GitHub.
 
 > **Fail-closed bootstrap window:** the sign-in allowlist is ingested from the
-> raw `main` URL of `deploy/portal/backstage/gsk/org-users.yaml` — until this
+> github.com blob URL of `deploy/portal/backstage/gsk/org-users.yaml` on `main`
+> (`https://github.com/PlatformRelay/Kaddy/blob/main/deploy/portal/backstage/gsk/org-users.yaml`).
+> It must be the **blob-URL form**: the configured github integration only
+> claims `github.com` URLs, and `raw.githubusercontent.com` is not in
+> `backend.reading.allow`, so a raw URL is rejected by the UrlReader and the
+> allowlist Users are never ingested (login fails for everyone). Until this
 > lane is merged **and pushed to main**, that URL 404s and **nobody** (including
 > `konih`) can sign in. This is intentional (fail closed, no escape-hatch
 > resolver); merge to main before expecting login to work.

@@ -117,7 +117,11 @@ ok "GSK override is GitHub-only (signInPage github; AUTH_GITHUB_*; oidc/guest nu
 # User entities. dangerouslyAllowSignInWithoutUserInCatalog would open the
 # scaffolder/register surface to ANY GitHub account (classic OAuth Apps cannot
 # restrict by org) — forbidden. The allowlist rides gsk/org-users.yaml via a
-# url location (image is immutable; repo is public; NetPol allows :443).
+# github.com blob-URL location (image is immutable; repo is public; NetPol
+# allows :443). It MUST be the github.com blob form: the configured github
+# integration only claims github.com URLs, and raw.githubusercontent.com is
+# NOT in backend.reading.allow — a raw URL is rejected by the UrlReader and
+# the allowlist Users are never ingested (live sign-in failure 2026-07-20).
 if printf '%s\n' "${payload_nocomment}" | grep -qi 'dangerouslyAllowSignInWithoutUserInCatalog'; then
   fail "override must NOT set dangerouslyAllowSignInWithoutUserInCatalog (ANY GitHub account could sign in)"
 fi
@@ -127,8 +131,11 @@ USERS_FILE="${ROOT}/deploy/portal/backstage/gsk/org-users.yaml"
 [[ -f "${USERS_FILE}" ]] || fail "missing ${USERS_FILE} (sign-in allowlist User entities)"
 grep -qE 'kind:[[:space:]]*User' "${USERS_FILE}" \
   || fail "org-users.yaml must define at least one Backstage User entity (else nobody can sign in)"
-printf '%s\n' "${payload_nocomment}" | grep -qE 'raw\.githubusercontent\.com/PlatformRelay/Kaddy/main/deploy/portal/backstage/gsk/org-users\.yaml' \
-  || fail "override catalog.locations must ingest org-users.yaml via its raw.githubusercontent.com url (sign-in allowlist)"
+printf '%s\n' "${payload_nocomment}" | grep -qE 'github\.com/PlatformRelay/Kaddy/blob/main/deploy/portal/backstage/gsk/org-users\.yaml' \
+  || fail "override catalog.locations must ingest org-users.yaml via its github.com blob url (sign-in allowlist; the github integration claims github.com)"
+if printf '%s\n' "${payload_nocomment}" | grep -q 'raw\.githubusercontent\.com'; then
+  fail "override must NOT use raw.githubusercontent.com (host not claimed by the github integration nor in backend.reading.allow — UrlReader rejects it and Users are never ingested)"
+fi
 # example org.yaml ships a `guest` User — must not be ingested as User anymore
 example_org_rules="$(printf '%s\n' "${payload_nocomment}" | grep -A2 'examples/org\.yaml' | grep 'allow:' || true)"
 if printf '%s\n' "${example_org_rules}" | grep -q 'User'; then

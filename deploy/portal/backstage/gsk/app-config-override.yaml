@@ -146,9 +146,16 @@ data:
             - allow: [Group]
         - type: url
           # Sign-in allowlist (User entities; see gsk/org-users.yaml). The
-          # image is immutable, so this repo file rides its raw URL (public
-          # repo — no token). 404s until the lane merges to main; other
-          # locations still load meanwhile.
-          target: https://raw.githubusercontent.com/PlatformRelay/Kaddy/main/deploy/portal/backstage/gsk/org-users.yaml
+          # image is immutable, so this repo file rides a github.com blob URL
+          # (public repo — no token). MUST be the blob-URL form: the configured
+          # `integrations.github: [{host: github.com}]` UrlReader only claims
+          # github.com URLs — raw.githubusercontent.com is a different host and
+          # is NOT in backend.reading.allow, so a raw URL is rejected with
+          # "Unable to read url ... not allowed" and the allowlist Users are
+          # never ingested (sign-in fails). Chosen over widening
+          # backend.reading.allow to keep the reader surface minimal.
+          # 404s until the lane merges to main; other locations still load
+          # meanwhile.
+          target: https://github.com/PlatformRelay/Kaddy/blob/main/deploy/portal/backstage/gsk/org-users.yaml
           rules:
             - allow: [User, Group]
