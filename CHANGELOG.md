@@ -3,20 +3,68 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
-## [0.6.0] — 2026-07-19
+## [0.7.0] — 2026-07-20
 
-**The Nix "fourth way" goes live — a reproducible, flake-locked golden image, served and
-scraped on gridscale.** E14 completes the golden-image story: alongside the Packer/Ubuntu
-path, kaddy now ships a **Nix-built** gridscale Marketplace image (`caddy-nix`) — a
-minimal-CVE, full-closure NixOS 24.11 image built reproducibly from a flake, exported to
-object storage, registered + imported as a one-click Marketplace app, and **live-proven
-end-to-end**: deploy → `GET /` 200 + `/healthz` + `:2019/metrics` (158 `caddy_` series) →
-Prometheus `up=1` on the standing GSK cluster, with every ephemeral VM torn down clean
-(0 orphans). The serve failure that stumped two earlier attempts turned out to be a caddy
-version skew — nixos-24.11's caddy 2.8.4 rejects the golden Caddyfile's `metrics { per_host }`
-block, so `caddy run` exited before binding :80 — fixed at source by pinning caddy ≥ 2.9. The
-Marketplace also gains engine-OS naming + logos (`caddy-ubuntu`, `caddy-nix`), and E13-S05
-live-proved the one-click Caddy deploy path end to end.
+**Pitch deck on every release, plus live GSK edge polish.** Tag pushes now
+Playwright-export `kaddy-deck.pdf`, size-guard hollow shells, and attach the
+PDF to the GitHub Release (kubernetes-workshop pattern). Also lands the
+five-minute GSK pitch deck, portal.lab / caddy.lab / grafana.lab sticky HTTPS
+200 paths, MIT LICENSE, and related GitOps/marketplace fixes since v0.6.0.
+
+### Features
+- **showcase:** Pin kaddy-showcase workloads to 0.6.0
+- **portal:** Clubhouse HTTPRoute for portal.lab on GSK edge
+- **e1g-s07:** Add e1g:status + standing marker write/clear
+- **gsk:** Add roll-caddy-images script for GSK Caddy bumps
+- **deck:** Deliver five-minute GSK pitch
+- **deck:** Wire Playwright PDF export into deck CI
+- **argocd:** Autosync policies Application by default
+- **deck:** Showcase stills, overboard title, live honesty
+- **ci:** Upload deck PDF on release tags
+
+### Fixes
+- **portal:** MD031 fencing + edge-up five-listener comment
+- **e1g-s07:** Soft-exit on incomplete standing markers
+- **gsk:** Wait Argo Rollout Healthy instead of rollout status
+- **deck:** Install Playwright Chromium browser in CI
+- **meta:** Stop batch2 wiring guard false-failing under pipefail
+- **caddy-mvp:** Ignore GSK/kind HTTPRoute parent collision
+- **caddy-mvp:** RespectIgnoreDifferences for GSK route ignore
+- **gitops:** Traefik ingressClass off + platform Provider ACL
+- **portal:** Select app=backstage + allow Traefik ingress
+- **caddy-lab:** Rename cloud HTTPRoute to avoid Argo collision
+- **marketplace:** Use 8-bit vendor icons for panel render
+- **gridscale:** Default GSK node_count to 3
+- **portal:** Restore GSK catalog create (locations + HTTPS egress)
+- **marketplace:** Prefix meta_icon with data URI for panel render
+- **monitoring:** Allow Traefik to Grafana for grafana.lab
+- **monitoring:** Address grafana.lab route review findings
+- **portal:** Disable GSK Backstage guest auth
+- **meta:** Parse OpenSpec Test paths with trailing prose
+
+### Tests
+- **e1g-s07:** Add standing TTL soft-WARN meta guard
+
+### Documentation
+- **e14-s03:** Note marshal caddy_* alerts (job=caddy) not exercised by the up=1 proof
+- **portal:** Live evidence for portal.lab HTTPRoute 200
+- **e1g-s07:** Document standing status in live-demo runbook
+- **deck:** Mark portal.lab HTTPRoute live
+- **deck:** Record E12d supersession
+- **deck:** Mark GSK Caddy image roll live
+- **deck:** Point slide links at GSK upstream URLs
+- **deck:** Point live surfaces at GSK upstream URLs
+- **deck:** Correct caddy live status
+- **skills:** Sync harness skills and document SDD
+- **marketplace:** Record E13-S06 live 8-bit icon PATCH
+- **readme:** Polish OSS README with live status honesty
+- **license:** Add MIT LICENSE and README badge
+
+### Chores
+- **marketplace:** Blank line before design heading (MD022)
+- **meta:** Gitignore local stuff/ screenshot tree
+
+## [0.6.0] — 2026-07-19
 
 ### Features
 - **e14-s01:** Nix-built gridscale golden image (flake + nixos-generators)
@@ -34,35 +82,18 @@ live-proved the one-click Caddy deploy path end to end.
 
 ### Documentation
 - **e1g-s06:** Reconcile retired "no standing env" prose → go-live carve-out + doc-truth guard
-- **e14-s03:** Nix VM deploy — mechanism proven, then boot-to-serve LIVE-PROVEN (caddy ≥2.9 pin)
-- **e14-s03:** QEMU boot test narrows the diagnosis — image boots, Caddy version skew found
+- **e14-s03:** Nix VM deploy — mechanism proven, boot-to-serve partial (ADR-0303)
+- **e14-s03:** QEMU boot test narrows the diagnosis — image boots, Caddy doesn't serve
 - **coord:** Handover 2026-07-19 loop2 — E14 Nix path + marketplace rename/icons
+- **e14:** E14-S03 serve+scrape LIVE-PROVEN — caddy>=2.9 pin was the fix
 
 ### Chores
 - **marketplace:** Tofu fmt the caddy/nix stack edits (align icon_path)
 - **e14:** Add hack/e14-s03-live-prove.sh — one-shot live deploy→prove→teardown
 - **e14:** Scrape-prove hook + teardown-order fix + wire nix into e13:up/down
+- **release:** V0.6.0 — the Nix "fourth way" goes live
 
 ## [0.5.0] — 2026-07-18
-
-**The gridscale cloud-edge goes live — real public URLs with real certs.** The phase-2
-substrate swap is complete and running: the kaddy platform serves on a standing gridscale
-GSK cluster behind a **Traefik v3 Gateway-API edge** with **publicly-trusted Let's Encrypt**
-certificates. Four live HTTPS surfaces — **Argo CD**, **Grafana**, the full **caddy-mvp**
-(Argo Rollouts canary showcase), and a demo landing page — on `*.lab.platformrelay.dev`,
-all HTTP 200 with a verifiable chain. Highlights: **E1g-S05a** adds a GSK-targetable
-bootstrap opt-in (`KADDY_GSK_CONTEXT`) that hardens rather than weakens the kind-only
-prod-nuke guard; **E1g-S05b/e/f/g** are codified into cloud-only GitOps overlays (Traefik
-controller app, `clubhouse` Gateway + per-host HTTPS listeners, cert-manager **DNS-01**
-Cloudflare issuers with a token-less ExternalSecret, real hostnames) plus replayable
-`hack/gsk/` scripts and a prominent README "Live demo" section; **E1g-S05i** codifies the
-caddy-mvp canary edge. Three findings shaped the build: GSK's managed Cilium **cannot** serve
-Gateway API (→ Traefik, decision **D-042**), GSK **has** a service-LoadBalancer CCM (auto
-public IP — collapses S05c/S05d), and Gateway API v1.5.1 CRDs need their k8s-1.31-only `isIP`
-CEL rules stripped to apply on GSK's k8s 1.30. **E1g-S05h** records the GSK node public-IP
-exposure as an accepted risk with compensating controls; **E1g-S06** reconciles the
-cost-governance prose into a recorded, time-boxed go-live standing carve-out with an offline
-doc-truth guard. Every lane independently reviewed (0 P0/P1); `task verify` green throughout.
 
 ### Features
 - **e1g-s05a:** GSK-targetable bootstrap opt-in via shared context guard
@@ -78,59 +109,47 @@ doc-truth guard. Every lane independently reviewed (0 P0/P1); `task verify` gree
 - **e1g-s06:** Fix doc-truth overclaim (F-01) + guard-scope caveat (F-02)
 - **e1g-s06:** D-042 forward-ref framing (NEW-A) + restore ROADMAP typo (NEW-B)
 
+### Chores
+- **release:** V0.5.0 — gridscale cloud-edge LIVE (Traefik Gateway-API + LE certs; argocd/grafana/caddy-mvp/demo public URLs) + S05a-i/S06
+
 ### Other
 - **e1g-s05b:** Guard gsk CRD apply against kind (S05a helper) + apply AppProject before Traefik App (review G1/G2)
 - **e1g:** S05h spike — GSK node public-IP exposure is accepted risk (no provider/API mitigation)
 
 ## [0.4.1] — 2026-07-17
 
-**Hardening, real CI gates, and a live `:6443` proof.** A remediation loop that burned
-down the D-039 next-session lanes and the audit backlog, then closed the one remaining
-environment block. Highlights: **SEC-14** pins explicit `securityContext` on the
-observability workloads (Grafana/Prometheus/Alertmanager/Loki; Alloy + node-exporter kept
-as documented host-access exceptions); **DOC-13** turns the markdownlint gate from inert to
-genuinely enforced in CI (pinned `markdownlint-cli2@0.23.1`, narrowed to shippable docs, 0
-issues across 160 files); a new **release-provenance** guard fails CI on a false "shipped in
-vX" claim (with a companion guard that keeps the CI checkout deep + tagged); the **E6g**
-Website composition drops a dead composed `Network` managed-resource (proven 3-kind serving
-topology); and the deck token gate + provenance guard were fixed to actually run where
-they're wired (three "inert gate" defects found by independent review). Finally, with the
-corporate VPN disconnected, the **GSK API `:6443` egress is now OPEN** — proven on an
-ephemeral cluster (`kubectl get nodes` → Ready) then torn down (tenant clean), un-blocking
-the E8b app-layer. Audit verdict: **READY** (0 P0/P1, 0 regressions).
-
-### Security
-- **SEC-14:** Explicit securityContext on observability workloads (Grafana/Prometheus/Alertmanager/Loki; Alloy + node-exporter documented host-access exceptions)
-
 ### Fixes
-- **e1g:** Scrub leftover `.terraform` in the offline gate + teardown (ENV-1); reconcile the e6g evidence Network-MR claim (DOC-14)
-
-### Refactoring
-- **deck:** Delete orphaned `.kw-*` CSS; assert token *application* not mere presence (D-039 F2)
-- **e6g:** Drop the unattached composed Network MR; relax the composition gate to the proven 3-kind topology (D-039)
+- **e1g:** Scrub leftover .terraform in offline gate + teardown (ENV-1); reconcile e6g evidence Network-MR claim (DOC-14)
 
 ### Tests
-- **meta:** Add a release-provenance ancestry guard — an epic's commits must be ancestors of the tag it claims to have shipped in
-- **meta:** Give the release-provenance guard teeth on CI (fetch full history + tags; wiring guard; fail-not-skip on CI)
-
-### CI & build
-- **doc13:** Enforce markdownlint over shippable docs (narrowed globs, line-length noise relaxed) and pin `markdownlint-cli2@0.23.1` (SEC-4)
-- **deck:** Wire `theme-tokens.sh` into the deck CI composite + guard the wiring so it can't silently un-wire (DECK-1)
+- **meta:** Add release-provenance ancestry guard (epic commits must be ancestors of claimed tag)
+- **meta:** Make release-provenance guard have teeth on CI (fetch full history+tags; wiring guard; fail-not-skip on CI)
 
 ### Documentation
-- **e8b:** Live-prove GSK `:6443` egress OPEN with the VPN disconnected (ephemeral cluster, torn down, tenant clean)
-- **e6g:** Drop the stale composed-Network claim in the openspec tasks (review F1)
-- **inbox / coord:** Log the D-039 operator answers, the loop3 lanes, and decision D-040
+- **inbox:** V0.4.0 release logged + E14 deferral (nix tooling + LGTM prereqs)
+- **inbox:** D-039 operator-inbox answers logged (E6g trim/deck F2/E8b jump-VM/E14 ungated)
+- **e6g:** Drop stale composed-Network claim in openspec tasks (review F1)
+- **doc13:** Fix markdownlint residual to zero over shippable docs
+- **e8b:** Live-prove GSK :6443 egress OPEN (VPN off); log loop3 lanes + D-040
+
+### Refactoring
+- **deck:** Delete orphaned .kw-* CSS; assert token application not presence (D-039 F2)
+- **e6g:** Drop unattached Network MR; relax composition gate to proven 3-kind topology (D-039)
+
+### CI & build
+- **doc13:** Enforce markdownlint over shippable docs (narrow globs, relax line-length noise)
+- **doc13:** Exclude .terraform provider cache from markdownlint
+- **doc13:** Quote markdownlint globs in Taskfile so globby (not shell) expands
+- **doc13:** Pin markdownlint@0.23.1 (SEC-4), expand to tests/skills, MD004:dash
+- **deck:** Wire theme-tokens.sh into the deck CI composite + guard the wiring (DECK-1)
+
+### Chores
+- **release:** V0.4.1 — hardening + real CI gates (SEC-14/DOC-13/provenance) + GSK :6443 live proof
+
+### Other
+- **SEC-14:** Explicit securityContext on observability workloads (Grafana/Prometheus/Alertmanager/Loki; Alloy+nodeExporter documented host-access exceptions)
 
 ## [0.4.0] — 2026-07-17
-
-**Phase-2 live extensions + deck refresh.** The gridscale delivery is now proven live end-to-end on
-real infrastructure (ephemeral create→verify→destroy, tenant clean after each): the **E6g Website
-Crossplane composition** provisions a real gridscale nginx VM serving `/legacy` + `/metrics` on a
-public IP; the **E13 Marketplace** register+import works for both Caddy and nginx engines; and the
-**E8b GSK substrate** (cluster + network + object-storage anchor) provisions cleanly. The **E12c deck
-refresh** reframes the interview deck around landed gridscale value (the provider + 3 upstream bug-fix
-PRs) with a gate-exempt appendix and a hybrid workshop visual identity. Audit verdict: **READY**.
 
 ### Features
 - **deck:** E12c-S01 appendix-exempt gates + raised main budget
@@ -160,6 +179,9 @@ PRs) with a gate-exempt appendix and a hybrid workshop visual identity. Audit ve
 - **coord:** Log E6g/E13-S02 live proofs + deck merge + review outcomes
 - **DOC-10:** Drop stale 15/15 GitOps-apps count + fix its guard
 - **e8b:** GSK substrate live-proven; app-layer egress-blocked (decide-and-log)
+
+### Chores
+- **release:** V0.4.0 — phase-2 live extensions + E12c deck refresh
 
 ## [0.3.1] — 2026-07-17
 

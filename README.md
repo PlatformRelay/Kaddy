@@ -122,7 +122,7 @@ Edge overlays: [`deploy/gateway-controller/traefik/`](deploy/gateway-controller/
 ## Status
 
 Brief answered end-to-end on kind + standing GSK lab edge: **serve → scrape → fire**, progressive
-delivery, enforcing security baseline, GitOps. Releases: **[v0.1.0](https://github.com/PlatformRelay/Kaddy/releases/tag/v0.1.0)** … **[v0.6.0](https://github.com/PlatformRelay/Kaddy/releases/tag/v0.6.0)** (Nix golden image live-proven).
+delivery, enforcing security baseline, GitOps. Releases: **[v0.1.0](https://github.com/PlatformRelay/Kaddy/releases/tag/v0.1.0)** … **[v0.7.0](https://github.com/PlatformRelay/Kaddy/releases/tag/v0.7.0)** (deck PDF on every release tag).
 
 | Area | State | Notes |
 | --- | --- | --- |
