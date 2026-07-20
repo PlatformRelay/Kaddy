@@ -97,7 +97,9 @@ Keep the main deck aligned with current evidence:
   Loki ruler, Nix boot-to-serve, and upstream merges remain open.
 - The GSK showcase image roll is **live-proven** (2026-07-20): caddy-mvp serves
   `ghcr.io/platformrelay/kaddy-showcase:0.6.0` (Rollout Healthy) and caddy-demo serves
-  `caddy:2.11.4-alpine`; `caddy.lab.platformrelay.dev` and `demo.lab.platformrelay.dev` return HTTPS 200.
+  `caddy:2.11.4-alpine`; `caddy.lab.platformrelay.dev` currently returns HTTPS 404 at `/`, while
+  `demo.lab.platformrelay.dev` returns HTTPS 200. Fresh caddy-mvp route evidence is pending in
+  `agent-context`.
 - E12d is a deck-only narrative change: the E10 public HTTPRoute proof landed independently, while
   the portal form-to-PR and read-path smoke remain E10 follow-on work. Upstream PRs remain filed
   and open, not merged; the Nix image build is landed while boot-to-serve remains open.

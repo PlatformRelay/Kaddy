@@ -46,4 +46,15 @@ appx_has 'boot-to-serve.*(open|remain)|boot proof' "Nix boot gap"
 appx_has 'filed.*open|open.*not merged|filed.*not merged' "upstream PR honesty"
 appx_has 'Backstage.*(narrative|talk).*(proof|E10)|E10.*(proof|runtime)' "Backstage narrative/proof boundary"
 
+# The caddy-mvp image roll landed, but its public root currently responds 404.
+# Keep all deck-facing documentation from promoting that route to an HTTPS 200
+# before the HTTPRoute/backend issue is fixed and fresh evidence is captured.
+main_has 'caddy-mvp.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "caddy-mvp current 404 status"
+grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${DECK}" \
+  || fail "deck must record caddy-mvp's current HTTPS 404 status"
+grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${ROOT}/slides/README.md" \
+  || fail "slides README must record caddy-mvp's current HTTPS 404 status"
+grep -Eqi 'caddy\.lab\.platformrelay\.dev.*(currently.*(HTTPS )?404|returns.*(HTTPS )?404)' "${ROOT}/README.md" \
+  || fail "root README must record caddy-mvp's current HTTPS 404 status"
+
 echo "OK: E12d pitch and honesty anchors are present"
