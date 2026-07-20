@@ -3,13 +3,35 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
-## [0.7.0] — 2026-07-20
+## [0.8.0] — 2026-07-20
 
-**Pitch deck on every release, plus live GSK edge polish.** Tag pushes now
-Playwright-export `kaddy-deck.pdf`, size-guard hollow shells, and attach the
-PDF to the GitHub Release (kubernetes-workshop pattern). Also lands the
-five-minute GSK pitch deck, portal.lab / caddy.lab / grafana.lab sticky HTTPS
-200 paths, MIT LICENSE, and related GitOps/marketplace fixes since v0.6.0.
+**The GSK portal locks its front door, and the cloud edge goes fully
+GitOps-owned.** Backstage on GSK now signs in via GitHub only — guest auth is
+gone, an OAuth URL contract stack keeps callbacks pinned to portal.lab, and
+sign-in is restricted to catalog org users (no dangerous resolver fallback).
+The GSK Traefik cloud edge moves under Argo ownership via `deploy/apps-cloud`,
+argo-rollouts gains an amd64 overlay for the gatewayapi plugin on cloud nodes,
+the AppProject description fits Argo's 255-char limit (with a gate to keep it
+that way), and cost docs are reconciled to the real node_count=3 figures.
+
+### Features
+- **rollouts:** Amd64 cloud overlay for gatewayapi plugin
+- **gateway:** GitOps-manage GSK Traefik cloud edge
+- **portal:** GitHub-only auth on GSK Backstage override
+- **portal:** OAuth URL contract stack + App Manifest helper
+
+### Fixes
+- **portal:** Disable default Guest SignInPage in GSK override
+- **portal:** Lock GitHub OAuth to portal.lab, drop localhost helper
+- **portal:** Clear e10 shellcheck SC2034 + OAuth stack docs
+- **portal:** Restrict sign-in to catalog org users (drop dangerous resolver flag)
+- **portal:** Exclude catalog entity file from Argo directory sync
+- **gitops:** AppProject description within Argo 255-char limit + edge-up overlay handover
+
+### Documentation
+- **cost:** Reconcile day0/README cost figures with node_count=3
+
+## [0.7.0] — 2026-07-20
 
 ### Features
 - **showcase:** Pin kaddy-showcase workloads to 0.6.0
@@ -59,6 +81,7 @@ five-minute GSK pitch deck, portal.lab / caddy.lab / grafana.lab sticky HTTPS
 - **marketplace:** Record E13-S06 live 8-bit icon PATCH
 - **readme:** Polish OSS README with live status honesty
 - **license:** Add MIT LICENSE and README badge
+- **release:** Changelog and README for v0.7.0
 
 ### Chores
 - **marketplace:** Blank line before design heading (MD022)
