@@ -15,10 +15,12 @@
 # MUST pin cwd-relative `./catalog/...` and `./examples/...` paths so file
 # locations actually load under the GSK Deployment command.
 #
-# LAB AUTH TRADE: guest stays enabled here because Dex OIDC is not yet wired for
-# portal.lab on GSK. Production target remains ADR-0107 (OIDC-only, no guest) in
-# deploy/portal/backstage/app-config.yaml + the image's app-config.production.yaml.
-# Do NOT copy guest into the canonical app-config.
+# AUTH: guest DISABLED on GSK (operator ASAP / ADR-0107). The image's baked
+# app-config.yaml still enables guest for local development — this override MUST
+# set `guest: null` so Backstage config merge deletes that provider. Dex OIDC for
+# portal.lab is NOT wired yet (dex.platformrelay.dev unreachable; no Dex client
+# for portal.lab callback) — fail closed: signInPage oidc with no anonymous path.
+# Production target remains deploy/portal/backstage/app-config.yaml OIDC→Dex.
 #
 # Secrets: backend auth key is env-expanded from Deployment env
 # BACKEND_AUTH_SECRET (Secret `backstage-backend-auth` on the cluster — never
@@ -58,10 +60,11 @@ data:
         client: better-sqlite3
         connection: ':memory:'
     auth:
-      # Lab-only — Dex client for portal.lab not wired yet (ADR-0107 = production).
-      environment: development
+      # Guest deleted via null (merge). Dex for portal.lab not wired — fail closed.
+      environment: production
       providers:
-        guest: {}
+        guest: null
+      signInPage: oidc
     kubernetes:
       serviceLocatorMethod:
         type: multiTenant

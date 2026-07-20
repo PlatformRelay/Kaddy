@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # REQ-E10-S05 / GSK lab — the live Backstage override must NOT empty the
-# software catalog. Live-proven 2026-07-20: portal.lab loaded as guest but
+# software catalog. Live-proven 2026-07-20: portal.lab catalog empty when
 # Create → Templates was empty and Register Existing timed out to GitHub
 # because:
 #   1. ConfigMap backstage-override set `catalog: { locations: [] }` (wipes
@@ -67,13 +67,18 @@ printf '%s\n' "${payload_nocomment}" | grep -qiE 'allow:.*Template|Template' \
   || fail "override must allow Template kind for the example scaffolder location"
 ok "override pins cwd-relative platform + Template catalog locations"
 
-# --- 4) lab guest is explicit (Dex OIDC still the production target) ---------
-# GSK lab currently has no Dex client wired for portal.lab — guest is the
-# intentional lab path (ADR-0107 still owns production). Documented in the
-# ConfigMap header; assert guest is present so operators know the trade.
-printf '%s\n' "${payload}" | grep -qiE 'guest:' \
-  || fail "GSK lab override must enable guest (Dex not wired on portal.lab yet)"
-ok "GSK lab override keeps guest auth (lab-only; production stays OIDC)"
+# --- 4) guest MUST NOT be enabled (ADR-0107 / operator ASAP) -----------------
+# Base image app-config.yaml still carries guest for local NODE_ENV=development.
+# The GSK override must DELETE it via `guest: null` (Backstage config merge)
+# and must NOT enable `guest: {}`. Dex OIDC for portal.lab may still be unwired —
+# fail closed (no anonymous) beats guest; document the Dex blocker separately.
+payload_nocomment="$(printf '%s\n' "${payload}" | sed 's/#.*//')"
+if printf '%s\n' "${payload_nocomment}" | grep -qiE 'guest:[[:space:]]*\{\}'; then
+  fail "GSK lab override must NOT enable guest: {} (anonymous portal.lab forbidden)"
+fi
+printf '%s\n' "${payload_nocomment}" | grep -qiE 'guest:[[:space:]]*null' \
+  || fail "GSK lab override must set guest: null to delete base image guest provider"
+ok "GSK lab override disables guest (guest: null; no guest: {})"
 
 # --- 5) NetPol allows HTTPS egress for register + scaffolder -----------------
 # Register Existing Component only accepts type=url and fetches raw GitHub;
@@ -97,4 +102,4 @@ awk '
   || fail "allow-https-egress must select app: backstage"
 ok "NetPol allow-https-egress selects backstage and allows :443"
 
-echo "PASS: gsk-catalog-override — locations preserved + portal.lab URL + HTTPS egress"
+echo "PASS: gsk-catalog-override — locations preserved + portal.lab URL + HTTPS egress + guest disabled"
