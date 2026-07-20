@@ -49,8 +49,40 @@ spec:
         # admission control: deploy/policies/kyverno/require-run-as-nonroot.yaml (Enforce).
         # --- global / HA off ---
         fullnameOverride: kps
+        # MANAGED-CLUSTER SCOPE (GSK, 2026-07-20): control-plane component
+        # monitoring is OFF. GSK is a managed Kubernetes cluster — etcd,
+        # kube-controller-manager, kube-scheduler, kube-proxy and CoreDNS
+        # endpoints are not scrapeable from workloads, AND the chart's default
+        # `kube*.enabled: true` renders headless Services into `kube-system`,
+        # which the closed `observability` AppProject (destinations: monitoring,
+        # argocd ONLY — deploy/apps/projects/observability.yaml) rightly rejects
+        # ("namespace kube-system is not permitted"). POLICY: keep the AppProject
+        # closed; disable the components instead. Losing kind control-plane
+        # scrape targets is accepted — the kind cluster is being wound down
+        # (operator directive: everything on gridscale). kubeDns stays at its
+        # chart default (false). The matching defaultRules.rules toggles below
+        # are also OFF so no alert rules fire on permanently-absent targets.
+        kubeEtcd:
+          enabled: false
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        coreDns:
+          enabled: false
         defaultRules:
           create: true
+          rules:
+            # Match the managed-cluster component scope above (87.x keys —
+            # kubeScheduler is split into Alerting/Recording; CoreDNS has no
+            # dedicated defaultRules group).
+            etcd: false
+            kubeControllerManager: false
+            kubeSchedulerAlerting: false
+            kubeSchedulerRecording: false
+            kubeProxy: false
         alertmanager:
           alertmanagerSpec:
             replicas: 1
