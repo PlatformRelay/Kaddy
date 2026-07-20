@@ -15,6 +15,8 @@ spec-driven internal developer platform for monitored, TLS-terminated websites o
 | 🏗️ | [docs/adr/README.md](docs/adr/README.md) | Architecture decision records |
 | 🔒 | [docs/audits/README.md](docs/audits/README.md) | Replayable security/compliance audit procedure |
 | 📋 | [docs/development/testing.md](docs/development/testing.md) | Test pyramid, Chainsaw, TDD gates |
+| 📋 | [docs/development/DEVELOPMENT.md](docs/development/DEVELOPMENT.md) | Gates, worktrees, **spec-driven** flow, skills pointer |
+| 📋 | [skills/README.md](skills/README.md) | Agent skills catalogue (loop, review, audit, handover, …) |
 | 📋 | [openspec/config.yaml](openspec/config.yaml) | OpenSpec conventions (OPSX workflow) |
 | 🎬 | [slides/README.md](slides/README.md) | Slidev interview deck |
 | 📊 | [evidence/README.md](evidence/README.md) | Scorecard evidence harness |
@@ -104,10 +106,24 @@ phase 2 (E1g). See decisions.md D-013/D-015/D-016/D-017.
 
 Run `/agent-loop` from the PlatformRelay workspace root targeting **kaddy** for implementation.
 
-## Repo-local skills
+## Agent skills
+
+Committed under [`skills/`](skills/) (see full catalogue in [`skills/README.md`](skills/README.md)).
+Symlink into `.claude/skills/` for harnesses that expect that path — `.claude/` remains gitignored.
 
 | Skill | When |
 | --- | --- |
 | [skills/pick-next-story/SKILL.md](skills/pick-next-story/SKILL.md) | Next backlog item without starting the loop |
 | [skills/evidence-capture/SKILL.md](skills/evidence-capture/SKILL.md) | Run or document scorecard capture (E8) |
 | [skills/kaddy-audit/SKILL.md](skills/kaddy-audit/SKILL.md) | Replayable security/compliance audit (E11) |
+| [skills/agent-loop/SKILL.md](skills/agent-loop/SKILL.md) | Implementation loop → PR |
+| [skills/agent-loop-auto/SKILL.md](skills/agent-loop-auto/SKILL.md) | Loop with auto-merge |
+| [skills/agent-loop-local/SKILL.md](skills/agent-loop-local/SKILL.md) | Loop with local ff-merge |
+| [skills/handover/SKILL.md](skills/handover/SKILL.md) | Session wrap-up + next-session prompt |
+| [skills/retrospective/SKILL.md](skills/retrospective/SKILL.md) | End-of-session learnings into agent-context |
+| [skills/replayable-audit/SKILL.md](skills/replayable-audit/SKILL.md) | Generic replayable health audit |
+| [skills/write-story/SKILL.md](skills/write-story/SKILL.md) | INVEST stories / OpenSpec slices |
+| [skills/tech-review/SKILL.md](skills/tech-review/SKILL.md) | Independent pre-merge review |
+
+Plus: `design-architecture`, `brainstorm`, `grill-me`, `roast`, `security-review`,
+`operator-inbox`, `merge-open-prs`, `changelog` — see the catalogue.

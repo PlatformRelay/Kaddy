@@ -66,10 +66,38 @@ Every OpenSpec REQ includes a `Verify:` block — implement the test before the 
 
 ASCII gitmoji shortcode mandatory. No AI co-author trailers.
 
-## OpenSpec workflow
+## Spec-driven development
 
-Each lane references `openspec/changes/<slug>/`. Update `tasks.md` as work progresses; run
-`openspec validate` when CLI installed.
+kaddy is built **spec-first**: behaviour is written down before (or as the failing test for)
+implementation. The spine:
+
+| Step | Artifact | Role |
+| --- | --- | --- |
+| Epic / phase | [docs/ROADMAP.md](../ROADMAP.md) | Build order (E1–E12…), EXIT criteria |
+| Story slice | OpenSpec change under `openspec/changes/<slug>/` | `proposal.md` · `specs/` · `tasks.md` · `design.md` |
+| Requirement | `REQ-E*-S*-**` in `specs/**/spec.md` | Given/When/Then + **`Verify:`** (command) + **`Test:`** (path) |
+| Test first | Path named by `Test:` | Failing test before the manifest/code (ADR-0701) |
+| Gate | `task verify` · `task test:spec` · story-level tests | Lint, scrub, OpenSpec structure, REQ↔Test coverage |
+| Ship | Conventional commits → rebase-merge PR | One logical change per commit |
+
+OpenSpec project conventions live in [`openspec/config.yaml`](../../openspec/config.yaml)
+(`schema: spec-driven`). Every REQ must carry **`Verify:`** and **`Test:`**;
+`task test:spec` enforces coverage. Epic EXIT uses `STRICT_TEST_FILES=1` so every `Test:` path
+exists. Exercise → epic mapping:
+[docs/requirements/exercise-traceability.md](../requirements/exercise-traceability.md).
+
+Typical lane flow (via the **agent-loop** skill): claim `OPERATOR-BOARD` → worktree → write/fail
+the test named by the REQ → implement → `task verify` (+ story gates) → independent **tech-review**
+→ PR (or local ff-merge under agent-loop-local).
+
+## Agent skills
+
+Committed skill definitions live under [`skills/`](../../skills/) (catalogue in
+[`skills/README.md`](../../skills/README.md)). Symlink or copy into `.claude/skills/` if your
+harness expects that path — `.claude/` itself is gitignored.
+
+Useful entrypoints for this repo: **agent-loop** / **agent-loop-local**, **write-story**,
+**tech-review**, **replayable-audit** / **kaddy-audit**, **handover**, **retrospective**.
 
 ## Docs
 
