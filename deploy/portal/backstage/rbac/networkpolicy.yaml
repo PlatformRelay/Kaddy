@@ -10,9 +10,12 @@
 #      community plugin reads sync/health/history.
 #   4. Egress to Dex :5556 (namespace identity) — OIDC discovery + token
 #      exchange (ADR-0107). Port-scoped, identity ns only — NOT a world allow.
-#   5. Ingress (kind): clubhouse Gateway (Envoy/Cilium) -> backstage :7007 via
+#   5. Egress HTTPS :443 (port-scoped world allow, same pattern as :6443) —
+#      catalog Register Existing (url locations) + scaffolder publishPhase to
+#      GitHub. Live-proven needed 2026-07-20 (default-deny timed out raw GH).
+#   6. Ingress (kind): clubhouse Gateway (Envoy/Cilium) -> backstage :7007 via
 #      CNP fromEntities:[ingress] (reserved identity; not a K8s NetPol peer).
-#   6. Ingress (GSK): Traefik (ns traefik) -> backstage :7007 via NetPol
+#   7. Ingress (GSK): Traefik (ns traefik) -> backstage :7007 via NetPol
 #      allow-traefik-to-backstage + CNP fromEndpoints (cloud edge is Traefik;
 #      fromEntities ingress alone misses it — live-proven 2026-07-20).
 #
@@ -207,6 +210,41 @@ spec:
       ports:
         - protocol: TCP
           port: 5556
+---
+# Write path / catalog-import: HTTPS :443 (GitHub raw + api.github.com).
+# Live-proven needed 2026-07-20 — Register Existing Component only accepts
+# type=url and fetches raw.githubusercontent.com; scaffolder publishPhase talks
+# to api.github.com. Same port-scoped world-allow pattern as allow-apiserver
+# :6443 (no in-cluster peer for public GitHub). NOT an unscoped 0.0.0.0/0.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-https-egress
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: allow-https-egress
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0111"
+    kaddy.io/req: REQ-E10-S05-01
+spec:
+  podSelector:
+    matchLabels:
+      app: backstage
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 443
 ---
 # GSK cloud-edge: Traefik (ns traefik) -> backstage :7007.
 # Live-proven 2026-07-20 — without this, default-deny + CNP-only-ingress entity

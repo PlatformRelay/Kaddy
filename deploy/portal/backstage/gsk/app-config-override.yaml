@@ -1,0 +1,96 @@
+# REQ-E10-S05 / GSK lab — Backstage app-config OVERRIDE (ConfigMap).
+#
+# Mounted by the live Deployment as `--config /cfg/app-config.override.yaml`
+# (volume from ConfigMap `backstage-override`). Merged OVER the image's baked
+# `app-config.yaml`.
+#
+# LIVE BUG (2026-07-20): the bootstrap override set an empty catalog.locations
+# array which REPLACED the image's platform + example Template locations →
+# Create → Templates empty, catalog entity count 0. It also kept the temporary
+# LB bootstrap baseUrl after portal.lab went live (cookie/CORS skew). Guest
+# permission checks ALLOW create; the wipe + NetPol :443 deny were the blockers.
+#
+# PATH NOTE: the image's baked locations use `../../catalog/...` which Backstage
+# resolves from process cwd `/app` to `/catalog/...` (missing). This override
+# MUST pin cwd-relative `./catalog/...` and `./examples/...` paths so file
+# locations actually load under the GSK Deployment command.
+#
+# LAB AUTH TRADE: guest stays enabled here because Dex OIDC is not yet wired for
+# portal.lab on GSK. Production target remains ADR-0107 (OIDC-only, no guest) in
+# deploy/portal/backstage/app-config.yaml + the image's app-config.production.yaml.
+# Do NOT copy guest into the canonical app-config.
+#
+# Secrets: backend auth key is env-expanded from Deployment env
+# BACKEND_AUTH_SECRET (Secret `backstage-backend-auth` on the cluster — never
+# commit the value).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-override
+  namespace: portal
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: backstage-override
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0107"
+    kaddy.io/req: REQ-E10-S05-01
+data:
+  app-config.override.yaml: |
+    app:
+      baseUrl: https://portal.lab.platformrelay.dev
+    backend:
+      baseUrl: https://portal.lab.platformrelay.dev
+      listen: ':7007'
+      cors:
+        origin: https://portal.lab.platformrelay.dev
+      auth:
+        keys:
+          - secret: ${BACKEND_AUTH_SECRET}
+      database:
+        client: better-sqlite3
+        connection: ':memory:'
+    auth:
+      # Lab-only — Dex client for portal.lab not wired yet (ADR-0107 = production).
+      environment: development
+      providers:
+        guest: {}
+    kubernetes:
+      serviceLocatorMethod:
+        type: multiTenant
+      clusterLocatorMethods:
+        - type: config
+          clusters:
+            - name: gsk
+              url: https://kubernetes.default.svc
+              authProvider: serviceAccount
+              skipTLSVerify: true
+    # Explicit locations (cwd=/app). Do NOT use an empty locations array — that
+    # wipe was the Create→Templates empty-catalog root cause. Do NOT use the
+    # image's ../../ relative targets either (they resolve to /catalog/... and
+    # miss the files under /app/catalog and /app/examples).
+    catalog:
+      rules:
+        - allow: [Component, System, API, Resource, Location, Group, Template, User]
+      locations:
+        - type: file
+          target: ./catalog/kaddy-platform.yaml
+          rules:
+            - allow: [Component, System, Group]
+        - type: file
+          target: ./examples/entities.yaml
+        - type: file
+          target: ./examples/template/template.yaml
+          rules:
+            - allow: [Template]
+        - type: file
+          target: ./examples/org.yaml
+          rules:
+            - allow: [User, Group]

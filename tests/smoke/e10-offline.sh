@@ -55,6 +55,7 @@ if command -v shellcheck >/dev/null 2>&1; then
              "${ROOT}/tests/portal/ingestor-config.sh" \
              "${ROOT}/tests/portal/read-path-rbac.sh" \
              "${ROOT}/tests/portal/catalog-entities.sh" \
+             "${ROOT}/tests/portal/gsk-catalog-override.sh" \
     || fail "shellcheck flagged an E10 script"
   ok "shellcheck clean (e10 scripts)"
 else
@@ -178,9 +179,11 @@ ok "chainsaw portal suite authored + skip-gated (skip-not-fail offline)"
 # NOTE: app-config.yaml + values.yaml are NOT k8s manifests — feed ONLY real
 # manifests. Gateway API / cert-manager / crossplane CRDs are not in the vanilla
 # schema set; -ignore-missing-schemas skips CRDs, strict on core kinds.
+GSK_OVERRIDE="${PORTAL_DIR}/gsk/app-config-override.yaml"
 if command -v kubeconform >/dev/null 2>&1; then
   kubeconform -strict -ignore-missing-schemas -summary \
-    "${NS}" "${NETPOL}" "${RBAC}" "${CERT}" "${CATALOG}" "${APP}" "${PROJ}" >/dev/null \
+    "${NS}" "${NETPOL}" "${RBAC}" "${CERT}" "${CATALOG}" "${APP}" "${PROJ}" \
+    "${GSK_OVERRIDE}" >/dev/null \
     || fail "kubeconform rejected an E10 manifest"
   ok "kubeconform: portal manifests schema-valid"
 else
@@ -193,6 +196,13 @@ fi
 bash "${ROOT}/tests/smoke/e1g-portal-cloud-route.sh" \
   || fail "e1g-portal-cloud-route.sh failed (portal.lab cloud-edge route)"
 ok "GSK cloud-edge portal.lab HTTPRoute + LE cert authored"
+
+# --- 12) GSK lab override must not wipe catalog locations (+ HTTPS egress) ---
+# Live 2026-07-20: empty locations: [] + NetPol :443 deny → Create empty /
+# Register Existing timeout. Guard the override ConfigMap + allow-https-egress.
+bash "${ROOT}/tests/portal/gsk-catalog-override.sh" \
+  || fail "gsk-catalog-override.sh failed (catalog wipe / portal.lab URL / HTTPS egress)"
+ok "GSK lab catalog override preserves locations + HTTPS egress NetPol"
 
 # --- live bring-up is deferred + honestly flagged ---------------------------
 echo "SKIP: live Backstage bring-up + real form->PR->XR reconcile (live cycle; chainsaw specs skip-gated)"
