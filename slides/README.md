@@ -95,9 +95,9 @@ Keep the main deck aligned with current evidence:
   it returns 200 through the fifth listener, a Ready Let's Encrypt certificate, and the
   `backstage:7007` backend (Cloudflare A → `185.241.34.187`). An external Alertmanager receiver,
   Loki ruler, Nix boot-to-serve, and upstream merges remain open.
-- The GSK showcase image roll updates caddy-mvp to
-  `ghcr.io/platformrelay/kaddy-showcase:0.6.0` and caddy-demo to
-  `caddy:2.11.4-alpine`; call it a rollout target until GitOps and live verification land.
+- The GSK showcase image roll is **live-proven** (2026-07-20): caddy-mvp serves
+  `ghcr.io/platformrelay/kaddy-showcase:0.6.0` (Rollout Healthy) and caddy-demo serves
+  `caddy:2.11.4-alpine`; `caddy.lab` and `demo.lab` return HTTPS 200.
 - E12d is a deck-only narrative change: the E10 public HTTPRoute proof landed independently, while
   the portal form-to-PR and read-path smoke remain E10 follow-on work. Upstream PRs remain filed
   and open, not merged; the Nix image build is landed while boot-to-serve remains open.

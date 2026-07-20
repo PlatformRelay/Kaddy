@@ -70,6 +70,9 @@ TDD-ordered vertical slices — failing test first, then content.
 - [x] Ensure main open-list does not lead with dismissive “three upstream merges remaining” as the
       gridscale value story (contribution stay on hero slide)
 - [x] Gate: content/pitch beats + `appendix-boundary.sh` + `exit-recording-ready.sh` green
+- [x] Honesty retcon (2026-07-20): GSK Caddy image roll **live-proven** —
+      `kaddy-showcase:0.6.0` (caddy-mvp Healthy) + `caddy:2.11.4-alpine` (caddy-demo);
+      deck/README no longer call the roll “in flight” / “rollout target”
 
 ## Out of band (not E12d) — optional E10 follow-on
 

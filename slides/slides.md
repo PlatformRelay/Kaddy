@@ -357,7 +357,7 @@ beat: scorecard
   <div class="kd-card kd-card-ok">
     <KdIcon name="mdi:source-branch-sync" size="1.5em" />
     <h3>Route and images</h3>
-    <p><code>portal.lab</code> Backstage HTTPRoute is live; the Caddy roll to showcase <code>:0.6.0</code> and <code>2.11.4-alpine</code> remains in flight.</p>
+    <p><code>portal.lab</code> Backstage HTTPRoute is live; Caddy images are live-proven on GSK — showcase <code>:0.6.0</code> (caddy-mvp) and <code>caddy:2.11.4-alpine</code> (caddy-demo).</p>
   </div>
   <div class="kd-card">
     <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.5em" />
@@ -368,11 +368,11 @@ beat: scorecard
 
 <div class="kd-grid kd-grid-2 mt-6">
   <div class="kd-card"><strong>Route proof</strong><span class="kd-muted">the Backstage public route is a listener, certificate, and HTTPRoute to <code>backstage:7007</code></span></div>
-  <div class="kd-card kd-card-ok"><strong>Honest evidence</strong><span class="kd-muted">the deck separates live proof, rollout targets, and remaining work</span></div>
+  <div class="kd-card kd-card-ok"><strong>Honest evidence</strong><span class="kd-muted">the deck separates live proof, remaining work, and open follow-ons</span></div>
 </div>
 
 <!--
-The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage's public route is live through the same listener, certificate, and HTTPRoute pattern as the other services. In parallel, the Caddy canary is still moving to the versioned showcase image and the demo to the current Caddy Alpine base. Scorecard turns the result into evidence instead of relying on selected screenshots.
+The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage's public route is live through the same listener, certificate, and HTTPRoute pattern as the other services. Caddy images are live-proven on GSK: caddy-mvp serves the versioned kaddy-showcase image and caddy-demo serves the current Caddy Alpine base, both returning HTTPS 200. Scorecard turns the result into evidence instead of relying on selected screenshots.
 -->
 
 ---
@@ -529,10 +529,10 @@ layout: default
   </div>
 </div>
 
-<div class="kd-callout mt-5">The Caddy rollout is being updated to the newest showcase images: <code>kaddy-showcase:0.6.0</code> for caddy-mvp and <code>caddy:2.11.4-alpine</code> for caddy-demo.</div>
+<div class="kd-callout mt-5">Caddy images are live-proven on GSK: <code>kaddy-showcase:0.6.0</code> for caddy-mvp (Healthy) and <code>caddy:2.11.4-alpine</code> for caddy-demo; <code>caddy.lab</code> and <code>demo.lab</code> return HTTPS 200.</div>
 
 <!--
-These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. In parallel, the Caddy rollout remains in flight to the versioned kaddy-showcase image for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
+These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. Caddy images are live-proven on GSK at the versioned kaddy-showcase pin for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
 -->
 
 ---
