@@ -96,6 +96,7 @@ tasks:
       - bash tests/meta/verify-spec-test-path-parse.sh
       - bash tests/meta/ws3-sha-pinned-actions.yaml
       - bash tests/meta/e12-deck-ci-wired.yaml
+      - bash tests/meta/e12-release-deck-wired.yaml
       - bash tests/meta/e8-s04-getting-started.sh
       - bash tests/smoke/e8-s04-02.sh
       - bash tests/smoke/e8-s04-demo.sh

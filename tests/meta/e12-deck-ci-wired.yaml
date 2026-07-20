@@ -58,6 +58,11 @@ printf '%s\n' "$wf_nocomment" | grep -qE 'name:[[:space:]]*deck-pdf' \
 printf '%s\n' "$wf_nocomment" | grep -qE 'path:[[:space:]]*slides/kaddy-deck\.pdf' \
   || fail "deck.yaml upload-artifact does not set path: slides/kaddy-deck.pdf"
 
+# Size guard must live in the shared export gate (hollow CI PDFs were ~2.6KB).
+export_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$export_gate")"
+printf '%s\n' "$export_nocomment" | grep -qE 'MIN_DECK_PDF_BYTES|MIN_BYTES' \
+  || fail "slidev-export.sh missing MIN_DECK_PDF_BYTES / MIN_BYTES size guard (hollow PDF would still pass)"
+
 test -f "$pkg" || fail "missing $pkg"
 pkg_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$pkg")"
 printf '%s\n' "$pkg_nocomment" | grep -qE '"playwright-chromium"' \

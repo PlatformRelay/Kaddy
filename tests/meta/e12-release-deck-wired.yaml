@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# E12 release wiring — tag-triggered release.yml must Playwright-export the
+# deck PDF and upload it to the GitHub Release (kubernetes-workshop pattern),
+# with a non-hollow size guard. Offline meta smoke — no cluster / node needed.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+wf="${ROOT}/.github/workflows/release.yml"
+export_gate="${ROOT}/tests/deck/slidev-export.sh"
+pkg="${ROOT}/slides/package.json"
+
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+test -f "$wf" || fail "missing $wf (tag-triggered release workflow)"
+
+wf_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$wf")"
+
+# Tag push only (never on ordinary branch pushes).
+printf '%s\n' "$wf_nocomment" | grep -qE "tags:" \
+  || fail "release.yml does not trigger on tags"
+printf '%s\n' "$wf_nocomment" | grep -qE '["'\'']v\*["'\'']' \
+  || fail "release.yml does not match v* tags"
+
+# Write permission required to create/update the Release + upload assets.
+printf '%s\n' "$wf_nocomment" | grep -qE 'contents:[[:space:]]*write' \
+  || fail "release.yml lacks permissions.contents: write (needed to upload Release assets)"
+
+# Playwright install + export gate (same teeth as deck.yaml).
+printf '%s\n' "$wf_nocomment" | grep -qE 'playwright[[:space:]]+install-deps[[:space:]]+chromium' \
+  || fail "release.yml does not install Chromium system deps via playwright install-deps chromium"
+printf '%s\n' "$wf_nocomment" | grep -qE 'playwright[[:space:]]+install[[:space:]]+chromium' \
+  || fail "release.yml does not install Chromium browser via playwright install chromium (install-deps alone is not enough)"
+printf '%s\n' "$wf_nocomment" | grep -qE 'tests/deck/slidev-export\.sh' \
+  || fail "release.yml does not run tests/deck/slidev-export.sh (Playwright PDF export + size guard)"
+
+# softprops uploads the PDF to the GitHub Release (not merely an Actions artifact).
+printf '%s\n' "$wf_nocomment" | grep -qE 'softprops/action-gh-release@[0-9a-f]{40}' \
+  || fail "release.yml does not use SHA-pinned softprops/action-gh-release"
+printf '%s\n' "$wf_nocomment" | grep -qE 'slides/kaddy-deck\.pdf' \
+  || fail "release.yml does not upload slides/kaddy-deck.pdf as a Release asset"
+printf '%s\n' "$wf_nocomment" | grep -qE 'fail_on_unmatched_files:[[:space:]]*true' \
+  || fail "release.yml must set fail_on_unmatched_files: true (do not silently ship without the PDF)"
+
+# Export gate must size-guard hollow PDFs (CI previously green-lit ~2.6KB empties).
+test -f "$export_gate" || fail "missing $export_gate"
+export_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$export_gate")"
+printf '%s\n' "$export_nocomment" | grep -qE 'MIN_DECK_PDF_BYTES|MIN_BYTES' \
+  || fail "slidev-export.sh does not define a MIN_DECK_PDF_BYTES / MIN_BYTES size guard"
+printf '%s\n' "$export_nocomment" | grep -qE 'hollow|MIN_BYTES|MIN_DECK_PDF_BYTES' \
+  || fail "slidev-export.sh does not fail on a hollow (too-small) PDF"
+
+test -f "$pkg" || fail "missing $pkg"
+pkg_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$pkg")"
+printf '%s\n' "$pkg_nocomment" | grep -qE '"export":[[:space:]]*"slidev export' \
+  || fail "slides/package.json missing export script (slidev export …)"
+# Wait flags reduce mid-export Vite-reload hollows observed in CI.
+printf '%s\n' "$pkg_nocomment" | grep -qE -- '--wait' \
+  || fail "slides/package.json export script missing --wait (CI hollow-PDF mitigation)"
+printf '%s\n' "$pkg_nocomment" | grep -qE -- '--wait-until' \
+  || fail "slides/package.json export script missing --wait-until (CI hollow-PDF mitigation)"
+
+echo "OK: E12 release deck wiring — release.yml exports + size-guards + uploads kaddy-deck.pdf on v* tags"

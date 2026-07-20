@@ -29,8 +29,8 @@ self-service claim provisions a site behind Caddy with observability, alerting, 
 progressive delivery. The [gridscale Platform Engineer exercise](docs/HIRING_EXERCISE.md)
 is satisfied as **one tenant** of the platform — `clubhouse` — not as a one-off VM script.
 
-> **Pitch deck:** [Download from GitHub Releases](https://github.com/PlatformRelay/Kaddy/releases)
-> (latest: [v0.6.0](https://github.com/PlatformRelay/Kaddy/releases/latest)).
+> **Pitch deck:** [Download from Releases](https://github.com/PlatformRelay/Kaddy/releases/latest/download/kaddy-deck.pdf)
+> (`kaddy-deck.pdf` on the [latest release](https://github.com/PlatformRelay/Kaddy/releases/latest)).
 
 ## Table of contents
 
