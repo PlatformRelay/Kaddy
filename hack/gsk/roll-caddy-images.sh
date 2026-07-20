@@ -99,7 +99,11 @@ kubectl -n "${DEMO_NS}" set image "deployment/${DEMO_DEPLOY}" \
   "${DEMO_CONTAINER}=${DEMO_IMAGE}"
 
 echo "==> Waiting for rollouts"
-kubectl -n "${MVP_NS}" rollout status "rollout/${MVP_ROLLOUT}" --timeout="${TIMEOUT}"
+# Argo Rollout: wait on status.phase=Healthy (e7 / mulligan pattern).
+# Plain kubectl "rollout status" against an Argo CR mis-reports progress;
+# use jsonpath phase=Healthy instead.
+kubectl -n "${MVP_NS}" wait --for=jsonpath='{.status.phase}'=Healthy \
+  "rollout/${MVP_ROLLOUT}" --timeout="${TIMEOUT}"
 kubectl -n "${DEMO_NS}" rollout status "deployment/${DEMO_DEPLOY}" --timeout="${TIMEOUT}"
 
 new_mvp="$(kubectl -n "${MVP_NS}" get rollout "${MVP_ROLLOUT}" \

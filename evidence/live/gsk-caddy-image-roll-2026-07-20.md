@@ -42,7 +42,9 @@ Equivalent one-shots (what the script runs):
 # mvp — Rollout JSON-patch by container index for name=caddy
 kubectl -n caddy-mvp patch rollout caddy-origin --type=json \
   -p='[{"op":"replace","path":"/spec/template/spec/containers/0/image","value":"ghcr.io/platformrelay/kaddy-showcase:0.6.0"}]'
-kubectl -n caddy-mvp rollout status rollout/caddy-origin --timeout=180s
+# Argo-aware wait (not `kubectl rollout status rollout/…`)
+kubectl -n caddy-mvp wait --for=jsonpath='{.status.phase}'=Healthy \
+  rollout/caddy-origin --timeout=180s
 
 # demo — live-only Deployment
 kubectl -n caddy-demo set image deployment/caddy caddy=caddy:2.11.4-alpine

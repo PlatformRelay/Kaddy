@@ -68,4 +68,17 @@ if grep -Eiq '(^| )(set|patch|apply|replace|edit|delete|rollout restart)( |$)' "
 fi
 ok "dry-run prints :0.6.0 + 2.11.4-alpine without mutating"
 
+# 4) Static source gate — Argo Rollout wait must be phase=Healthy (e7 pattern).
+#    `kubectl rollout status` against an Argo CR is wrong; forbid that form.
+#    Strip comments so explanatory prose cannot false-fail the forbid check.
+script_code="$(sed -E 's/#.*$//' "${SCRIPT}")"
+if echo "${script_code}" | grep -Eq 'rollout[[:space:]]+status[[:space:]]+["'\'']?rollout/'; then
+  fail "script must not use 'kubectl rollout status rollout/…' (use wait --for=jsonpath=.status.phase=Healthy)"
+fi
+echo "${script_code}" | grep -Eq "wait[[:space:]]+--for=jsonpath='\\{\\.status\\.phase\\}'=Healthy" \
+  || fail "script must wait --for=jsonpath='{.status.phase}'=Healthy … (e7 pattern)"
+echo "${script_code}" | grep -Eq 'rollout/' \
+  || fail "Healthy wait must target rollout/…"
+ok "Argo Rollout wait is phase=Healthy (no rollout status rollout/)"
+
 echo "PASS: gsk-roll-caddy-images offline gate green"
