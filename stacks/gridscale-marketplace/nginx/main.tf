@@ -11,7 +11,8 @@ module "marketplace" {
 
   name                = module.labels.name
   object_storage_path = var.object_storage_path
-  category            = "Adminpanel" # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
+  category            = "Adminpanel"                   # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
+  icon_path           = "${path.module}/nginx-512.png" # nginx logo (Simple Icons, CC0); ≤8-bit for panel render (E13-S06)
 
   meta_os         = "Ubuntu 24.04"
   meta_components = ["nginx", "nginx-prometheus-exporter", "sample landing page"]

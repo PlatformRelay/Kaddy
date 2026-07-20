@@ -20,19 +20,23 @@ Two engines: a **Caddy** template and a mirrored **nginx** template, from one pa
 
 ```text
 stacks/gridscale-marketplace/          # Terramate stack (phase 2; gated on E1g)
-  caddy/                               # marketplace app: Caddy
-  nginx/                               # marketplace app: nginx (mirror)
-modules/marketplace-template/          # reusable: register + import + deploy-proof
+  caddy/                               # marketplace app: caddy-ubuntu (+ caddy-512.png)
+  nginx/                               # marketplace app: nginx mirror (+ nginx-512.png)
+  nix/                                 # marketplace app: caddy-nix (+ nixos-512.png)
+modules/marketplace-template/          # reusable: register + import
   main.tf variables.tf outputs.tf
+  assets/icon.png                      # kaddy fallback when icon_path omitted
   tests/                               # tofu test fixtures (L0, offline)
 packer/                                # golden-image build (Caddy/nginx + /metrics)
   caddy.pkr.hcl  nginx.pkr.hcl
-assets/marketplace/icon.png            # meta_icon source (base64 at plan time)
-tests/smoke/                           # live gridscale-API smoke (gated on E1g creds)
-  e13-s02-register.sh  e13-s03-deploy.sh
+tests/smoke/                           # offline + live (gated) smoke
+  e13-offline.sh  e13-marketplace-icons.sh  e13-s02-register.sh  e13-s03-deploy.sh
 tests/promtool/gridscale-marketplace.test.yaml   # caddy_* fires against the deployed VM (L1)
 ```
 
+Each stack passes `icon_path` → a committed **≤8-bit** vendor PNG; the module
+`filebase64`s it into `meta_icon`. 16-bit RGBA uploads but renders blank in the
+panel (E13-S06).
 ## Test levels (gridscale API — no k8s cluster)
 
 This epic runs against the **gridscale cloud API + VMs**, not a Kubernetes cluster, so **L2 Chainsaw

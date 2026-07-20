@@ -51,3 +51,12 @@
         evidence (`evidence/live/e13-marketplace-deploy-2026-07-19.md`), tore down clean. Deploy
         mechanism resolved: storage `template_uuid = <consumer import object_uuid>` (no TF-provider deploy resource).
 - [x] Gate: `task test:spec` (structure) + `tofu test` + offline gate (`task test:smoke:e13`); live smoke gated on E1g credits.
+
+## E13-S06 — Vendor logos render in the panel (≤8-bit meta_icon)
+
+- [x] Offline gate `tests/smoke/e13-marketplace-icons.sh` (wired into `e13-offline.sh`): every engine
+      stack has `icon_path` → present PNG, ≤8-bit, distinct from module default kaddy logo
+- [x] Convert `caddy-512.png` / `nixos-512.png` from 16-bit RGBA → 8-bit RGB; add `nginx-512.png` +
+      `icon_path` on the nginx stack
+- [ ] Live re-apply `meta_icon` for `caddy-ubuntu` / `caddy-nix` (+ nginx if registered); evidence
+      `evidence/live/e13-marketplace-icons-<date>.md`

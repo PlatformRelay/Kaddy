@@ -79,6 +79,19 @@ silent preserved), against a **real gridscale target** — closing D-026 on the 
 
 ---
 
+## REQ-E13-S06-01: Vendor meta_icon bytes are ≤8-bit PNG and distinct from the module default
+
+**Priority:** must · **Story:** E13-S06 · **Level:** L0 · **TDD:** icon smoke first  
+**Given** the engine stacks under `stacks/gridscale-marketplace/{caddy,nix,nginx}`  
+**When** the offline icon gate runs  
+**Then** each stack sets `icon_path` to a present PNG that is ≤8-bit and whose bytes differ from
+`modules/marketplace-template/assets/icon.png` (so a silent fallback to the kaddy logo cannot go green)  
+**Test:** `tests/smoke/e13-marketplace-icons.sh`
+
+**Verify:** `bash tests/smoke/e13-marketplace-icons.sh` (also invoked from `tests/smoke/e13-offline.sh`)
+
+---
+
 ## REQ-E13-EXIT: One-click Marketplace deploy demonstrable end-to-end
 
 **Priority:** should  

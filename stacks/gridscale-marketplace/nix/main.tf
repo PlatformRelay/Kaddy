@@ -15,7 +15,7 @@ module "marketplace" {
   name                = "caddy-nix"
   object_storage_path = var.object_storage_path
   category            = "Adminpanel"                   # enum has no "Web Server"; real class in meta_* (D-032 / spec constraint)
-  icon_path           = "${path.module}/nixos-512.png" # NixOS snowflake (Simple Icons, CC0)
+  icon_path           = "${path.module}/nixos-512.png" # NixOS snowflake (Simple Icons, CC0); ≤8-bit for panel (E13-S06)
 
   meta_os         = "NixOS 24.11"
   meta_components = ["Caddy", "Prometheus /metrics endpoint", "Nix flake-locked closure", "sample landing page"]

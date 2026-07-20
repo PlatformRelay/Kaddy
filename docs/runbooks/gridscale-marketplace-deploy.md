@@ -154,11 +154,13 @@ holds remote state).
   `meta_components` / `meta_overview`. Enforced by module variable validation.
 - **`object_storage_path` must be `.gz` and start `s3://`** — enforced by module
   - stack variable validation (`^s3://.+\.gz$`) and by the offline `tofu test`.
-- **`meta_icon` required** — base64 of the repo logo (`slides/public/branding/
-  logo-512.png`), copied to `modules/marketplace-template/assets/icon.png` and
-  read via `filebase64("${path.module}/assets/icon.png")` so it is not a giant
-  HCL literal. `filebase64` runs under `mock_provider`, so the offline test
-  asserts the icon is non-empty.
+- **`meta_icon` required** — each engine stack passes `icon_path` to a
+  committed vendor PNG (`stacks/gridscale-marketplace/{caddy,nix,nginx}/*-512.png`),
+  which the module base64-encodes via `filebase64`. The module default
+  (`modules/marketplace-template/assets/icon.png`, the kaddy logo) is only a
+  fallback when `icon_path` is omitted. Vendor PNGs must be **≤8-bit** RGB —
+  16-bit RGBA uploads but renders blank in the tenant panel (E13-S06;
+  `tests/smoke/e13-marketplace-icons.sh`).
 - **Private tenant only (D-032)** — `is_publish_*` stay false; no global listing.
   Public listing needs gridscale's manual review (`product@gridscale.io`) — out
   of scope; a private import is all the demo needs.

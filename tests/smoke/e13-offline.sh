@@ -102,4 +102,7 @@ else
   echo "promtool not installed — skip alert test (CI installs promtool)"
 fi
 
+# --- 6) vendor icons ≤8-bit + distinct from module default (E13-S06) ---------
+bash "${DIR}/e13-marketplace-icons.sh" || fail "marketplace vendor icon contract"
+
 echo "PASS: e13 offline gate green"
