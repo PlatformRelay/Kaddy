@@ -46,12 +46,19 @@ spec:
       jqPathExpressions:
         - .spec.rules[].backendRefs[].weight
     # REQ-CADDY-S02-02 — caddy-origin canary mutates tenant HTTPRoute weights.
+    # E1g GSK: same name/ns as deploy/gateway/cloud-only/httproutes.yaml. When the
+    # workloads App auto-syncs on GSK it would overwrite clubhouse/https-caddy +
+    # caddy.lab with the kind parents (caddy-mvp Gateway + caddy-mvp.kaddy.local)
+    # → Traefik 404 on https://caddy.lab.platformrelay.dev/. Ignore parentRefs +
+    # hostnames so edge-up / live re-apply of the cloud route survives sync.
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: caddy-mvp
       namespace: caddy-mvp
       jqPathExpressions:
         - .spec.rules[].backendRefs[].weight
+        - .spec.parentRefs
+        - .spec.hostnames
   syncPolicy:
     automated:
       prune: true

@@ -146,6 +146,13 @@ need_file "${WORKLOADS_PROJ}"
 need_file "${PLATFORM_PROJ}"
 grep -A30 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'caddy-mvp' \
   || fail "workloads Application ignoreDifferences must cover caddy-mvp HTTPRoute"
+# GSK cloud-edge collision: Argo workloads syncs the kind HTTPRoute (same name/ns)
+# over the edge-up cloud route (clubhouse/https-caddy, caddy.lab). Ignore parentRefs
+# + hostnames so a live cloud re-apply is not clobbered on the next automated sync.
+grep -A40 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'parentRefs' \
+  || fail "workloads ignoreDifferences for caddy-mvp must include .spec.parentRefs (GSK/kind Gateway collision)"
+grep -A40 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'hostnames' \
+  || fail "workloads ignoreDifferences for caddy-mvp must include .spec.hostnames (caddy.lab vs kaddy.local)"
 grep -A40 'destinations:' "${WORKLOADS_PROJ}" | grep -q 'caddy-mvp' \
   || fail "workloads AppProject destinations must allow namespace caddy-mvp"
 grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'caddy-mvp' \

@@ -143,16 +143,18 @@ spec:
 # parents the LOCAL cilium Gateway (`caddy-mvp`/`https`, host caddy-mvp.kaddy.local)
 # and is UNCHANGED here. This cloud route parents the `clubhouse` Gateway
 # (ns traefik) by sectionName `https-caddy`, host caddy.lab.platformrelay.dev.
-# They never coexist on one cluster: the kind route ships via the `workloads`
-# ArgoCD App (kind only); this cloud route is applied imperatively via
-# edge-up.sh on the GSK edge (which runs NO ArgoCD Applications — verified
-# 2026-07-18), so there is no controller fighting over the object.
+#
+# COEXISTENCE (updated 2026-07-20): Argo CD Applications DO run on GSK now. The
+# `workloads` App auto-syncs the kind HTTPRoute over this object (same name/ns)
+# unless `ignoreDifferences` covers `.spec.parentRefs` + `.spec.hostnames`
+# (see deploy/apps/workloads.yaml). After enabling those ignores, re-apply this
+# file via edge-up.sh / `kubectl apply -f deploy/gateway/cloud-only/` so
+# caddy.lab attaches to clubhouse again.
 #
 # The backendRef weights (stable 100 / canary 0) are the STABLE steady state;
 # the Argo Rollouts Gateway API plugin (amd64 on GSK — see
 # hack/gsk/rollouts-plugin-amd64.sh) mutates them live during a caddy-origin
-# canary. Because the edge is imperative (no ArgoCD sync), the mutated weights
-# simply persist — no ignoreDifferences needed here.
+# canary. Weight diffs are also ignoreDifferences'd on the workloads App.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
