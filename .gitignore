@@ -43,7 +43,7 @@ node_modules/
 slides/dist/
 slides/.slidev/
 slides/kaddy-deck.pdf
-
+stuff/
 # --- Python ---
 __pycache__/
 *.pyc
