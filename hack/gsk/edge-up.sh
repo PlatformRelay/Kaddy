@@ -51,8 +51,8 @@ kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/gsk-cloud-edge.yaml"
 kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yaml"
 kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
 
-# 4) The clubhouse Gateway (3 HTTPS listeners, port 8443), per-host Certificates,
-#    and the app HTTPRoutes (incl. the caddy-mvp canary route, host caddy.lab).
+# 4) The clubhouse Gateway (five HTTPS listeners, port 8443), per-host Certificates,
+#    and the app HTTPRoutes (incl. caddy-mvp canary on caddy.lab + portal.lab).
 kubectl apply -f "${REPO_ROOT}/deploy/gateway/cloud-only/"
 
 # 5) Argo Rollouts plugin arch override (E1g-S05i). ONLY needed if argo-rollouts

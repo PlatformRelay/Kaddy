@@ -1,6 +1,6 @@
 # E10 portal cloud HTTPRoute LIVE — portal.lab on clubhouse (2026-07-20)
 
-Lane `portal-cloud-httproute` (`feat/portal-cloud-httproute` @ `f2fd87b`).
+Lane `portal-cloud-httproute` (`feat/portal-cloud-httproute`).
 
 ## PROVEN LIVE
 
@@ -9,12 +9,14 @@ Lane `portal-cloud-httproute` (`feat/portal-cloud-httproute` @ `f2fd87b`).
   `CN=portal.lab.platformrelay.dev`, issuer `Let's Encrypt CN=YR2`,
   valid Jul 20 → Oct 18 2026).
 - `ssl_verify_result=0` via:
+
   ```bash
   curl -w '%{http_code} %{ssl_verify_result}\n' \
     --resolve portal.lab.platformrelay.dev:443:185.241.34.187 \
     https://portal.lab.platformrelay.dev/
   # → 200 0
   ```
+
 - Public resolvers (`dig @1.1.1.1` / `@8.8.8.8` / `@ns3.cloudflare.com`) return
   `185.241.34.187`. Some local resolvers lag; use `--resolve` or `1.1.1.1` until TTL clears.
 
