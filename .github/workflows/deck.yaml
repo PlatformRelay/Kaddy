@@ -1,7 +1,8 @@
 # E12 deck gate — the interview deck must stay recording-ready: reproducible
 # Slidev build + word-by-word speaker notes + wordcount + iframe surfaces +
 # narrative beats (tests/deck/exit-recording-ready.sh). Publishes slides/dist
-# as the artifact the clubhouse/Caddy tenant can serve later.
+# as the artifact the clubhouse/Caddy tenant can serve later, plus a Playwright
+# PDF export (kubernetes-workshop release pattern) as deck-pdf.
 name: deck
 
 on:
@@ -20,6 +21,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # Slidev + pnpm must run non-interactively (pnpm otherwise prompts on its
+  # dependency-build allowlist). Mirrors kubernetes-workshop CI.
+  CI: "true"
+
 jobs:
   deck:
     runs-on: ubuntu-latest
@@ -35,9 +41,22 @@ jobs:
           cache-dependency-path: slides/pnpm-lock.yaml
       - name: deck exit gate (build + notes + wordcount + iframes + beats)
         run: bash tests/deck/exit-recording-ready.sh
+      - name: Install Chromium system dependencies
+        # Browser binary comes from playwright-chromium postinstall; this adds
+        # the OS libraries slidev export needs headless (workshop release.yml).
+        working-directory: slides
+        run: pnpm exec playwright install-deps chromium
+      - name: Export deck PDF (Playwright)
+        run: bash tests/deck/slidev-export.sh
       - name: Upload deck artifact (slides/dist)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deck-dist
           path: slides/dist/
+          retention-days: 14
+      - name: Upload deck PDF artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deck-pdf
+          path: slides/kaddy-deck.pdf
           retention-days: 14

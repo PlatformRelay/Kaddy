@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "slidev slides.md --open",
     "build": "slidev build slides.md",
-    "export": "slidev export slides.md",
+    "export": "slidev export slides.md --output kaddy-deck",
     "lint": "markdownlint-cli2 --config ../hack/tooling/.markdownlint-cli2.yaml slides.md README.md image-prompts.md"
   },
   "dependencies": {

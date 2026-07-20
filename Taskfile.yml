@@ -122,6 +122,11 @@ tasks:
     cmds:
       - bash tests/deck/slidev-build.sh
 
+  deck:export:
+    desc: E12 — export the Slidev deck to PDF via Playwright (wraps tests/deck/slidev-export.sh; asserts a FRESH slides/kaddy-deck.pdf)
+    cmds:
+      - bash tests/deck/slidev-export.sh
+
   test:image-digests:
     desc: E1c — fail on :latest in first-party deploy/ image refs (REQ-E1c-S03-01)
     cmds:

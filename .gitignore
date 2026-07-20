@@ -42,6 +42,7 @@ crash.*.log
 node_modules/
 slides/dist/
 slides/.slidev/
+slides/kaddy-deck.pdf
 
 # --- Python ---
 __pycache__/

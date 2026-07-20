@@ -3,15 +3,18 @@
 # Asserts .github/workflows/deck.yaml builds the deck via the composite exit
 # gate (tests/deck/exit-recording-ready.sh — includes the slidev build),
 # publishes slides/dist as the static-SPA artifact the clubhouse/Caddy tenant
-# can serve, triggers on the deck paths, and that the Taskfile wires
-# `task deck:build` around tests/deck/slidev-build.sh. Offline meta smoke —
-# no cluster and no node toolchain required.
+# can serve, exports a PDF via Playwright (mirrors kubernetes-workshop release
+# export; wired into every deck push here), triggers on the deck paths, and
+# that the Taskfile wires `task deck:build` / `task deck:export`. Offline meta
+# smoke — no cluster and no node toolchain required.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 wf="${ROOT}/.github/workflows/deck.yaml"
 tf="${ROOT}/Taskfile.yml"
 composite="${ROOT}/tests/deck/exit-recording-ready.sh"
+export_gate="${ROOT}/tests/deck/slidev-export.sh"
+pkg="${ROOT}/slides/package.json"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -39,6 +42,24 @@ printf '%s\n' "$wf_nocomment" | grep -qE 'actions/upload-artifact|upload-artifac
 printf '%s\n' "$wf_nocomment" | grep -qE 'path:[[:space:]]*slides/dist' \
   || fail "deck.yaml upload-artifact does not set path: slides/dist"
 
+# Playwright PDF export (kubernetes-workshop release pattern, on every deck CI push).
+test -f "$export_gate" || fail "missing $export_gate (slidev PDF export gate)"
+printf '%s\n' "$wf_nocomment" | grep -qE 'tests/deck/slidev-export\.sh' \
+  || fail "deck.yaml does not run tests/deck/slidev-export.sh (Playwright PDF export)"
+printf '%s\n' "$wf_nocomment" | grep -qE 'playwright[[:space:]]+install-deps[[:space:]]+chromium' \
+  || fail "deck.yaml does not install Chromium system deps via playwright install-deps chromium"
+printf '%s\n' "$wf_nocomment" | grep -qE 'name:[[:space:]]*deck-pdf' \
+  || fail "deck.yaml does not upload artifact name: deck-pdf"
+printf '%s\n' "$wf_nocomment" | grep -qE 'path:[[:space:]]*slides/kaddy-deck\.pdf' \
+  || fail "deck.yaml upload-artifact does not set path: slides/kaddy-deck.pdf"
+
+test -f "$pkg" || fail "missing $pkg"
+pkg_nocomment="$(sed -E 's/[[:space:]]*#.*$//' "$pkg")"
+printf '%s\n' "$pkg_nocomment" | grep -qE '"playwright-chromium"' \
+  || fail "slides/package.json missing playwright-chromium (required for slidev export)"
+printf '%s\n' "$pkg_nocomment" | grep -qE '"export":[[:space:]]*"slidev export' \
+  || fail "slides/package.json missing export script (slidev export …)"
+
 grep -qE "slides/\*\*" "$wf" \
   || fail "deck.yaml does not trigger on slides/** changes"
 
@@ -53,4 +74,10 @@ grep -qE '^  deck:build:' "$tf" \
 grep -qE 'tests/deck/slidev-build\.sh' "$tf" \
   || fail "Taskfile 'deck:build' does not wrap tests/deck/slidev-build.sh"
 
-echo "OK: E12 deck CI wiring — deck.yaml builds + publishes slides/dist; task deck:build wired"
+grep -qE '^  deck:export:' "$tf" \
+  || fail "Taskfile.yml does not define 'deck:export' (task wrapper for Playwright PDF export)"
+
+grep -qE 'tests/deck/slidev-export\.sh' "$tf" \
+  || fail "Taskfile 'deck:export' does not wrap tests/deck/slidev-export.sh"
+
+echo "OK: E12 deck CI wiring — deck.yaml builds + publishes slides/dist + deck-pdf; task deck:build/export wired"
