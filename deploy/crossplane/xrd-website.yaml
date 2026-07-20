@@ -80,7 +80,7 @@ spec:
                     required — the platform denies :latest). Must answer GET
                     /healthz (probes) and SHOULD expose Prometheus metrics on
                     /metrics (the composed ServiceMonitor scrapes it).
-                  default: ghcr.io/platformrelay/kaddy-showcase:0.1.1
+                  default: ghcr.io/platformrelay/kaddy-showcase:0.6.0
                 port:
                   type: integer
                   description: HTTP port the image listens on (unprivileged).

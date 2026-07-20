@@ -101,9 +101,13 @@ grep -q 'caddy_http_request_duration_seconds_count' "${TENANT}/analysistemplate.
 ok "Rollouts (canary+blueGreen), Services, HTTPRoute, AnalysisTemplate"
 
 # --- 5) Image pin + hardening (REQ-CADDY-S02-04) -----------------------------
-IMAGE_PIN='ghcr.io/platformrelay/kaddy-showcase:0.1.1'
+IMAGE_PIN='ghcr.io/platformrelay/kaddy-showcase:0.6.0'
 grep -qF "${IMAGE_PIN}" "${TENANT}/rollout-caddy-origin.yaml" \
   || fail "caddy-origin must use digest/tag pin ${IMAGE_PIN} (website-demo pin)"
+grep -qF "${IMAGE_PIN}" "${ROOT}/deploy/workloads/website-demo/website.yaml" \
+  || fail "website-demo Website XR must pin ${IMAGE_PIN}"
+grep -qF "default: ${IMAGE_PIN}" "${ROOT}/deploy/crossplane/xrd-website.yaml" \
+  || fail "Website XRD image default must be ${IMAGE_PIN}"
 grep -q 'runAsNonRoot: true' "${TENANT}/rollout-caddy-origin.yaml" \
   || fail "caddy-origin missing runAsNonRoot"
 grep -q 'readOnlyRootFilesystem: true' "${TENANT}/rollout-caddy-origin.yaml" \

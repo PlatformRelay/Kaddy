@@ -42,7 +42,7 @@ spec:
     compositionSelector:
       matchLabels:
         platform.kaddy.io/variant: in-cluster
-  image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
+  image: ghcr.io/platformrelay/kaddy-showcase:0.6.0
   port: 8080
   path: /putting-green
   replicas: 1

@@ -44,7 +44,7 @@ spec:
                   app.kubernetes.io/name: portal-scaffold-demo
                 spec:
                   path: /portal-scaffold-demo
-                  image: ghcr.io/platformrelay/kaddy-showcase:0.1.1
+                  image: ghcr.io/platformrelay/kaddy-showcase:0.6.0
                   port: 8080
                   replicas: 1
     - name: composed-resources-ready
