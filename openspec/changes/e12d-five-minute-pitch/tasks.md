@@ -65,8 +65,8 @@ TDD-ordered vertical slices — failing test first, then content.
 - [x] Reframe/replace the agentic beat: “built with AI” + spec-to-test loop; optional **sample
       OpenSpec** snippet (Given/When/Then + `Test:`/`Verify:`) visible on-slide
 - [x] Honesty appendix (or brief main footnote + appendix detail): Nix **build landed /
-      boot-to-serve open**; Backstage **narrative assumed for talk** vs **E10 live proof still
-      required**; upstream PRs **filed, open**
+      boot-to-serve open**; Backstage public HTTPRoute **live/proven independently of E12d** while
+      E10 form-to-PR/read-path smoke remains follow-on; upstream PRs **filed, open**
 - [x] Ensure main open-list does not lead with dismissive “three upstream merges remaining” as the
       gridscale value story (contribution stay on hero slide)
 - [x] Gate: content/pitch beats + `appendix-boundary.sh` + `exit-recording-ready.sh` green

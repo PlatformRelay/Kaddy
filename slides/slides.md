@@ -115,7 +115,6 @@ layout: default
   <div class="kd-card kd-card-warn">
     <h3><KdIcon name="material-symbols:pending-actions-rounded" /> Still open</h3>
     <ul>
-      <li>Backstage public Gateway API route</li>
       <li>external Alertmanager receiver</li>
       <li>Loki ruler alert</li>
       <li>Nix boot-to-serve</li>
@@ -125,7 +124,7 @@ layout: default
 </div>
 
 <!--
-This is the status line I use for the rest of the walkthrough. The Website API, including its ephemeral gridscale VM proof, identity, dashboards, enforced policy, scorecard publishing, audits, cloud edge, Packer path, and Nix build are present at their documented scope. The open work is narrower: the public portal route, external alert delivery, Loki ruler, Nix boot, and upstream merges.
+This is the status line I use for the rest of the walkthrough. The Website API, including its ephemeral gridscale VM proof, identity, dashboards, enforced policy, scorecard publishing, audits, cloud edge, Packer path, Nix build, and Backstage public route are present at their documented scope. The open work is narrower: external alert delivery, Loki ruler, Nix boot, and upstream merges.
 That separation matters because several artifacts are complete at one layer but not at the next. A committed configuration is not automatically a running service, an image build is not a successful boot, and an open pull request is not an upstream merge. I use those boundaries consistently.
 -->
 
@@ -283,9 +282,9 @@ beat: portal-hero
       </ul>
     </div>
   </div>
-    <div class="kd-surface kd-surface-fallback" data-surface="backstage" data-surface-mode="fallback">
+    <div class="kd-surface kd-surface-live" data-surface="backstage" data-surface-mode="live">
     <div class="kd-surface-label"><KdIcon name="mdi:application-brackets-outline" /> Backstage · GSK showcase</div>
-    <p>Public route: Gateway listener + DNS-01 certificate + HTTPRoute → <code>backstage:7007</code>.</p>
+    <p>Live public route (200): Gateway listener + Let's Encrypt certificate + HTTPRoute → <code>backstage:7007</code>.</p>
   </div>
 </div>
 
@@ -358,7 +357,7 @@ beat: scorecard
   <div class="kd-card kd-card-ok">
     <KdIcon name="mdi:source-branch-sync" size="1.5em" />
     <h3>Route and images</h3>
-    <p><code>portal.lab</code> adds the Backstage HTTPRoute; Caddy rolls to showcase <code>:0.6.0</code> and <code>2.11.4-alpine</code>.</p>
+    <p><code>portal.lab</code> Backstage HTTPRoute is live; the Caddy roll to showcase <code>:0.6.0</code> and <code>2.11.4-alpine</code> remains in flight.</p>
   </div>
   <div class="kd-card">
     <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.5em" />
@@ -373,7 +372,7 @@ beat: scorecard
 </div>
 
 <!--
-The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage receives the same listener, certificate, and HTTPRoute pattern as the other services. In parallel, the Caddy canary moves to the versioned showcase image and the demo moves to the current Caddy Alpine base. Scorecard turns the result into evidence instead of relying on selected screenshots.
+The GSK showcase makes the platform tangible: its operations surfaces, Caddy workloads, and Backstage share one cloud edge. Backstage's public route is live through the same listener, certificate, and HTTPRoute pattern as the other services. In parallel, the Caddy canary is still moving to the versioned showcase image and the demo to the current Caddy Alpine base. Scorecard turns the result into evidence instead of relying on selected screenshots.
 -->
 
 ---
@@ -398,16 +397,16 @@ layout: default
         <li>Expose the portal through the shared Gateway API edge</li>
       </ol>
     </div>
-    <p class="kd-muted mt-4">Backstage serves on GSK. The showcase route is <code>portal.lab.platformrelay.dev</code>: a fifth Gateway listener, TLS certificate, and HTTPRoute to <code>backstage:7007</code> are being landed.</p>
+    <p class="kd-muted mt-4">Backstage serves on GSK. The showcase route <code>portal.lab.platformrelay.dev</code> is live: a fifth Gateway listener, Let's Encrypt certificate, and HTTPRoute to <code>backstage:7007</code> return 200.</p>
   </div>
   <div class="kd-stack">
     <div data-surface="argocd" data-surface-mode="static" class="kd-surface kd-surface-fallback">
       <div class="kd-surface-label"><KdIcon name="mdi:source-branch-sync" /> Argo CD · static</div>
       <p>Public GSK GitOps surface retained for deep-dive recording, not required by the spoken pitch.</p>
     </div>
-    <div data-surface="backstage" data-surface-mode="fallback" class="kd-surface kd-surface-fallback">
-      <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage · GSK route in flight</div>
-      <p>The portal is running; this surface becomes live after the shared HTTPRoute returns 200 on <code>portal.lab.platformrelay.dev</code>.</p>
+    <div data-surface="backstage" data-surface-mode="live" class="kd-surface kd-surface-live">
+      <div class="kd-surface-label"><KdIcon name="mdi:view-dashboard-outline" /> Backstage · GSK route live</div>
+      <p>The shared HTTPRoute returns 200 on <code>portal.lab.platformrelay.dev</code>; its Let's Encrypt certificate is Ready.</p>
     </div>
     <div data-surface="crossplane-graph" data-surface-mode="fallback" class="kd-surface kd-surface-fallback">
       <div class="kd-surface-label"><KdIcon name="mdi:graph-outline" /> Crossplane graph · fallback</div>
@@ -417,7 +416,7 @@ layout: default
 </div>
 
 <!--
-The portal is the experience layer, not the source of truth. The intended flow derives a form from the Website XRD, opens a GitOps change, and renders reconciliation status. Backstage now serves on GSK; the remaining showcase integration is its public Gateway API HTTPRoute. The route uses the same pattern as the other cloud surfaces: a dedicated listener, a DNS-01 certificate, and an HTTPRoute to the portal Service on port 7007. Until that URL returns 200, this remains an explicit fallback rather than a simulated screenshot.
+The portal is the experience layer, not the source of truth. The intended flow derives a form from the Website XRD, opens a GitOps change, and renders reconciliation status. Backstage serves on GSK and its public Gateway API HTTPRoute is proven: the dedicated listener, Let's Encrypt certificate, and portal Service on port 7007 return 200 at the public URL. The form-to-PR and read-path smoke remain distinct follow-on evidence.
 -->
 
 ---
@@ -526,14 +525,14 @@ layout: default
   <div class="kd-card kd-card-accent">
     <KdIcon name="mdi:view-dashboard-outline" size="1.7em" />
     <h3>Backstage</h3>
-    <p>Running on GSK; the public <code>portal.lab.platformrelay.dev</code> HTTPRoute is the final showcase edge integration.</p>
+    <p>Running on GSK; the public <code>portal.lab.platformrelay.dev</code> HTTPRoute is live and returns 200.</p>
   </div>
 </div>
 
 <div class="kd-callout mt-5">The Caddy rollout is being updated to the newest showcase images: <code>kaddy-showcase:0.6.0</code> for caddy-mvp and <code>caddy:2.11.4-alpine</code> for caddy-demo.</div>
 
 <!--
-These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is deliberately called out until its public 200 is recorded. In parallel, the Caddy rollout is updated to the versioned kaddy-showcase image for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
+These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. In parallel, the Caddy rollout remains in flight to the versioned kaddy-showcase image for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
 -->
 
 ---
@@ -610,13 +609,12 @@ layout: default
 
 <div class="kd-flow kd-flow-vertical mt-5">
   <div class="kd-step"><span>1</span><strong>Operations</strong>external Alertmanager receiver and Loki ruler</div>
-  <div class="kd-step"><span>2</span><strong>Showcase edge</strong>prove Backstage at <code>portal.lab.platformrelay.dev</code> and capture the HTTPRoute 200</div>
-  <div class="kd-step"><span>3</span><strong>Image proof</strong>boot the Nix image on gridscale and verify serve → scrape → alert</div>
-  <div class="kd-step"><span>4</span><strong>Upstream</strong>respond to review and land the three provider fixes</div>
+  <div class="kd-step"><span>2</span><strong>Image proof</strong>boot the Nix image on gridscale and verify serve → scrape → alert</div>
+  <div class="kd-step"><span>3</span><strong>Upstream</strong>respond to review and land the three provider fixes</div>
 </div>
 
 <!--
-My next work would close operational loops before adding breadth. First I would deliver alerts to an external receiver and add the Loki ruler. Then I would complete the public Backstage route on the GSK showcase edge and prove the generated experience. After that I would complete the Nix boot-to-serve proof. Upstream review continues in parallel because merge timing is not fully mine to control.
+My next work would close operational loops before adding breadth. First I would deliver alerts to an external receiver and add the Loki ruler. The public Backstage route on the GSK showcase edge is already proven; the generated form-to-PR experience remains separate follow-on evidence. After that I would complete the Nix boot-to-serve proof. Upstream review continues in parallel because merge timing is not fully mine to control.
 -->
 
 ---
@@ -666,11 +664,11 @@ layout: default
 
 <div class="kd-card mt-5">
   <strong>Pitch honesty boundary</strong>
-  <span class="kd-muted">Upstream PRs are filed and open, not merged. Backstage is assumed in the talk; E10 HTTPRoute proof remains a separately recorded live step.</span>
+  <span class="kd-muted">Upstream PRs are filed and open, not merged. Backstage's public HTTPRoute proof is live and separately recorded from E12d; the talk narrative was never used as its proof. E10 form-to-PR smoke remains follow-on work.</span>
 </div>
 
 <!--
-For image questions, Packer and Nix are parallel paths. Packer provisions a familiar base image and has the serving proof. The Nix flake and module now build an image reproducibly. That corrects the old appendix wording: flake dot nix does exist. What is still missing is boot-to-serve on gridscale, so Nix is built but not fully proven. The pitch treats Backstage as the experience layer while keeping the public-route proof separate, and it never turns filed upstream pull requests into claimed merges.
+For image questions, Packer and Nix are parallel paths. Packer provisions a familiar base image and has the serving proof. The Nix flake and module now build an image reproducibly. That corrects the old appendix wording: flake dot nix does exist. What is still missing is boot-to-serve on gridscale, so Nix is built but not fully proven. The pitch treats Backstage as the experience layer while recording the live public route separately from this deck epic; it never turns filed upstream pull requests into claimed merges.
 -->
 
 ---

@@ -58,9 +58,28 @@ shipping the `Website` XRD as a v2 namespaced XR** (D-027). TDD: add the failing
 - [~] Rehearse the auto-gen money-shot: edit XRD → refresh → new form field (E12 iframe surface)
       — **documented in the runbook; the live rehearsal is DEFERRED (needs a running Backstage)**
 
+## E10-S07 — Portal image publish + live bring-up smoke
+
+> The public GSK HTTPRoute is live/proven: `https://portal.lab.platformrelay.dev` returns 200 through
+> a Ready Let's Encrypt certificate and Cloudflare A → `185.241.34.187`. Offline S01–S06 wiring is
+> landed; this story retains the portal form-to-PR/read-path smoke and unskipped live-cycle tests.
+> See also INBOX §E10-S07 assessment (GSK portal Deployment may already exist scaled to 0 —
+> finish image/plugins/OIDC/smoke rather than re-authoring the skeleton).
+
+- [ ] Confirm / publish `ghcr.io/platformrelay/kaddy-portal:<tag>` from `PlatformRelay/kaddy-portal`
+      (plugins pinned in `deploy/portal/backstage/plugin-versions.md`); resolve plugin registration
+      defects if still present
+- [ ] Wire or verify Helm chart grandchild in `deploy/apps/portal.yaml`; pin image digest in
+      `deploy/portal/backstage/values.yaml`
+- [ ] Ensure Dex `backstage` static client + KSOPS-rendered OIDC secret (no guest in prod)
+- [ ] Scale/sync portal App; `kubectl -n portal rollout status deploy/backstage`
+- [ ] Smoke: scaffolder form from Website XRD → GitOps PR path; read-path graph/Argo/K8s
+- [ ] Un-skip or live-prove the relevant `tests/chainsaw/portal/*` specs; update runbook status
+
 ## Test hygiene
 
 - [x] **[TEST-4]** `tests/chainsaw/portal/chainsaw-test.yaml` kept `skip: true` with a status
       annotation — the EXIT path drives a LIVE Backstage (form→PR→reconcile + XRD-edit money-shot),
-      a live-cycle bring-up. Un-skipping now would FAIL offline (the running portal is deferred),
-      violating skip-not-fail. The offline contract is proven by `tests/smoke/e10-offline.sh`.
+      a live-cycle smoke. Un-skipping the form-to-PR suite without that proof would FAIL offline,
+      violating skip-not-fail. The public HTTPRoute is live; the offline contract is proven by
+      `tests/smoke/e10-offline.sh`.
