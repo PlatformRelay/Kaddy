@@ -145,6 +145,21 @@ composed/workload GVKs, and netpol allows egress only to kube-apiserver + argocd
 
 ---
 
+## REQ-E10-S05-03: GSK sign-in is GitHub-only and catalog-restricted
+
+**Priority:** could · **Story:** E10-S05 · **Level:** meta · **Refs:** ADR-0107  
+**Given** the GSK override ConfigMap, the OAuth URL-contract stack, and the wire helper  
+**When** the offline contract gate inspects them  
+**Then** the portal.lab GitHub callback is pinned (never localhost), guest/oidc are deleted, and the
+`usernameMatchingUserEntityName` resolver admits ONLY GitHub logins that exist as catalog User
+entities (allowlist `deploy/portal/backstage/gsk/org-users.yaml` via url location; no
+sign-in-without-catalog-user escape hatch — classic OAuth Apps cannot restrict by org)  
+**Test:** `tests/portal/github-oauth-contract.sh`
+
+**Verify:** `bash tests/portal/github-oauth-contract.sh` (fails if the escape hatch returns or the allowlist is removed)
+
+---
+
 ## REQ-E10-EXIT: Portal demo path (auto-gen money-shot)
 
 **Priority:** could  

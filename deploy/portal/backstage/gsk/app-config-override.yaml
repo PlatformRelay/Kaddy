@@ -17,7 +17,10 @@
 #
 # AUTH (operator ASAP): GitHub provider ONLY on GSK. Dex is not deployed on this
 # cluster (no identity ns / dex.platformrelay.dev unreachable from lab), so OIDC
-# must be deleted (`oidc: null`). Guest must be deleted (`guest: null`) AND the
+# must be deleted (`oidc: null`). Sign-in is CATALOG-RESTRICTED: the
+# usernameMatchingUserEntityName resolver only admits GitHub logins that exist
+# as catalog User entities (allowlist: gsk/org-users.yaml, ingested via url
+# location). Guest must be deleted (`guest: null`) AND the
 # Deployment must run NODE_ENV=production — the kaddy-portal image loads the
 # guest backend module whenever NODE_ENV !== production (config merge alone
 # cannot unload the module). Secrets: AUTH_GITHUB_* from Secret `backstage-github`
@@ -72,10 +75,12 @@ data:
             clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
             signIn:
               resolvers:
-                # Lab catalog may not list every org member — allow sign-in and
-                # synthesize a user entity when no catalog match exists.
+                # Catalog-restricted sign-in: this resolver ONLY admits GitHub
+                # logins that exist as catalog User entities (org-users.yaml
+                # url location below). No escape hatch: classic OAuth Apps
+                # cannot restrict by org, so any relaxation here opens the
+                # scaffolder/register surface to EVERY GitHub account.
                 - resolver: usernameMatchingUserEntityName
-                  dangerouslyAllowSignInWithoutUserInCatalog: true
       signInPage: github
     kubernetes:
       serviceLocatorMethod:
@@ -106,6 +111,17 @@ data:
           rules:
             - allow: [Template]
         - type: file
+          # Group only — the example org.yaml ships a `guest` User which the
+          # catalog-restricted resolver would otherwise admit (the GitHub
+          # account named "guest" could sign in).
           target: ./examples/org.yaml
+          rules:
+            - allow: [Group]
+        - type: url
+          # Sign-in allowlist (User entities; see gsk/org-users.yaml). The
+          # image is immutable, so this repo file rides its raw URL (public
+          # repo — no token). 404s until the lane merges to main; other
+          # locations still load meanwhile.
+          target: https://raw.githubusercontent.com/PlatformRelay/Kaddy/main/deploy/portal/backstage/gsk/org-users.yaml
           rules:
             - allow: [User, Group]

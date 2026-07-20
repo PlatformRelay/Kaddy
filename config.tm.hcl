@@ -1,8 +1,10 @@
 # Terramate codegen — the ONE place provider/backend/labels are defined.
 #
-# These generate_hcl blocks run for every stack (they carry no `condition`,
-# so they apply to all descendant stacks). Each stack therefore gets, without
-# copy-paste:
+# These generate_hcl blocks are scoped via `condition`: the gridscale day-0
+# stacks (tag "gridscale") get provider/vars/labels codegen, the S3 backend
+# renders only where the per-stack `backend` global is "s3", and non-gridscale
+# stacks (e.g. stacks/github/portal-oauth) bring their own providers. Each
+# matching stack therefore gets, without copy-paste:
 #   * _terramate_generated_provider.tf — required_providers pin + provider auth
 #   * _terramate_generated_labels.tf   — the modules/labels call (E1b-S04)
 #

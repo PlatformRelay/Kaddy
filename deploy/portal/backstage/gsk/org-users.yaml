@@ -1,0 +1,32 @@
+# REQ-E10-S05 / GSK lab — portal.lab sign-in allowlist (Backstage catalog Users).
+#
+# The GSK override pins the `usernameMatchingUserEntityName` resolver WITHOUT
+# any escape hatch, so GitHub sign-in only succeeds for logins that exist as
+# catalog User entities. metadata.name MUST equal the GitHub login exactly.
+# This file IS the allowlist — add a User entity per admitted org member.
+#
+# Ingested via a `type: url` catalog location in app-config-override.yaml
+# pointing at this file's raw.githubusercontent.com URL: the kaddy-portal image
+# is immutable (new files cannot ride `type: file` locations), the repo is
+# public (URL reader needs no token), and NetPol allow-https-egress permits
+# the :443 fetch.
+#
+# NOT a k8s manifest — Backstage catalog entities only (keep out of kubeconform).
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: konih
+  description: Operator — GitHub login konih (PlatformRelay org)
+spec:
+  profile:
+    displayName: Konrad Heimel
+  memberOf: [platform-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+  description: PlatformRelay platform operators
+spec:
+  type: team
+  children: []

@@ -111,6 +111,30 @@ printf '%s\n' "${payload_nocomment}" | grep -qiE 'oidc:[[:space:]]*null' \
   || fail "GSK override must set oidc: null (Dex unwired on GSK; GitHub-only)"
 ok "GSK override is GitHub-only (signInPage github; AUTH_GITHUB_*; oidc/guest null)"
 
+# --- 4c) sign-in restricted to catalog User entities (no escape hatch) -------
+# usernameMatchingUserEntityName ONLY admits GitHub logins present as catalog
+# User entities. dangerouslyAllowSignInWithoutUserInCatalog would open the
+# scaffolder/register surface to ANY GitHub account (classic OAuth Apps cannot
+# restrict by org) — forbidden. The allowlist rides gsk/org-users.yaml via a
+# url location (image is immutable; repo is public; NetPol allows :443).
+if printf '%s\n' "${payload_nocomment}" | grep -qi 'dangerouslyAllowSignInWithoutUserInCatalog'; then
+  fail "override must NOT set dangerouslyAllowSignInWithoutUserInCatalog (ANY GitHub account could sign in)"
+fi
+printf '%s\n' "${payload_nocomment}" | grep -q 'usernameMatchingUserEntityName' \
+  || fail "override must pin the usernameMatchingUserEntityName sign-in resolver"
+USERS_FILE="${ROOT}/deploy/portal/backstage/gsk/org-users.yaml"
+[[ -f "${USERS_FILE}" ]] || fail "missing ${USERS_FILE} (sign-in allowlist User entities)"
+grep -qE 'kind:[[:space:]]*User' "${USERS_FILE}" \
+  || fail "org-users.yaml must define at least one Backstage User entity (else nobody can sign in)"
+printf '%s\n' "${payload_nocomment}" | grep -qE 'raw\.githubusercontent\.com/PlatformRelay/Kaddy/main/deploy/portal/backstage/gsk/org-users\.yaml' \
+  || fail "override catalog.locations must ingest org-users.yaml via its raw.githubusercontent.com url (sign-in allowlist)"
+# example org.yaml ships a `guest` User — must not be ingested as User anymore
+example_org_rules="$(printf '%s\n' "${payload_nocomment}" | grep -A2 'examples/org\.yaml' | grep 'allow:' || true)"
+if printf '%s\n' "${example_org_rules}" | grep -q 'User'; then
+  fail "examples/org.yaml location must not allow User (its guest User would admit the GitHub 'guest' account)"
+fi
+ok "sign-in restricted to catalog User entities (no dangerous flag; org-users.yaml url location; example Users excluded)"
+
 # --- 5) NetPol allows HTTPS egress for register + scaffolder -----------------
 # Register Existing Component only accepts type=url and fetches raw GitHub;
 # scaffolder publishPhase talks to api.github.com. Port-scoped :443 (same

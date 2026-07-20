@@ -65,9 +65,12 @@ kubectl --request-timeout=30s -n portal create secret generic backstage-github \
   --dry-run=client -o yaml | kubectl --request-timeout=30s apply -f -
 ok "Secret portal/backstage-github updated (AUTH_GITHUB_*)"
 
-# Ensure Deployment env refs exist
-if ! kubectl --request-timeout=15s -n portal get deploy backstage \
-  -o jsonpath='{.spec.template.spec.containers[0].env[*].name}' | grep -q AUTH_GITHUB_CLIENT_ID; then
+# Ensure Deployment env refs exist — require BOTH id AND secret so a
+# half-wired Deployment (e.g. only CLIENT_ID present) gets repaired.
+env_names="$(kubectl --request-timeout=15s -n portal get deploy backstage \
+  -o jsonpath='{.spec.template.spec.containers[0].env[*].name}')"
+if ! grep -q 'AUTH_GITHUB_CLIENT_ID' <<<"${env_names}" \
+  || ! grep -q 'AUTH_GITHUB_CLIENT_SECRET' <<<"${env_names}"; then
   kubectl --request-timeout=30s -n portal set env deployment/backstage \
     --from=secret/backstage-github
   ok "wired AUTH_GITHUB_* env from secret onto Deployment"
