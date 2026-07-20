@@ -149,10 +149,15 @@ grep -A30 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'caddy-mvp' \
 # GSK cloud-edge collision: Argo workloads syncs the kind HTTPRoute (same name/ns)
 # over the edge-up cloud route (clubhouse/https-caddy, caddy.lab). Ignore parentRefs
 # + hostnames so a live cloud re-apply is not clobbered on the next automated sync.
-grep -A40 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'parentRefs' \
-  || fail "workloads ignoreDifferences for caddy-mvp must include .spec.parentRefs (GSK/kind Gateway collision)"
-grep -A40 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'hostnames' \
-  || fail "workloads ignoreDifferences for caddy-mvp must include .spec.hostnames (caddy.lab vs kaddy.local)"
+# Literal jqPathExpressions lines — comments alone must not satisfy these greps.
+grep -E '^\s+- \.spec\.parentRefs$' "${WORKLOADS_APP}" \
+  || fail "workloads ignoreDifferences must list jqPathExpression '.spec.parentRefs' (GSK/kind Gateway collision)"
+grep -E '^\s+- \.spec\.hostnames$' "${WORKLOADS_APP}" \
+  || fail "workloads ignoreDifferences must list jqPathExpression '.spec.hostnames' (caddy.lab vs kaddy.local)"
+# Without RespectIgnoreDifferences, Argo ignores ignoreDifferences at sync time
+# and still reclobbers the clubhouse route.
+grep -qE '^\s+- RespectIgnoreDifferences=true$' "${WORKLOADS_APP}" \
+  || fail "workloads syncOptions must include RespectIgnoreDifferences=true"
 grep -A40 'destinations:' "${WORKLOADS_PROJ}" | grep -q 'caddy-mvp' \
   || fail "workloads AppProject destinations must allow namespace caddy-mvp"
 grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'caddy-mvp' \

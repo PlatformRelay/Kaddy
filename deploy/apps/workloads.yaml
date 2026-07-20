@@ -65,3 +65,7 @@ spec:
       selfHeal: false
     syncOptions:
       - CreateNamespace=true
+      # Required for ignoreDifferences to apply at sync time (not only for
+      # OutOfSync detection). Without this, Argo still overwrites live
+      # parentRefs/hostnames on the caddy-mvp HTTPRoute during sync.
+      - RespectIgnoreDifferences=true
