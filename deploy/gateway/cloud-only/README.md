@@ -55,5 +55,6 @@ rollout reconciliation. The amd64 override IS a committed overlay:
 `deploy/rollouts/cloud-only/config.yaml` pins the `...-linux-amd64` binary of
 the SAME pinned release (v0.16.0), leaving the kind arm64 default untouched;
 `hack/gsk/rollouts-plugin-amd64.sh` (live-patch + controller restart) remains
-as break-glass only. `edge-up.sh` runs it automatically when argo-rollouts is
-present.
+as break-glass only. `edge-up.sh` applies the overlay
+(`kubectl apply -k deploy/rollouts/cloud-only`) and restarts the controller
+automatically when argo-rollouts is present.

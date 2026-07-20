@@ -37,12 +37,20 @@ metadata:
     kaddy.io/req: REQ-E1g-S05b
     kaddy.io/status: cloud-only-gsk-edge
 spec:
+  # Argo CD's API server rejects AppProjects whose spec.description exceeds 255
+  # characters (seen live 2026-07-20: the apply failed, the cluster kept the OLD
+  # project, and gateway-cloud-edge / cert-manager-cloud-edge could not sync).
+  # Keep the FOLDED description <=255 chars — the offline gate
+  # (tests/smoke/gsk-cloud-edge-gitops-offline.sh) enforces this. Overflow
+  # rationale lives here instead: the member Applications
+  # (deploy/gateway-controller/traefik/application.yaml + deploy/apps-cloud/)
+  # sit OUTSIDE the kind app-of-apps and are applied only on the gridscale GSK
+  # edge; the edge is on-demand and torn down after each demo.
   description: >-
-    kaddy GSK cloud-edge (E1g): the Traefik Gateway API controller in `traefik`,
-    the clubhouse Gateway/Certificates/HTTPRoutes, and the DNS-01 ClusterIssuers.
-    Cloud-only — the member Applications live outside the kind app-of-apps
-    (deploy/gateway-controller/traefik/ + deploy/apps-cloud/) and are applied
-    only on the gridscale GSK edge. On-demand, torn down after each demo.
+    kaddy GSK cloud-edge (E1g): the Traefik Gateway API controller, the
+    clubhouse Gateway/Certificates/HTTPRoutes, and the DNS-01 ClusterIssuers.
+    Cloud-only - member Apps live outside the kind app-of-apps; applied only
+    on the GSK edge.
   sourceRepos:
     - https://github.com/PlatformRelay/Kaddy.git
     # The Traefik Gateway API controller Helm chart (closed list — one repo).

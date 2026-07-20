@@ -22,6 +22,9 @@
 #   8. edge-up.sh hands ownership to Argo (applies deploy/apps-cloud/), keeping
 #      the raw manifests as documented break-glass only.
 #   9. kubeconform schema-validates the App manifests (if installed).
+#  10. The gsk-cloud-edge AppProject spec.description FOLDS to <=255 chars —
+#      Argo's API server rejects longer ones (seen live: the apply failed and
+#      the cluster kept the OLD project, blocking both cloud-edge Apps).
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -84,8 +87,10 @@ cm_path="$(yq -r '.spec.source.path' "${CM_APP}")"
 [[ "${cm_path}" == "deploy/cert-manager/cloud-only" ]] \
   || fail "cert-manager-cloud-edge must sync deploy/cert-manager/cloud-only (got: ${cm_path})"
 cm_include="$(yq -r '.spec.source.directory.include // "missing"' "${CM_APP}")"
-[[ "${cm_include}" == *cluster-issuer-dns01* ]] \
-  || fail "cert-manager-cloud-edge must directory.include ONLY the cluster-issuer-dns01-* files (ExternalSecret + deferred E4 certs stay out of sync); got: ${cm_include}"
+# Exact match, not substring: widening the include (e.g. '*.yaml' or a brace
+# pattern that still contains the dns01 stem) must FAIL this gate.
+[[ "${cm_include}" == "cluster-issuer-dns01-*.yaml" ]] \
+  || fail "cert-manager-cloud-edge must directory.include EXACTLY 'cluster-issuer-dns01-*.yaml' (ExternalSecret + deferred E4 certs stay out of sync); got: ${cm_include}"
 ok "cert-manager App syncs only the DNS-01 ClusterIssuers"
 
 # --- 6) KIND-SAFETY: root never picks up the cloud-edge Apps -----------------
@@ -143,5 +148,15 @@ if command -v kubeconform >/dev/null 2>&1; then
 else
   echo "kubeconform not installed — skip schema validation (CI installs it)"
 fi
+
+# --- 10) AppProject description within Argo's 255-char server-side limit -----
+# Argo CD rejects AppProjects whose spec.description exceeds 255 characters
+# ("spec.description: Too long"). Measure the FOLDED scalar — exactly the
+# string the API server validates — in bytes (strictest; description must stay
+# ASCII so bytes == chars).
+desc_len="$(yq -r '.spec.description // ""' "${PROJECT}" | tr -d '\n' | wc -c | tr -d ' ')"
+[[ "${desc_len}" -le 255 ]] \
+  || fail "gsk-cloud-edge AppProject spec.description folds to ${desc_len} chars — Argo rejects >255 (apply fails, cluster keeps the OLD project); move rationale into YAML comments above the field"
+ok "AppProject description within Argo's 255-char limit (${desc_len} chars folded)"
 
 echo "PASS: gsk cloud-edge GitOps offline gate green"

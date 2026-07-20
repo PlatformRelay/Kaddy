@@ -68,16 +68,22 @@ kubectl apply -f "${REPO_ROOT}/deploy/apps-cloud/"
 
 # 5) Argo Rollouts plugin arch override (E1g-S05i). ONLY needed if argo-rollouts
 #    is deployed on the edge to serve the FULL caddy-mvp canary (the caddy.lab
-#    HTTPRoute caddy-lab above). GSK nodes are amd64, but deploy/rollouts/config.yaml pins
-#    the arm64 plugin (kind default) — without this the controller hits
-#    `exec format error` and NO rollout reconciles. Skipped automatically if the
+#    HTTPRoute caddy-lab above). GSK nodes are amd64, but deploy/rollouts/config.yaml
+#    pins the arm64 plugin (kind default) — without the override the controller
+#    hits `exec format error` and NO rollout reconciles. The override is the
+#    COMMITTED overlay deploy/rollouts/cloud-only/ (same pinned v0.16.0 release,
+#    linux-amd64); hack/gsk/rollouts-plugin-amd64.sh (live patch) is break-glass
+#    ONLY — see deploy/gateway/cloud-only/README.md. The controller needs a
+#    one-time restart to load the ConfigMap. Skipped automatically if the
 #    argo-rollouts deployment is absent.
 if kubectl -n argo-rollouts get deploy argo-rollouts >/dev/null 2>&1; then
-  echo "==> argo-rollouts present — overriding the gatewayAPI plugin to linux-amd64"
-  "${REPO_ROOT}/hack/gsk/rollouts-plugin-amd64.sh"
+  echo "==> argo-rollouts present — applying the linux-amd64 plugin overlay"
+  kubectl apply -k "${REPO_ROOT}/deploy/rollouts/cloud-only"
+  kubectl -n argo-rollouts rollout restart deploy/argo-rollouts
+  kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=180s || true
 else
-  echo "==> argo-rollouts not deployed — skipping the amd64 plugin override"
-  echo "    (deploy argo-rollouts then run hack/gsk/rollouts-plugin-amd64.sh for the caddy-mvp canary)."
+  echo "==> argo-rollouts not deployed — skipping the amd64 plugin overlay"
+  echo "    (deploy argo-rollouts, then kubectl apply -k deploy/rollouts/cloud-only + restart the controller for the caddy-mvp canary)."
 fi
 
 echo ""
