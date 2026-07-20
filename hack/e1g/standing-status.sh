@@ -69,8 +69,9 @@ PY
 
 read_field() {
   local key="$1" file="$2"
-  # Strip comments/blank; take first matching key=
-  grep -E "^${key}=" "$file" 2>/dev/null | head -n1 | cut -d= -f2-
+  # Missing key must NOT fail under set -euo pipefail (grep exit 1 would abort
+  # the script before the incomplete-marker WARN). Empty string + exit 0.
+  grep -E "^${key}=" "$file" 2>/dev/null | head -n1 | cut -d= -f2- || true
 }
 
 cmd_clear() {

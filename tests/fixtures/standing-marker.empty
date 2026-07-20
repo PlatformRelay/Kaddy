@@ -1,0 +1,2 @@
+# E1g-S07 fixture — empty marker body (comments only; no KEY=value fields).
+# Soft contract: status must WARN + exit 0.

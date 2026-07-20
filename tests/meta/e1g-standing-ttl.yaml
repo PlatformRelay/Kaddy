@@ -7,6 +7,8 @@
 #   (c) stale marker   → WARN (names teardown-by + owner + e1g:down), STILL exit 0
 #   (d) Taskfile wires e1g:status + this meta check into test:meta:ci
 #   (e) e1g:up writes / updates the marker; e1g:down clears it
+#   (f) incomplete/empty marker → WARN + exit 0 (never abort under pipefail)
+#   (g) write → clear behavioural round-trip
 #
 # Creds-free: reads local marker files only. Controllable via
 # E1G_STANDING_MARKER + E1G_STANDING_NOW (+ optional E1G_STANDING_WINDOW_DAYS).
@@ -19,6 +21,8 @@ TASKFILE="$ROOT/Taskfile.yml"
 FIX="$ROOT/tests/fixtures"
 FRESH="$FIX/standing-marker.fresh"
 STALE="$FIX/standing-marker.stale"
+INCOMPLETE="$FIX/standing-marker.incomplete"
+EMPTY="$FIX/standing-marker.empty"
 NOW=2026-07-20
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -42,6 +46,8 @@ grep -A50 -E '^[[:space:]]*e1g:down:' "$TASKFILE" | grep -qE 'standing-status.*(
 [ -x "$STATUS_SH" ] || fail "$STATUS_SH must be executable"
 [ -f "$FRESH" ] || fail "missing fixture $FRESH"
 [ -f "$STALE" ] || fail "missing fixture $STALE"
+[ -f "$INCOMPLETE" ] || fail "missing fixture $INCOMPLETE"
+[ -f "$EMPTY" ] || fail "missing fixture $EMPTY"
 
 run_status() {
   local marker="$1"
@@ -88,9 +94,44 @@ echo "$out" | grep -qF 'e1g:down' \
   || fail "stale WARN must name task e1g:down; got: $out"
 ok "stale marker → WARN + exit 0 (soft)"
 
-# Softness proof against task verify: a stale marker in the default path must
-# not be able to redden this meta check (we already proved exit 0). Documented
-# in DEVELOPMENT / runbook; here we only re-assert the contract.
-ok "softness: status always exit 0 (absent/fresh/stale)"
+# --- (f) incomplete / empty → WARN + exit 0 (soft; never set -e abort) ------
+# Regression F1: read_field under pipefail used to exit 1 before the incomplete
+# WARN path when keys were missing.
+rc=0
+out="$(run_status "$INCOMPLETE" 2>&1)" || rc=$?
+[ "$rc" -eq 0 ] || fail "incomplete marker must exit 0 (soft); got $rc; output: $out"
+echo "$out" | grep -qiE 'WARN' \
+  || fail "incomplete marker must WARN; got: $out"
+echo "$out" | grep -qiE 'incomplete' \
+  || fail "incomplete WARN must say incomplete; got: $out"
+echo "$out" | grep -qF 'e1g:down' \
+  || fail "incomplete WARN must name task e1g:down; got: $out"
+ok "incomplete marker → WARN + exit 0 (soft)"
+
+rc=0
+out="$(run_status "$EMPTY" 2>&1)" || rc=$?
+[ "$rc" -eq 0 ] || fail "empty marker must exit 0 (soft); got $rc; output: $out"
+echo "$out" | grep -qiE 'WARN' \
+  || fail "empty marker must WARN; got: $out"
+echo "$out" | grep -qiE 'incomplete' \
+  || fail "empty marker WARN must say incomplete; got: $out"
+ok "empty marker → WARN + exit 0 (soft)"
+
+# --- (g) write / clear behavioural round-trip (F2) --------------------------
+SCRATCH="$(mktemp -d)/standing-marker"
+E1G_STANDING_MARKER="$SCRATCH" E1G_STANDING_NOW="$NOW" \
+  E1G_STANDING_WHAT='fixture-write' E1G_STANDING_OWNER='fixture-writer' \
+  bash "$STATUS_SH" write >/dev/null
+[ -f "$SCRATCH" ] || fail "write must create marker at $SCRATCH"
+grep -qF 'what=fixture-write' "$SCRATCH" || fail "write must persist what="
+grep -qF 'owner=fixture-writer' "$SCRATCH" || fail "write must persist owner="
+E1G_STANDING_MARKER="$SCRATCH" bash "$STATUS_SH" clear >/dev/null
+[ ! -f "$SCRATCH" ] || fail "clear must remove marker at $SCRATCH"
+ok "write → clear round-trip"
+
+# Softness proof against task verify: a stale/incomplete marker must never
+# redden this meta check (we already proved exit 0). Documented in DEVELOPMENT
+# / runbook; here we only re-assert the contract.
+ok "softness: status always exit 0 (absent/fresh/stale/incomplete/empty)"
 
 echo "OK: E1g-S07 standing TTL soft-WARN guardrail"
