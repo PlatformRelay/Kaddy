@@ -17,7 +17,11 @@ The `gateway` child Application (`deploy/apps/gateway.yaml`) directory-syncs
 `deploy/gateway` with **recurse OFF** (the ArgoCD default — no `directory.recurse`
 key), so this `cloud-only/` subdir is **never rendered/applied on kind**. The kind
 edge stays on Cilium's `cilium` GatewayClass, `clubhouse.kaddy.local`, and HTTP-01
-TLS — unchanged. Apply these on the GSK edge via `hack/gsk/edge-up.sh`.
+TLS — unchanged. On the GSK edge these manifests are **Argo-owned**: the
+`gateway-cloud-edge` Application (`deploy/apps-cloud/gateway-cloud-edge.yaml`,
+project `gsk-cloud-edge`) syncs this directory from git `main`.
+`hack/gsk/edge-up.sh` bootstraps that Application once per bring-up; raw
+`kubectl apply -f` of this directory is break-glass only.
 
 ## How this differs from the kind edge (all proven live)
 
@@ -47,9 +51,9 @@ cloud overlay (Argo `workloads` owns it). The cloud route weight-splits
 **arch-specific** binary. `deploy/rollouts/config.yaml` pins `...-linux-arm64`
 for the local kind cluster (Apple-Silicon); **GSK worker nodes are amd64**, so
 on the edge the arm64 binary aborts with `exec format error` and stalls ALL
-rollout reconciliation. `hack/gsk/rollouts-plugin-amd64.sh` live-patches the
-`argo-rollouts-config` ConfigMap to the `...-linux-amd64` binary of the SAME
-pinned release (v0.16.0) and restarts the controller. It is NOT a committed
-ConfigMap overlay (ArgoCD rejects two same-named resources in one Application,
-and the edge runs no ArgoCD App), and it leaves the kind arm64 default
-untouched. `edge-up.sh` runs it automatically when argo-rollouts is present.
+rollout reconciliation. The amd64 override IS a committed overlay:
+`deploy/rollouts/cloud-only/config.yaml` pins the `...-linux-amd64` binary of
+the SAME pinned release (v0.16.0), leaving the kind arm64 default untouched;
+`hack/gsk/rollouts-plugin-amd64.sh` (live-patch + controller restart) remains
+as break-glass only. `edge-up.sh` runs it automatically when argo-rollouts is
+present.

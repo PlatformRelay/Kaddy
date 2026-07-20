@@ -12,8 +12,11 @@
 #
 # EXCLUDED FROM GITOPS SYNC BY LOCATION: the platform-core Application
 # directory-syncs deploy/cert-manager with recurse OFF (the ArgoCD default), so
-# this cloud-only/ subdir is never rendered/applied on kind. Apply it on the GSK
-# edge via hack/gsk/edge-up.sh.
+# this cloud-only/ subdir is never rendered/applied on kind. On the GSK edge the
+# issuers are Argo-owned: the cert-manager-cloud-edge Application
+# (deploy/apps-cloud/cert-manager-cloud-edge.yaml) syncs ONLY the
+# cluster-issuer-dns01-*.yaml files here (directory.include); hack/gsk/edge-up.sh
+# bootstraps that Application once per bring-up.
 #
 # SECRET — the Cloudflare API token lives in Secret `cloudflare-api-token` (ns
 # cert-manager, key `api-token`). It is NEVER committed. Create it out-of-band

@@ -33,29 +33,38 @@ fi
 echo "==> Target GSK context: ${active}"
 
 # 1) Gateway API CRDs (v1.5.1, isIP/isCIDR/isURL CEL stripped for k8s 1.30).
+#    Deliberately NOT Argo-owned: Argo syncing the pristine upstream CRDs would
+#    fight the stripped, script-applied ones (see deploy/apps-cloud/README.md).
 "${REPO_ROOT}/hack/gsk/apply-gatewayapi-crds.sh"
 
-# 2) DNS-01 ClusterIssuers (staging + prod). The Cloudflare token Secret must
-#    already exist (see prerequisites) — these only reference it.
-kubectl apply -f "${REPO_ROOT}/deploy/cert-manager/cloud-only/cluster-issuer-dns01-staging.yaml"
-kubectl apply -f "${REPO_ROOT}/deploy/cert-manager/cloud-only/cluster-issuer-dns01-prod.yaml"
+# 2) The gsk-cloud-edge AppProject. Every cloud-edge Application below is
+#    project-scoped to it, so it MUST exist first — else ArgoCD rejects the
+#    Apps with an unknown-project error. Applying Applications also requires
+#    ArgoCD present on the edge (bootstrap:argocd with KADDY_GSK_CONTEXT); if
+#    ArgoCD is absent these applies fail on the unknown CRD — bootstrap ArgoCD
+#    first (see docs/runbooks/gridscale-live-demo.md).
+kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/gsk-cloud-edge.yaml"
 
 # 3) Traefik Gateway API controller (creates the `traefik` GatewayClass + a
 #    type=LoadBalancer Service that the GSK CCM fronts with a public IP).
-#    The Application is project-scoped to gsk-cloud-edge, so the AppProject MUST
-#    exist first — else ArgoCD rejects the App with an unknown-project error.
-#    Applying the App also requires ArgoCD present on the edge (bootstrap:argocd
-#    with KADDY_GSK_CONTEXT); if ArgoCD is absent this apply will fail on the
-#    unknown CRD — bootstrap ArgoCD first (see docs/runbooks/gridscale-live-demo.md).
-kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/gsk-cloud-edge.yaml"
 kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yaml"
 kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
 
-# 4) The clubhouse Gateway (five HTTPS listeners, port 8443), per-host Certificates,
-#    and the app HTTPRoutes (incl. HTTPRoute caddy-lab → caddy.lab + portal.lab).
-#    caddy-lab must NOT share the kind HTTPRoute name caddy-mvp (Argo workloads
-#    owns that object and would reclobber clubhouse parents).
-kubectl apply -f "${REPO_ROOT}/deploy/gateway/cloud-only/"
+# 4) GitOps handover — the rest of the edge is Argo-OWNED. Apply the cloud-edge
+#    Applications ONCE (deploy/apps-cloud/): gateway-cloud-edge syncs the
+#    clubhouse Gateway (five HTTPS listeners, port 8443) + per-host Certificates
+#    + app HTTPRoutes (incl. HTTPRoute caddy-lab → caddy.lab, and portal.lab)
+#    from deploy/gateway/cloud-only/; cert-manager-cloud-edge syncs the DNS-01
+#    ClusterIssuers (staging + prod) from deploy/cert-manager/cloud-only/ — the
+#    Cloudflare token Secret must already exist (see prerequisites), the issuers
+#    only reference it. Argo reconciles all of it from git `main` after this;
+#    do NOT kubectl-apply those manifests directly except as break-glass with
+#    Argo down (documented in docs/runbooks/gridscale-live-demo.md).
+#    Route rule still holds: caddy-lab must NOT share the kind HTTPRoute name
+#    caddy-mvp (Argo workloads owns that object and would reclobber clubhouse
+#    parents). Sync ordering: the Apps carry syncPolicy.retry to absorb the
+#    Traefik-readiness / CRD-registration races after the rollout wait above.
+kubectl apply -f "${REPO_ROOT}/deploy/apps-cloud/"
 
 # 5) Argo Rollouts plugin arch override (E1g-S05i). ONLY needed if argo-rollouts
 #    is deployed on the edge to serve the FULL caddy-mvp canary (the caddy.lab

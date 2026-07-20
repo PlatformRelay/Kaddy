@@ -1,0 +1,73 @@
+# E1g-S05e follow-up — the GSK clubhouse edge (Gateway + Certificates +
+# HTTPRoutes) as an Argo CD Application (CLOUD-ONLY; operator directive:
+# "everything on gridscale, GitOps-managed").
+#
+# WHY THIS DIRECTORY (deploy/apps-cloud/, NOT deploy/apps/) — KIND-SAFETY:
+#   deploy/apps/root.yaml directory-syncs deploy/apps/ with recurse:true, so any
+#   *.yaml there becomes a live child on the local kind cluster. The clubhouse
+#   Gateway targets GatewayClass `traefik` and DNS-01 Let's Encrypt certs that
+#   only exist on GSK — applied on kind it would sit broken next to the Cilium
+#   edge. So the cloud-edge Apps live in this separate, root-invisible directory
+#   (same reasoning as deploy/gateway-controller/traefik/application.yaml).
+#   hack/gsk/edge-up.sh applies this directory ONCE at edge bootstrap (exactly
+#   like `task bootstrap:e3` kubectl-applies root.yaml on kind); from then on
+#   Argo owns the manifests. Guarded offline by
+#   tests/smoke/gsk-cloud-edge-gitops-offline.sh (a gsk-cloud-edge-project App
+#   under deploy/apps/ fails the gate).
+#
+# ORDERING: the Traefik controller (deploy/gateway-controller/traefik/) must be
+# running and the Gateway API CRDs applied (hack/gsk/apply-gatewayapi-crds.sh —
+# CEL-stripped for k8s 1.30, deliberately NOT Argo-owned) before this App syncs
+# cleanly. edge-up.sh waits on the Traefik rollout, and syncPolicy.retry below
+# absorbs the remaining races (CRD registration, GatewayClass admission) instead
+# of leaving the App Degraded on first sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-cloud-edge
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: gateway
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: gateway-cloud-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05e
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  # Closed-list cloud-edge project (deploy/apps/projects/gsk-cloud-edge.yaml).
+  # Its destinations enumerate exactly the namespaces these manifests use
+  # (traefik + the HTTPRoute app namespaces) — extend the project when adding a
+  # route namespace, the offline gate cross-checks them.
+  project: gsk-cloud-edge
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/gateway/cloud-only
+  destination:
+    server: https://kubernetes.default.svc
+    # Default ns only — every resource in cloud-only/ carries an explicit
+    # metadata.namespace (Gateway+Certificates in traefik, HTTPRoutes in their
+    # app namespaces).
+    namespace: traefik
+  syncPolicy:
+    # selfHeal OFF — the clubhouse Gateway fronts all live edge traffic; keep a
+    # human in the loop for drift (matches gateway/traefik/observability).
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+    # Absorb the Traefik/CRD readiness race on first bring-up (see header).
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

@@ -1,0 +1,74 @@
+# E1g-S05f follow-up — the GSK DNS-01 Let's Encrypt ClusterIssuers as an Argo CD
+# Application (CLOUD-ONLY; operator directive: "everything on gridscale,
+# GitOps-managed").
+#
+# KIND-SAFETY: lives in deploy/apps-cloud/ (NOT under root's deploy/apps/) so
+# the kind app-of-apps never applies it — see gateway-cloud-edge.yaml header.
+# hack/gsk/edge-up.sh applies this directory once; Argo owns the issuers after.
+#
+# SCOPE — issuers ONLY (directory.include below), matching exactly what the
+# imperative edge-up.sh used to kubectl-apply:
+#   - cluster-issuer-dns01-staging.yaml / cluster-issuer-dns01-prod.yaml: IN.
+#   - externalsecret-cloudflare-token.yaml: OUT. The Cloudflare token Secret
+#     `cloudflare-api-token` (ns cert-manager, key api-token) is supplied
+#     OUT-OF-BAND — created from $CLOUDFLARE_TOKEN or materialised by that
+#     ExternalSecret once ESO is wired on the edge (its SecretStore remoteRef is
+#     a placeholder; syncing it unedited would just sit Degraded — and ESO may
+#     not be installed on GSK at all). The token itself is NEVER in git.
+#   - clubhouse-certificate-letsencrypt.yaml: OUT. Deferred E4 HTTP-01-era
+#     certs in ns `gateway` — superseded on GSK by the per-host DNS-01
+#     Certificates in deploy/gateway/cloud-only/certificates.yaml (ns traefik).
+#
+# ORDERING: cert-manager itself is installed at edge bootstrap (helm jetstack /
+# task bootstrap — out of band, like on kind). The ClusterIssuer CRD must exist
+# before this App syncs; syncPolicy.retry absorbs that race.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-cloud-edge
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: platform-core
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: cert-manager-cloud-edge
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/req: REQ-E1g-S05f
+    kaddy.io/status: cloud-only-gsk-edge
+spec:
+  # Closed-list cloud-edge project; ClusterIssuer (cluster-scoped) is on its
+  # clusterResourceWhitelist — closed list, not */*.
+  project: gsk-cloud-edge
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/cert-manager/cloud-only
+    directory:
+      # Issuers ONLY — see the SCOPE header. The other files in this directory
+      # are documentation-grade manifests that must NOT be applied by Argo.
+      include: "cluster-issuer-dns01-*.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    # ClusterIssuers are cluster-scoped; this is the nominal destination ns
+    # (where their referenced `cloudflare-api-token` Secret lives).
+    namespace: cert-manager
+  syncPolicy:
+    # selfHeal OFF — issuance path for the live edge certs; human in the loop.
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+    # Absorb the cert-manager CRD-registration race on first bring-up.
+    retry:
+      limit: 5
+      backoff:
+        duration: 20s
+        factor: 2
+        maxDuration: 5m

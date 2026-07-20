@@ -117,6 +117,7 @@ tasks:
       - bash tests/smoke/argocd-autosync-defaults-offline.sh
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e1g-traefik-gitops-offline.sh
+      - bash tests/smoke/gsk-cloud-edge-gitops-offline.sh
       - bash tests/smoke/e1g-caddy-lab-cloud-route.sh
       - bash tests/smoke/e1g-grafana-lab-traefik-netpol.sh
       - bash tests/smoke/e6g-offline.sh
@@ -371,6 +372,7 @@ tasks:
     cmds:
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e1g-traefik-gitops-offline.sh
+      - bash tests/smoke/gsk-cloud-edge-gitops-offline.sh
       - bash tests/smoke/bootstrap-guard.sh
 
   e1g:generate:

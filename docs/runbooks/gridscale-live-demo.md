@@ -209,30 +209,51 @@ same pattern as `deploy/cert-manager/cloud-only/`. On the cloud edge, point the
 platform Gateway's `certificateRefs` Secret at `e8b-demo-tls-le-staging` first
 (untrusted chain — expected), then flip to `e8b-demo-tls-le-prod`.
 
-## Cloud-edge (Traefik Gateway API) apply path — E1g-S05b/S05e/S05f
+## GitOps-managed edge (Traefik Gateway API) — E1g-S05b/S05e/S05f
 
 The live cloud-edge proven 2026-07-18 (three public HTTPS URLs with real Let's
-Encrypt certs) is codified as cloud-only GitOps overlays. It replaces the kind
-Cilium edge on GSK because **GSK's managed Cilium cannot serve Gateway API**
-(D-042) — a self-contained Traefik controller is used instead. All of it is
-**excluded-by-location** from the kind app-of-apps and is applied only on GSK:
+Encrypt certs) is **Argo-owned**: every edge manifest is reconciled from git
+`main` by Argo CD Applications, per the operator directive "everything on
+gridscale, GitOps-managed". It replaces the kind Cilium edge on GSK because
+**GSK's managed Cilium cannot serve Gateway API** (D-042) — a self-contained
+Traefik controller is used instead. All of it is **excluded-by-location** from
+the kind app-of-apps and is applied only on GSK:
 
 - [`deploy/gateway-controller/traefik/`](../../deploy/gateway-controller/traefik/)
-  — the Traefik Gateway API controller as an ArgoCD Application. It is **not** a
-  child under `deploy/apps/` (that would install a second controller on kind); it
-  lives outside the kind root and is applied only on the edge. The Traefik chart
-  creates the `traefik` GatewayClass itself (`providers.kubernetesGateway.enabled`),
-  so no GatewayClass object is hand-authored.
-- [`deploy/gateway/cloud-only/`](../../deploy/gateway/cloud-only/) — the
-  `clubhouse` Gateway (three HTTPS listeners on **port 8443** — Traefik's
-  `websecure` entrypoint, not 443), the per-host Certificates, and the app
-  HTTPRoutes. Excluded because `deploy/apps/gateway.yaml` syncs `deploy/gateway`
-  with recurse OFF.
-- [`deploy/cert-manager/cloud-only/`](../../deploy/cert-manager/cloud-only/) — the
-  DNS-01 Let's Encrypt ClusterIssuers (staging + prod, Cloudflare solver) and a
-  token-less ExternalSecret/SecretStore. The Cloudflare token is **never
-  committed** — it lives in Secret `cloudflare-api-token` (ns cert-manager),
-  created out-of-band from `$CLOUDFLARE_TOKEN` or populated by the ExternalSecret.
+  — the Traefik Gateway API controller as an ArgoCD Application (chart pinned,
+  no floating tag). It is **not** a child under `deploy/apps/` (that would
+  install a second controller on kind); it lives outside the kind root and is
+  applied only on the edge. The Traefik chart creates the `traefik` GatewayClass
+  itself (`providers.kubernetesGateway.enabled`), so no GatewayClass object is
+  hand-authored.
+- [`deploy/apps-cloud/`](../../deploy/apps-cloud/) — the cloud-edge
+  Applications (same outside-the-kind-root pattern; see its README):
+  - `gateway-cloud-edge` syncs [`deploy/gateway/cloud-only/`](../../deploy/gateway/cloud-only/)
+    — the `clubhouse` Gateway (HTTPS listeners on **port 8443** — Traefik's
+    `websecure` entrypoint, not 443), the per-host Certificates, and the app
+    HTTPRoutes.
+  - `cert-manager-cloud-edge` syncs the DNS-01 Let's Encrypt ClusterIssuers
+    (staging + prod, Cloudflare solver) from
+    [`deploy/cert-manager/cloud-only/`](../../deploy/cert-manager/cloud-only/)
+    — issuers only, via `directory.include`. The directory's token-less
+    ExternalSecret/SecretStore stays out-of-band. The Cloudflare token is
+    **never committed** — it lives in Secret `cloudflare-api-token` (ns
+    cert-manager), created out-of-band from `$CLOUDFLARE_TOKEN` or populated by
+    the ExternalSecret once ESO is wired.
+  - All three Apps are scoped to the closed-allowlist `gsk-cloud-edge`
+    AppProject. Kind-safety + pinning + project scoping are gated offline by
+    `tests/smoke/gsk-cloud-edge-gitops-offline.sh` (wired into `task verify`).
+- **Bootstrap-owned, deliberately NOT Argo-owned:** the Gateway API CRDs.
+  They must be CEL-stripped for k8s 1.30 (below), so Argo syncing the pristine
+  upstream CRDs would fight the stripped ones — they stay a
+  `hack/gsk/apply-gatewayapi-crds.sh` bootstrap step, mirroring kind's E1e
+  bootstrap-owned CRDs. Same for the App objects themselves: `edge-up.sh`
+  kubectl-applies `deploy/apps-cloud/` once per bring-up (like `task
+  bootstrap:e3` applies `root.yaml` on kind); everything they point at is
+  Argo-owned from then on.
+- **Sync ordering:** edge-up waits on the Traefik rollout before applying the
+  Apps, and the Apps carry `syncPolicy.retry` (backoff to 5m) to absorb the
+  controller/CRD readiness races on first sync.
 
 Key GSK findings (why the edge differs from kind):
 
@@ -247,7 +268,9 @@ Key GSK findings (why the edge differs from kind):
 - **argocd behind TLS termination** must run with `server.insecure=true`
   (`argocd-cmd-params-cm`) or it 307-loops HTTP->HTTPS.
 
-Replayable apply (cloud-edge only — refuses to run against kind):
+Replayable bootstrap (cloud-edge only — refuses to run against kind). This is
+the **bootstrap** path: it applies the CRDs + AppProject + Applications once,
+then Argo owns the edge and reconciles it from git `main`:
 
 ```bash
 export KUBECONFIG=<GSK kubeconfig>
@@ -255,15 +278,28 @@ export KADDY_GSK_CONTEXT=$(kubectl config current-context)
 # Cloudflare token Secret must exist first (never committed):
 kubectl -n cert-manager create secret generic cloudflare-api-token \
   --from-literal=api-token="$CLOUDFLARE_TOKEN"
-hack/gsk/edge-up.sh     # CRDs (CEL-stripped) -> DNS-01 issuers -> Traefik -> Gateway+certs+routes
+hack/gsk/edge-up.sh     # CRDs (CEL-stripped) -> AppProject -> Traefik App -> apps-cloud Apps (Argo owns the edge)
 ```
+
+Day-2 changes go through git: edit `deploy/gateway/cloud-only/` /
+`deploy/cert-manager/cloud-only/`, merge to `main`, Argo syncs (selfHeal is OFF
+on the edge Apps — live traffic, human in the loop — so cluster-side drift is
+surfaced, not auto-reverted; sync from the Argo UI/CLI to converge).
+
+**Break-glass only** (Argo down or edge App deleted): the manifests still apply
+raw — `kubectl apply -f deploy/gateway/cloud-only/` and
+`kubectl apply -f deploy/cert-manager/cloud-only/cluster-issuer-dns01-{staging,prod}.yaml`.
+Expect Argo to flag the objects OutOfSync until the Apps reconcile again; re-run
+`hack/gsk/edge-up.sh` to restore GitOps ownership.
 
 ## References
 
 - [gridscale-day0.md](gridscale-day0.md) — the E1g substrate this composes on.
 - `deploy/gateway-controller/traefik/` + `deploy/gateway/cloud-only/` +
   `deploy/cert-manager/cloud-only/` — the codified cloud-edge overlays.
-- `hack/gsk/apply-gatewayapi-crds.sh` + `hack/gsk/edge-up.sh` — the edge apply path.
+- `deploy/apps-cloud/` — the Argo CD Applications that own those overlays on GSK.
+- `hack/gsk/apply-gatewayapi-crds.sh` + `hack/gsk/edge-up.sh` — the edge
+  bootstrap path (once per bring-up; Argo owns the edge after).
 - `deploy/monitoring/e8b-demo/` — the read-only demo surfaces (GitOps).
 - `deploy/apps/e8b-demo.yaml` + `deploy/apps/projects/e8b-demo.yaml` — the child
   Application and its dedicated closed-list AppProject (destinations = monitoring
