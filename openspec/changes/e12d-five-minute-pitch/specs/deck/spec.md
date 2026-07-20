@@ -3,7 +3,7 @@
 
 Epic: E12d (extends E12; **supersedes** E12c narrative/budget REQs where they conflict) ·
 **Refs:** `slides/` Slidev project · worktree deck refresh · E6g `provider-gridscale` · TF PRs
-#509–#511 · E7 mulligan · E10 portal (narrative assume-deploy only) · E14/ADR-0303 Nix honesty ·
+`#509–#511` · E7 mulligan · E10 portal (narrative assume-deploy only) · E14/ADR-0303 Nix honesty ·
 ADR-0112 visual identity (unchanged)
 **Levels:** L1 golden-file/lint (deck epic — no cluster REQs)
 

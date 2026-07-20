@@ -485,19 +485,41 @@ heavy live iframes (Backstage, ArgoCD, Grafana/marshal, the running Caddy site, 
 
 **OpenSpec:** [e12c-deck-docs-refresh](../openspec/changes/e12c-deck-docs-refresh/) · **ADR:** [0112](adr/0112-deck-visual-identity.md) (hybrid k8s-workshop visual port, golf-teal accent) · **Decision:** design-lane spec RATIFIED 2026-07-17 (INBOX §E12c)
 
-**Reframe:** *"I call myself a platform engineer, so I submit a platform — and made something genuinely useful for gridscale along the way."* ~15-min main deck + gate-exempt appendix; landed-vs-designed honesty preserved. Image **prompts** authored (S15+ Mœbius covers); operator generates the art.
+**Reframe:** *"I call myself a platform engineer, so I submit a platform — and made something genuinely useful for gridscale along the way."* Originally ~15-min main deck + gate-exempt appendix.
+**Supersession (2026-07-20):** spoken **narrative/budget** work moves to **E12d** (~5 min). E12c-S01–S04 narrative REQs are superseded where they conflict; keep S05/S07–S09 as orthogonal polish.
 
 | ID | Story | Status |
 | --- | --- | --- |
-| E12c-S01 | Appendix-exempt gates + raised main budget (`<!-- APPENDIX -->` sentinel; main sums [1400,2200] words / [600,1000]s) | ⬜ |
-| E12c-S02 | gridscale value-creation hero + Crossplane-as-IaC (main arc; provider-gridscale + 3 TF-provider bug MRs — **landed**) | ⬜ |
-| E12c-S03 | Agentic-workflow beat (epic → plan → story → test, walked on `e5-monitoring-marshal`) | ⬜ |
-| E12c-S04 | Appendix (post-sentinel, gate-exempt): NixOS-path (**designed**) · repo-tree · quickstart+tools · solved-different-ways | ⬜ |
+| E12c-S01 | Appendix-exempt gates + raised main budget (`<!-- APPENDIX -->` sentinel; main sums [1400,2200] words / [600,1000]s) | ⏸ superseded budget by E12d-S01 (appendix sentinel retained) |
+| E12c-S02 | gridscale value-creation hero + Crossplane-as-IaC (main arc; provider-gridscale + 3 TF-provider bug MRs — **landed**) | ⏸ superseded narrative by E12d-S02 |
+| E12c-S03 | Agentic-workflow beat (epic → plan → story → test, walked on `e5-monitoring-marshal`) | ⏸ superseded narrative by E12d-S05 |
+| E12c-S04 | Appendix (post-sentinel, gate-exempt): NixOS-path (**designed**) · repo-tree · quickstart+tools · solved-different-ways | ⏸ superseded honesty/appendix shape by E12d-S05 (Nix now build-landed / boot-open) |
 | E12c-S05 | Hybrid k8s-workshop styling port (`--kw-*` palette, golf-teal accent, Inter/JetBrains Mono, chrome; `theme-tokens.sh`) | ⬜ |
-| E12c-S06 | GIF recording protocol wired (`data-surface-mode=fallback` slots; keep ≥ 3 live iframes) | ⬜ |
+| E12c-S06 | GIF recording protocol wired (`data-surface-mode=fallback` slots; keep ≥ 3 live iframes) | ⏸ iframe floor relaxed by E12d-S04 (recording guide reusable) |
 | E12c-S07 | Kaddy README badges (CI/deck/license/docs; `readme-badges.sh`) | ⬜ |
 | E12c-S08 | provider-gridscale badge/release backfill (SEPARATE repo) | ⏸ HELD — outward-facing; needs explicit operator go-ahead |
 | E12c-S09 | Docs hygiene (rename the misspelled hiring-exercise doc to `HIRING_EXERCISE.md`; fix broken ROADMAP E14 links; markdownlint clean) | ⬜ |
+
+---
+
+## E12d · Five-minute pitch deck (exercise → platform) ✅
+
+**OpenSpec:** [e12d-five-minute-pitch](../openspec/changes/e12d-five-minute-pitch/) · **Depends:** E12 scaffold ✅ · **Supersedes:** E12c narrative/budget REQs where they conflict · **Non-goals:** Backstage runtime, Nix boot-to-serve
+
+**Reframe:** ~5-minute spoken path (~8–12 slides): exercise → platform; early `provider-gridscale` +
+TF PRs #509–#511 as contribution value; stakeholder mulligan; portal narrative assumes deploy;
+static surfaces; D-042 demoted; cost teardown kept; honesty appendix for Nix / PR-open / E10 proof.
+
+| ID | Story | Status |
+| --- | --- | --- |
+| E12d-S01 | Five-minute spoken-path budget gates (`[240,360]` s / `[450,900]` words / 8–12 slides) | ✅ |
+| E12d-S02 | Opening + early gridscale contribution hero (provider + PRs framed as value) | ✅ |
+| E12d-S03 | Main-arc hygiene (D-042→appendix; no GSK exposure card; teardown; portal assume-deploy; clear Website→resources) | ✅ |
+| E12d-S04 | Mulligan stakeholder language + pitch-safe static surfaces (no live-localhost dependency) | ✅ |
+| E12d-S05 | AI + OpenSpec how-I-worked + honesty appendix (Nix / PRs / Backstage narrative≠proof) | ✅ |
+
+**E12c polish left orthogonal (do not block E12d):** S05 styling · S07 README badges · S08
+provider-gridscale badges (held) · S09 docs hygiene.
 
 ---
 
