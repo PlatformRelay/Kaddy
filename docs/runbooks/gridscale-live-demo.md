@@ -39,6 +39,31 @@ declare standing infra always fine, and it does **not** weaken the ephemeral
 `e8b:up`/`e8b:down` demo cycle or the per-story create→verify→destroy live-proof
 discipline, both of which stay ephemeral-by-default.
 
+### Standing status (E1g-S07) — cost visibility
+
+A standing bring-up leaves a billable meter running. E1g-S07 keeps that visible
+**offline** (no gridscale creds, no tofu):
+
+```bash
+task e1g:status   # reads evidence/live/.standing-marker only; always exit 0
+```
+
+**Marker fields** (KEY=value; written by `task e1g:up`, cleared by `task e1g:down`):
+
+| Field | Meaning |
+| --- | --- |
+| `what` | What is standing (e.g. GSK day-0 substrate) |
+| `since` | Bring-up date (`YYYY-MM-DD`) |
+| `teardown-by` | Explicit deadline (`YYYY-MM-DD`) |
+| `owner` | Who owns the time-box |
+
+Defaults: ~**14-day** window from `since` (`E1G_STANDING_WINDOW_DAYS`); override
+"today" for tests with `E1G_STANDING_NOW=YYYY-MM-DD`. Past `teardown-by` (or age
+past the window) prints a **WARN** naming the deadline + owner + `task e1g:down`,
+but **still exits 0** — soft guardrail, never a `task verify` hard fail. Absent
+marker → silent no-op (ephemeral / torn-down default). Example template:
+`evidence/live/.standing-marker.example`.
+
 ## TL;DR
 
 ```bash
