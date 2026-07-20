@@ -52,12 +52,14 @@ kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yam
 kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
 
 # 4) The clubhouse Gateway (five HTTPS listeners, port 8443), per-host Certificates,
-#    and the app HTTPRoutes (incl. caddy-mvp canary on caddy.lab + portal.lab).
+#    and the app HTTPRoutes (incl. HTTPRoute caddy-lab → caddy.lab + portal.lab).
+#    caddy-lab must NOT share the kind HTTPRoute name caddy-mvp (Argo workloads
+#    owns that object and would reclobber clubhouse parents).
 kubectl apply -f "${REPO_ROOT}/deploy/gateway/cloud-only/"
 
 # 5) Argo Rollouts plugin arch override (E1g-S05i). ONLY needed if argo-rollouts
 #    is deployed on the edge to serve the FULL caddy-mvp canary (the caddy.lab
-#    HTTPRoute above). GSK nodes are amd64, but deploy/rollouts/config.yaml pins
+#    HTTPRoute caddy-lab above). GSK nodes are amd64, but deploy/rollouts/config.yaml pins
 #    the arm64 plugin (kind default) — without this the controller hits
 #    `exec format error` and NO rollout reconciles. Skipped automatically if the
 #    argo-rollouts deployment is absent.
@@ -74,5 +76,6 @@ echo "==> Edge applied. Watch cert issuance + LB IP:"
 echo "    kubectl get certificate -n traefik"
 echo "    kubectl get svc -n traefik traefik -o wide   # EXTERNAL-IP = the public LB IP"
 echo "    kubectl get gateway clubhouse -n traefik"
+echo "    kubectl get httproute caddy-lab -n caddy-mvp   # must NOT be named caddy-mvp (kind collision)"
 echo "Point Cloudflare A records {argocd,grafana,demo,caddy,portal}.lab.platformrelay.dev at that IP (proxied=false)."
 echo "    (includes portal.lab for the Backstage IDP HTTPRoute)"

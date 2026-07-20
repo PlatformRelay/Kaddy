@@ -5,10 +5,11 @@ GSK cloud-edge: the Traefik-backed `clubhouse` Gateway with five HTTPS listeners
 the per-host Let's Encrypt Certificates, and the app HTTPRoutes. They serve the
 public demo URLs with real, publicly-trusted certs. Hosts:
 `{argocd,grafana,demo,caddy,portal}.lab.platformrelay.dev`. The `caddy.lab`
-host (E1g-S05i) fronts the FULL caddy-mvp Argo Rollouts canary — see the
-name/ns-collision note in `httproutes.yaml` and the amd64 plugin caveat below.
-`portal.lab` (E10) fronts the Backstage IDP (`Service backstage:7007` in ns
-`portal`).
+host (E1g-S05i) fronts the FULL caddy-mvp Argo Rollouts canary via HTTPRoute
+**`caddy-lab`** (distinct name from kind's `caddy-mvp` HTTPRoute — sharing that
+name let Argo `workloads` reclobber clubhouse parents). See amd64 plugin caveat
+below. `portal.lab` (E10) fronts the Backstage IDP (`Service backstage:7007` in
+ns `portal`).
 
 ## Excluded from the kind path by location
 
@@ -35,17 +36,20 @@ in each app's namespace (argocd / monitoring / caddy-demo / caddy-mvp / portal) 
 to the Gateway listener by `sectionName`; `allowedRoutes.namespaces.from: All` on
 each listener admits them without a per-route ReferenceGrant for the parent attach.
 
-## caddy-mvp canary + the argo-rollouts amd64 plugin caveat (E1g-S05i)
+## caddy-lab HTTPRoute + the argo-rollouts amd64 plugin caveat (E1g-S05i)
 
-The `caddy.lab` route drives the FULL caddy-mvp — an Argo Rollouts canary that
-weight-splits `caddy-origin-stable`/`caddy-origin-canary`. The Rollouts Gateway
-API traffic-router plugin ships as an **arch-specific** binary. `deploy/rollouts/
-config.yaml` pins `...-linux-arm64` for the local kind cluster (Apple-Silicon);
-**GSK worker nodes are amd64**, so on the edge the arm64 binary aborts with
-`exec format error` and stalls ALL rollout reconciliation. `hack/gsk/
-rollouts-plugin-amd64.sh` live-patches the `argo-rollouts-config` ConfigMap to
-the `...-linux-amd64` binary of the SAME pinned release (v0.16.0) and restarts
-the controller. It is NOT a committed ConfigMap overlay (ArgoCD rejects two
-same-named resources in one Application, and the edge runs no ArgoCD App), and it
-leaves the kind arm64 default untouched. `edge-up.sh` runs it automatically when
-argo-rollouts is present.
+The `caddy.lab` public host is served by HTTPRoute **`caddy-lab`** (ns
+`caddy-mvp`) on clubhouse/`https-caddy`. Kind keeps a separate HTTPRoute named
+`caddy-mvp` for `caddy-mvp.kaddy.local` — do **not** reuse that name on the
+cloud overlay (Argo `workloads` owns it). The cloud route weight-splits
+`caddy-origin-stable`/`caddy-origin-canary` (there is no Service named
+`caddy-mvp`). The Rollouts Gateway API traffic-router plugin ships as an
+**arch-specific** binary. `deploy/rollouts/config.yaml` pins `...-linux-arm64`
+for the local kind cluster (Apple-Silicon); **GSK worker nodes are amd64**, so
+on the edge the arm64 binary aborts with `exec format error` and stalls ALL
+rollout reconciliation. `hack/gsk/rollouts-plugin-amd64.sh` live-patches the
+`argo-rollouts-config` ConfigMap to the `...-linux-amd64` binary of the SAME
+pinned release (v0.16.0) and restarts the controller. It is NOT a committed
+ConfigMap overlay (ArgoCD rejects two same-named resources in one Application,
+and the edge runs no ArgoCD App), and it leaves the kind arm64 default
+untouched. `edge-up.sh` runs it automatically when argo-rollouts is present.

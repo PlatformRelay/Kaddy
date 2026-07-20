@@ -1,11 +1,13 @@
 # REQ-CADDY-S02-05 — default-deny baseline for ns caddy-mvp.
 #
 # Allowed paths:
-#   1. Cilium Gateway (ingress entity) → nginx-proxy :8080
+#   1. Cilium Gateway (ingress entity) → nginx-proxy / caddy-origin :8080
 #   2. nginx-proxy → caddy-origin :8080
 #   3. Prometheus (monitoring) → caddy-origin metrics (:8080 /metrics)
 #   4. DNS egress to CoreDNS :53
 #   5. Probe-pod hairpin legs (run= label) mirroring websites baseline
+#   6. GSK Traefik (ns traefik) → caddy-origin :8080 (cloud HTTPRoute caddy-lab;
+#      fromEntities ingress alone misses Traefik — same pattern as portal)
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -174,9 +176,10 @@ spec:
         - protocol: TCP
           port: 8080
 ---
-# Cilium-specific: admit Gateway API (Envoy) to nginx-proxy (showcase hop)
-# AND caddy-origin (tenant HTTPRoute canary backends). Envoy carries the
-# reserved `ingress` identity.
+# Cilium-specific: admit Gateway API traffic to nginx-proxy (showcase hop)
+# AND caddy-origin (tenant HTTPRoute + cloud caddy-lab backends).
+# - fromEntities:[ingress] — kind clubhouse (Cilium Gateway / Envoy reserved identity)
+# - fromEndpoints traefik ns — GSK clubhouse (Traefik Gateway API controller)
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -211,6 +214,50 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: traefik
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# GSK cloud-edge: Traefik (ns traefik) → caddy-origin :8080 for HTTPRoute
+# caddy-lab (caddy.lab). Without this K8s NetPol, default-deny + CNP-only
+# fromEntities ingress times out HTTPS even when the HTTPRoute is Accepted.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-origin
+  namespace: caddy-mvp
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-traefik-to-origin
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-CADDY-S02-05
+spec:
+  podSelector:
+    matchLabels:
+      app: caddy-origin
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

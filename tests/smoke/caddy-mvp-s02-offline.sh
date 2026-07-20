@@ -130,6 +130,11 @@ grep -q 'nginx-proxy' "${NETPOL}" || fail "netpol must admit Gateway → nginx-p
 grep -q 'caddy-origin' "${NETPOL}" || fail "netpol must allow nginx-proxy → caddy-origin"
 grep -qE 'kind:[[:space:]]*CiliumNetworkPolicy' "${NETPOL}" \
   || fail "netpol must include CiliumNetworkPolicy for reserved ingress identity"
+# GSK Traefik cloud-edge (HTTPRoute caddy-lab) — portal-pattern dual allow.
+grep -q 'allow-traefik-to-origin' "${NETPOL}" \
+  || fail "netpol must include allow-traefik-to-origin (GSK Traefik → caddy-origin)"
+grep -q 'k8s:io.kubernetes.pod.namespace: traefik' "${NETPOL}" \
+  || fail "CNP must fromEndpoints traefik ns (fromEntities ingress alone misses Traefik)"
 ok "deploy/policies/network/caddy-mvp.yaml default-deny + minimum allows"
 
 # --- 7) PodMonitor re-point (REQ-CADDY-S02-03) -------------------------------
@@ -146,16 +151,17 @@ need_file "${WORKLOADS_PROJ}"
 need_file "${PLATFORM_PROJ}"
 grep -A30 'ignoreDifferences:' "${WORKLOADS_APP}" | grep -q 'caddy-mvp' \
   || fail "workloads Application ignoreDifferences must cover caddy-mvp HTTPRoute"
-# GSK cloud-edge collision: Argo workloads syncs the kind HTTPRoute (same name/ns)
-# over the edge-up cloud route (clubhouse/https-caddy, caddy.lab). Ignore parentRefs
-# + hostnames so a live cloud re-apply is not clobbered on the next automated sync.
-# Literal jqPathExpressions lines — comments alone must not satisfy these greps.
-grep -E '^\s+- \.spec\.parentRefs$' "${WORKLOADS_APP}" \
-  || fail "workloads ignoreDifferences must list jqPathExpression '.spec.parentRefs' (GSK/kind Gateway collision)"
-grep -E '^\s+- \.spec\.hostnames$' "${WORKLOADS_APP}" \
-  || fail "workloads ignoreDifferences must list jqPathExpression '.spec.hostnames' (caddy.lab vs kaddy.local)"
-# Without RespectIgnoreDifferences, Argo ignores ignoreDifferences at sync time
-# and still reclobbers the clubhouse route.
+# Canary weight mutations only — cloud caddy.lab is HTTPRoute caddy-lab (no name
+# collision). parentRefs/hostnames ignoreDifferences were an insufficient bandage.
+grep -E '^\s+- \.spec\.rules\[\]\.backendRefs\[\]\.weight$' "${WORKLOADS_APP}" \
+  || fail "workloads ignoreDifferences must list jqPathExpression for backendRef weights"
+# Must NOT rely on parentRefs/hostnames ignore for GSK/kind coexistence.
+if grep -E '^\s+- \.spec\.parentRefs$' "${WORKLOADS_APP}" >/dev/null 2>&1; then
+  fail "workloads must not use parentRefs ignoreDifferences — rename cloud route to caddy-lab instead"
+fi
+if grep -E '^\s+- \.spec\.hostnames$' "${WORKLOADS_APP}" >/dev/null 2>&1; then
+  fail "workloads must not use hostnames ignoreDifferences — rename cloud route to caddy-lab instead"
+fi
 grep -qE '^\s+- RespectIgnoreDifferences=true$' "${WORKLOADS_APP}" \
   || fail "workloads syncOptions must include RespectIgnoreDifferences=true"
 grep -A40 'destinations:' "${WORKLOADS_PROJ}" | grep -q 'caddy-mvp' \
@@ -164,7 +170,8 @@ grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'caddy-mvp' \
   || fail "platform AppProject destinations must allow namespace caddy-mvp (policies netpol)"
 grep -A40 'destinations:' "${PLATFORM_PROJ}" | grep -q 'mulligan' \
   || fail "platform AppProject destinations must allow namespace mulligan (policies netpol)"
-ok "workloads + platform AppProject destinations + ignoreDifferences for caddy-mvp"
+# Cloud route rename is gated by e1g-caddy-lab-cloud-route.sh (wired in Taskfile).
+ok "workloads + platform AppProject destinations + weight ignoreDifferences for caddy-mvp"
 
 # --- 9) nginx reverse-proxy config present (showcase topology prep) ---------
 grep -qiE 'proxy_pass' "${TENANT}/configmap-nginx.yaml" \

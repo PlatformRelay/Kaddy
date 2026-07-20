@@ -46,26 +46,22 @@ spec:
       jqPathExpressions:
         - .spec.rules[].backendRefs[].weight
     # REQ-CADDY-S02-02 — caddy-origin canary mutates tenant HTTPRoute weights.
-    # E1g GSK: same name/ns as deploy/gateway/cloud-only/httproutes.yaml. When the
-    # workloads App auto-syncs on GSK it would overwrite clubhouse/https-caddy +
-    # caddy.lab with the kind parents (caddy-mvp Gateway + caddy-mvp.kaddy.local)
-    # → Traefik 404 on https://caddy.lab.platformrelay.dev/. Ignore parentRefs +
-    # hostnames so edge-up / live re-apply of the cloud route survives sync.
+    # Cloud caddy.lab uses a DISTINCT HTTPRoute name (`caddy-lab` in
+    # deploy/gateway/cloud-only/httproutes.yaml) so Argo workloads syncing the
+    # kind route cannot reclobber clubhouse parents. Weight ignores remain for
+    # the kind canary path only.
     - group: gateway.networking.k8s.io
       kind: HTTPRoute
       name: caddy-mvp
       namespace: caddy-mvp
       jqPathExpressions:
         - .spec.rules[].backendRefs[].weight
-        - .spec.parentRefs
-        - .spec.hostnames
   syncPolicy:
     automated:
       prune: true
       selfHeal: false
     syncOptions:
       - CreateNamespace=true
-      # Required for ignoreDifferences to apply at sync time (not only for
-      # OutOfSync detection). Without this, Argo still overwrites live
-      # parentRefs/hostnames on the caddy-mvp HTTPRoute during sync.
+      # RespectIgnoreDifferences keeps canary weight mutations from flipping
+      # OutOfSync / being overwritten on the kind HTTPRoute caddy-mvp.
       - RespectIgnoreDifferences=true

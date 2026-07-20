@@ -8,7 +8,7 @@
 #   argocd.lab   -> argocd-server        (ns argocd)      port 80
 #   grafana.lab  -> monitoring-grafana   (ns monitoring)  port 80
 #   demo.lab     -> caddy                (ns caddy-demo)  port 80
-#   caddy.lab    -> caddy-origin-*       (ns caddy-mvp)   port 8080 (S05i)
+#   caddy.lab    -> caddy-origin-*       (ns caddy-mvp)   port 8080 (S05i; HTTPRoute name caddy-lab)
 #   portal.lab   -> backstage            (ns portal)      port 7007 (E10)
 #
 # NOTE (argocd): argocd-server must run with server.insecure=true
@@ -138,39 +138,37 @@ spec:
 # E1g-S05i — the FULL caddy-mvp Argo Rollouts canary on the cloud-edge
 # (caddy.lab). Distinct from the caddy-demo landing page above (demo.lab).
 #
-# NAME/NS COLLISION NOTE: this route is name `caddy-mvp` in ns `caddy-mvp` — the
-# SAME name+ns as deploy/workloads/caddy-mvp/httproute.yaml. That kind route
-# parents the LOCAL cilium Gateway (`caddy-mvp`/`https`, host caddy-mvp.kaddy.local)
-# and is UNCHANGED here. This cloud route parents the `clubhouse` Gateway
-# (ns traefik) by sectionName `https-caddy`, host caddy.lab.platformrelay.dev.
+# RESOURCE NAME: `caddy-lab` (NOT `caddy-mvp`). Kind's tenant HTTPRoute is also
+# named `caddy-mvp` in ns `caddy-mvp` (local cilium Gateway + caddy-mvp.kaddy.local).
+# Sharing that name caused Argo `workloads` to reclobber clubhouse parentRefs /
+# hostnames within ~15s even with RespectIgnoreDifferences — durable fix is a
+# distinct cloud-only name. Kind route is UNCHANGED.
 #
-# COEXISTENCE (updated 2026-07-20): Argo CD Applications DO run on GSK now. The
-# `workloads` App auto-syncs the kind HTTPRoute over this object (same name/ns)
-# unless `ignoreDifferences` covers `.spec.parentRefs` + `.spec.hostnames`
-# (see deploy/apps/workloads.yaml). After enabling those ignores, re-apply this
-# file via edge-up.sh / `kubectl apply -f deploy/gateway/cloud-only/` so
-# caddy.lab attaches to clubhouse again.
+# Parents clubhouse (ns traefik) / https-caddy → host caddy.lab.platformrelay.dev.
+# Backends are the Rollouts Services caddy-origin-stable/canary (there is no
+# Service named caddy-mvp in the tenant).
 #
 # The backendRef weights (stable 100 / canary 0) are the STABLE steady state;
 # the Argo Rollouts Gateway API plugin (amd64 on GSK — see
-# hack/gsk/rollouts-plugin-amd64.sh) mutates them live during a caddy-origin
-# canary. Weight diffs are also ignoreDifferences'd on the workloads App.
+# hack/gsk/rollouts-plugin-amd64.sh) mutates weights on the KIND route name
+# referenced by Rollout/caddy-origin; cloud traffic here stays at steady weights
+# unless a follow-up points the plugin at caddy-lab.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: caddy-mvp
+  name: caddy-lab
   namespace: caddy-mvp
   labels:
     owner: platform-team
     service: caddy-mvp
     part-of: kaddy
-    managed-by: argocd
+    managed-by: edge-up
     data-classification: public
     business-criticality: business-operational
     track: stable
-    app.kubernetes.io/name: caddy-mvp
+    app.kubernetes.io/name: caddy-lab
     app.kubernetes.io/part-of: kaddy
-    app.kubernetes.io/managed-by: argocd
+    app.kubernetes.io/managed-by: edge-up
   annotations:
     kaddy.io/req: REQ-E1g-S05i
     kaddy.io/status: cloud-only-gsk-edge
