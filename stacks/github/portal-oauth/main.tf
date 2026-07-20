@@ -1,15 +1,16 @@
-# Portal.lab Backstage — GitHub OAuth contract + Secret wiring.
+# Portal.lab Backstage — GitHub OAuth contract + Secret wiring (GSK only).
 #
 # Classic OAuth Apps cannot be created via the GitHub API / terraform-provider-
-# github. Create the app with hack/portal/create-github-app-manifest.sh (or the
-# GitHub UI), then:
+# github. Create the app in the GitHub UI with the URLs below, then apply the
+# Secret with TF vars or hack/portal/wire-github-oauth-secret.sh.
+#
+# NEVER use http://127.0.0.1 or kind-local URLs as the Authorization callback.
 #
 #   export TF_VAR_auth_github_client_id='…'
 #   export TF_VAR_auth_github_client_secret='…'
-#   export KUBECONFIG=.state/gsk/kubeconfig
+#   export TF_VAR_apply_secret=true
+#   export TF_VAR_kubeconfig_path=.state/gsk/kubeconfig
 #   tofu -chdir=stacks/github/portal-oauth apply
-#
-# Or seal into GitOps: deploy/secrets/portal/backstage-github.enc.yaml (SOPS).
 
 terraform {
   required_version = ">= 1.6"
@@ -25,55 +26,53 @@ terraform {
 }
 
 provider "kubernetes" {
-  # Uses KUBECONFIG / in-cluster. Offline validate uses -backend=false and does
-  # not need a live API when plan is skipped; apply is live-only.
   config_path = var.kubeconfig_path
 }
 
 variable "kubeconfig_path" {
   type        = string
-  description = "Path to GSK kubeconfig (repo-relative .state/gsk/kubeconfig at apply time)."
+  description = "Path to GSK kubeconfig (repo .state/gsk/kubeconfig at apply time)."
   default     = ""
 }
 
 variable "auth_github_client_id" {
   type        = string
-  description = "GitHub OAuth App / App-Manifest client_id for portal.lab Backstage."
+  description = "GitHub OAuth App client_id for portal.lab Backstage."
   sensitive   = true
   default     = ""
 }
 
 variable "auth_github_client_secret" {
   type        = string
-  description = "GitHub OAuth App / App-Manifest client_secret for portal.lab Backstage."
+  description = "GitHub OAuth App client_secret for portal.lab Backstage."
   sensitive   = true
   default     = ""
 }
 
 variable "apply_secret" {
   type        = bool
-  description = "When true, create/update Secret portal/backstage-github. Requires non-empty client id/secret + kubeconfig."
+  description = "When true, create/update Secret portal/backstage-github."
   default     = false
 }
 
 locals {
   homepage_url = "https://portal.lab.platformrelay.dev"
-  # Exact Authorization callback URL Backstage github provider redirects to.
+  # Exact Authorization callback URL for Backstage github provider on GSK.
+  # MUST NOT be http://127.0.0.1 or any kind-local URL.
   oauth_callback_url = "https://portal.lab.platformrelay.dev/api/auth/github/handler/frame"
   oauth_app_name     = "kaddy-portal-lab"
-  oauth_app_desc     = "kaddy Backstage portal.lab (GSK) — GitHub sign-in only"
   create_url_org     = "https://github.com/organizations/PlatformRelay/settings/applications/new"
-  create_url_user    = "https://github.com/settings/applications/new"
+  apps_settings_url  = "https://github.com/organizations/PlatformRelay/settings/apps"
 }
 
 output "homepage_url" {
   value       = local.homepage_url
-  description = "GitHub OAuth App Homepage URL"
+  description = "GitHub OAuth App Homepage URL (GSK portal.lab)"
 }
 
 output "oauth_callback_url" {
   value       = local.oauth_callback_url
-  description = "GitHub OAuth App Authorization callback URL (must match exactly)"
+  description = "GitHub OAuth App Authorization callback URL — portal.lab only, never localhost"
 }
 
 output "oauth_app_name" {
@@ -82,25 +81,32 @@ output "oauth_app_name" {
 
 output "create_urls" {
   value = {
-    org  = local.create_url_org
-    user = local.create_url_user
+    oauth_app_new = local.create_url_org
+    github_apps   = local.apps_settings_url
   }
-  description = "Manual create URLs when not using the App Manifest script"
 }
 
 output "operator_checklist" {
   value = <<-EOT
-    1. Prefer: bash hack/portal/create-github-app-manifest.sh
-       (opens GitHub App Manifest for PlatformRelay; captures client_id/secret).
-    2. Or create a classic OAuth App at ${local.create_url_org} with:
-         Application name: ${local.oauth_app_name}
-         Homepage URL:     ${local.homepage_url}
-         Callback URL:     ${local.oauth_callback_url}
-    3. Apply secret:
-         TF_VAR_auth_github_client_id=… TF_VAR_auth_github_client_secret=… \
+    GSK ONLY — do not use kind / 127.0.0.1 callbacks.
+
+    1. Create (or edit) OAuth App / GitHub App:
+         Homepage:  ${local.homepage_url}
+         Callback:  ${local.oauth_callback_url}
+         New OAuth App: ${local.create_url_org}
+         Existing GitHub Apps: ${local.apps_settings_url}
+            → "User authorization callback URL" = Callback above
+    2. Wire secret (preferred script):
+         AUTH_GITHUB_CLIENT_ID=… AUTH_GITHUB_CLIENT_SECRET=… \
+           bash hack/portal/wire-github-oauth-secret.sh
+       Or TF:
          TF_VAR_apply_secret=true TF_VAR_kubeconfig_path=.state/gsk/kubeconfig \
-         tofu -chdir=stacks/github/portal-oauth apply
-    4. Restart Backstage: kubectl -n portal rollout restart deploy/backstage
+         TF_VAR_auth_github_client_id=… TF_VAR_auth_github_client_secret=… \
+           tofu -chdir=stacks/github/portal-oauth apply
+    3. Prove:
+         curl -sSI 'https://portal.lab.platformrelay.dev/api/auth/github/start?env=production' | grep -i location
+         # must include portal.lab …/api/auth/github/handler/frame
+         # must NOT include 127.0.0.1 or localhost
   EOT
 }
 
@@ -111,12 +117,12 @@ resource "kubernetes_secret_v1" "backstage_github" {
     name      = "backstage-github"
     namespace = "portal"
     labels = {
-      "owner"                      = "platform-team"
-      "service"                    = "portal"
-      "part-of"                    = "kaddy"
-      "managed-by"                 = "opentofu"
-      "app.kubernetes.io/name"     = "backstage-github"
-      "app.kubernetes.io/part-of"  = "kaddy"
+      "owner"                        = "platform-team"
+      "service"                      = "portal"
+      "part-of"                      = "kaddy"
+      "managed-by"                   = "opentofu"
+      "app.kubernetes.io/name"       = "backstage-github"
+      "app.kubernetes.io/part-of"    = "kaddy"
       "app.kubernetes.io/managed-by" = "opentofu"
     }
   }
@@ -131,11 +137,15 @@ resource "kubernetes_secret_v1" "backstage_github" {
   lifecycle {
     precondition {
       condition     = length(var.auth_github_client_id) > 0 && length(var.auth_github_client_secret) > 0
-      error_message = "TF_VAR_auth_github_client_id and TF_VAR_auth_github_client_secret must be set when apply_secret=true."
+      error_message = "TF_VAR_auth_github_client_id and TF_VAR_auth_github_client_secret required when apply_secret=true."
     }
     precondition {
       condition     = length(var.kubeconfig_path) > 0
-      error_message = "TF_VAR_kubeconfig_path must point at the GSK kubeconfig when apply_secret=true."
+      error_message = "TF_VAR_kubeconfig_path required when apply_secret=true."
+    }
+    precondition {
+      condition     = !can(regex("127\\.0\\.0\\.1|localhost", local.oauth_callback_url))
+      error_message = "oauth_callback_url must not be localhost — GSK uses portal.lab only."
     }
   }
 }

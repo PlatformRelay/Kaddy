@@ -1,73 +1,50 @@
-# Runbook — GitHub OAuth for portal.lab Backstage (GSK)
+# Runbook — GitHub OAuth for portal.lab Backstage (**GSK only**)
 
 **Host:** `https://portal.lab.platformrelay.dev`  
-**Provider:** Backstage `auth.providers.github` (GitHub-only; no guest)  
 **Stack:** [`stacks/github/portal-oauth/`](../../stacks/github/portal-oauth/)  
-**Helper:** [`hack/portal/create-github-app-manifest.sh`](../../hack/portal/create-github-app-manifest.sh)
+**Wire script:** [`hack/portal/wire-github-oauth-secret.sh`](../../hack/portal/wire-github-oauth-secret.sh)
 
-## Exact GitHub App / OAuth App fields
+## Exact fields (paste into GitHub)
 
 | Field | Value |
 | --- | --- |
 | Homepage URL | `https://portal.lab.platformrelay.dev` |
 | Authorization callback URL | `https://portal.lab.platformrelay.dev/api/auth/github/handler/frame` |
 
-Use **`portal.lab.platformrelay.dev`**, not `platform-relay.com` (that hostname does not resolve).
+**Do not use** `http://127.0.0.1:8765/callback`, kind-local hosts, or `platform-relay.com`.
 
-## Why not Terraform `github_oauth_app`?
+If you previously ran an App Manifest helper, that localhost URL was only a
+one-shot **create** redirect. Edit the App under
+[PlatformRelay GitHub Apps](https://github.com/organizations/PlatformRelay/settings/apps)
+and set **User authorization callback URL** to the Authorization callback above.
 
-GitHub exposes **no public API** to create classic OAuth Apps, so
-`integrations/terraform-provider-github` cannot create them
-([#786](https://github.com/integrations/terraform-provider-github/issues/786)).
-The OpenTofu stack therefore owns the **URL contract + Secret wiring** only.
+## Create / fix app
 
-## Preferred create path (one click)
+1. **Classic OAuth App (preferred for clarity):**  
+   <https://github.com/organizations/PlatformRelay/settings/applications/new>
+2. Or fix an existing **GitHub App** at  
+   <https://github.com/organizations/PlatformRelay/settings/apps>
 
-```bash
-# From repo root — opens a browser form, captures client_id/secret, applies
-# Secret portal/backstage-github, optionally writes SOPS ciphertext.
-bash hack/portal/create-github-app-manifest.sh
-```
-
-This uses the [GitHub App Manifest](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest)
-flow (org: **PlatformRelay**). The resulting `client_id` / `client_secret` work
-with Backstage's github provider. After creation, confirm the App's **User
-authorization callback URL** is exactly the Authorization callback URL above
-(org Settings → GitHub Apps → kaddy-portal-lab).
-
-## Manual classic OAuth App
-
-1. Open <https://github.com/organizations/PlatformRelay/settings/applications/new>
-2. Paste the Homepage + Authorization callback URLs from the table above.
-3. Apply secrets:
+## Wire secrets to GSK
 
 ```bash
 export KUBECONFIG=.state/gsk/kubeconfig
-export TF_VAR_kubeconfig_path="$KUBECONFIG"
-export TF_VAR_auth_github_client_id='…'
-export TF_VAR_auth_github_client_secret='…'
-export TF_VAR_apply_secret=true
-tofu -chdir=stacks/github/portal-oauth init
-tofu -chdir=stacks/github/portal-oauth apply
-kubectl -n portal rollout restart deploy/backstage
+AUTH_GITHUB_CLIENT_ID='…' AUTH_GITHUB_CLIENT_SECRET='…' \
+  bash hack/portal/wire-github-oauth-secret.sh
 ```
 
-Or encrypt for GitOps (never commit plaintext):
+## Prove (authorize must be portal.lab)
 
 ```bash
-# edit deploy/secrets/portal/backstage-github.enc.yaml via sops
-sops deploy/secrets/portal/backstage-github.enc.yaml
+curl -sSI 'https://portal.lab.platformrelay.dev/api/auth/github/start?env=production' | grep -i '^location:'
+# Location must include:
+#   redirect_uri=…portal.lab.platformrelay.dev/api/auth/github/handler/frame
+# and must NOT include 127.0.0.1 or localhost
 ```
 
-## Prove
+Then open `https://portal.lab.platformrelay.dev/login` and sign in with GitHub.
 
-```bash
-# Backend: guest gone, github redirects to github.com with the portal callback
-curl -sS -o /dev/null -w '%{http_code}\n' https://portal.lab.platformrelay.dev/api/auth/guest/start
-# expect 404
-curl -sS -D- -o /dev/null \
-  'https://portal.lab.platformrelay.dev/api/auth/github/start?env=production' | grep -i '^location:'
-# location must include redirect_uri=…/api/auth/github/handler/frame
+## TF limitation
 
-# Browser: https://portal.lab.platformrelay.dev/login → Sign in with GitHub
-```
+GitHub has **no API** to create classic OAuth Apps, so OpenTofu only owns the
+URL contract + Secret apply (`stacks/github/portal-oauth`).

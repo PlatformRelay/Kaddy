@@ -49,9 +49,6 @@ data:
   app-config.override.yaml: |
     app:
       baseUrl: https://portal.lab.platformrelay.dev
-      # Kill DefaultSignInPage (hardcoded Guest). GitHub page is sign-in-page:app/github.
-      extensions:
-        - sign-in-page:app: false
     backend:
       baseUrl: https://portal.lab.platformrelay.dev
       listen: ':7007'
