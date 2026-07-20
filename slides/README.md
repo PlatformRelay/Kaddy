@@ -56,7 +56,7 @@ Five compact surfaces are tagged for the deck gates:
 | `argocd` | static | GitOps application view for appendix/recording |
 | `grafana` | live | public GSK alerts and dashboards at `grafana.lab.platformrelay.dev` (appendix only) |
 | `clubhouse` | live | public GSK served website at `demo.lab.platformrelay.dev` (appendix only) |
-| `backstage` | live | GSK portal; public `portal.lab` HTTPRoute is proven live (200) |
+| `backstage` | live | GSK portal; public `portal.lab.platformrelay.dev` HTTPRoute is proven live (200) |
 | `crossplane-graph` | fallback | live portal graph remains open |
 
 The five-minute spoken path contains no local or kind demo targets; live frames use public GSK
@@ -97,7 +97,7 @@ Keep the main deck aligned with current evidence:
   Loki ruler, Nix boot-to-serve, and upstream merges remain open.
 - The GSK showcase image roll is **live-proven** (2026-07-20): caddy-mvp serves
   `ghcr.io/platformrelay/kaddy-showcase:0.6.0` (Rollout Healthy) and caddy-demo serves
-  `caddy:2.11.4-alpine`; `caddy.lab` and `demo.lab` return HTTPS 200.
+  `caddy:2.11.4-alpine`; `caddy.lab.platformrelay.dev` and `demo.lab.platformrelay.dev` return HTTPS 200.
 - E12d is a deck-only narrative change: the E10 public HTTPRoute proof landed independently, while
   the portal form-to-PR and read-path smoke remain E10 follow-on work. Upstream PRs remain filed
   and open, not merged; the Nix image build is landed while boot-to-serve remains open.

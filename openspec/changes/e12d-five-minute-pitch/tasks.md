@@ -73,6 +73,9 @@ TDD-ordered vertical slices — failing test first, then content.
 - [x] Honesty retcon (2026-07-20): GSK Caddy image roll **live-proven** —
       `kaddy-showcase:0.6.0` (caddy-mvp Healthy) + `caddy:2.11.4-alpine` (caddy-demo);
       deck/README no longer call the roll “in flight” / “rollout target”
+- [x] GSK upstream URLs (2026-07-20): live iframe/demo targets use
+      `*.lab.platformrelay.dev` (not `*.kaddy.local` / `127.0.0.1`); short `.lab` hosts expanded;
+      `iframe-surfaces.sh` gates local/kind/nip.io/NodePort clickable targets
 
 ## Out of band (not E12d) — optional E10 follow-on
 

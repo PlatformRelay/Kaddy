@@ -357,7 +357,7 @@ beat: scorecard
   <div class="kd-card kd-card-ok">
     <KdIcon name="mdi:source-branch-sync" size="1.5em" />
     <h3>Route and images</h3>
-    <p><code>portal.lab</code> Backstage HTTPRoute is live; Caddy images are live-proven on GSK — showcase <code>:0.6.0</code> (caddy-mvp) and <code>caddy:2.11.4-alpine</code> (caddy-demo).</p>
+    <p><code>portal.lab.platformrelay.dev</code> Backstage HTTPRoute is live; Caddy images are live-proven on GSK — showcase <code>:0.6.0</code> (caddy-mvp) and <code>caddy:2.11.4-alpine</code> (caddy-demo).</p>
   </div>
   <div class="kd-card">
     <KdIcon name="material-symbols:fact-check-outline-rounded" size="1.5em" />
@@ -529,10 +529,10 @@ layout: default
   </div>
 </div>
 
-<div class="kd-callout mt-5">Caddy images are live-proven on GSK: <code>kaddy-showcase:0.6.0</code> for caddy-mvp (Healthy) and <code>caddy:2.11.4-alpine</code> for caddy-demo; <code>caddy.lab</code> and <code>demo.lab</code> return HTTPS 200.</div>
+<div class="kd-callout mt-5">Caddy images are live-proven on GSK: <code>kaddy-showcase:0.6.0</code> for caddy-mvp (Healthy) and <code>caddy:2.11.4-alpine</code> for caddy-demo; <code>caddy.lab.platformrelay.dev</code> and <code>demo.lab.platformrelay.dev</code> return HTTPS 200.</div>
 
 <!--
-These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. Caddy images are live-proven on GSK at the versioned kaddy-showcase pin for the full canary and the current Caddy Alpine base for the landing page. If a local frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
+These compact surfaces support a GSK-first demonstration without taking over the explanatory slides. Argo CD, Grafana, the Caddy tenant, and Backstage share the cloud edge; the portal route is live with its public 200 recorded. Caddy images are live-proven on GSK at the versioned kaddy-showcase pin for the full canary and the current Caddy Alpine base for the landing page. Live frames use public *.lab.platformrelay.dev URLs; if a public frame is unavailable during a review, the repository still contains the manifests, tests, and generated evidence, so the claim does not depend on a browser tab.
 -->
 
 ---
