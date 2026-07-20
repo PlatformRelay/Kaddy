@@ -19,8 +19,13 @@
 #      identity is the Cilium `kube-apiserver`/`host` entity — CNP required.
 #   3. kubelet liveness/readiness probes are host-originated; Cilium admits
 #      them without an explicit rule.
-# Grafana/Prometheus UI access is via kubectl port-forward (host path) —
-# unaffected by these policies. No Gateway/HTTPRoute fronts monitoring today.
+#   4. GSK Traefik (ns traefik) → Grafana :3000 (HTTPRoute grafana.lab).
+# Grafana UI on GSK is fronted by clubhouse HTTPRoute grafana.lab
+# (deploy/gateway/cloud-only/httproutes.yaml → Service monitoring-grafana).
+# Kind still uses port-forward / e8b demo Gateway (ns gateway) for local demos.
+# Without the Traefik peer allows below, default-deny drops edge traffic and
+# grafana.lab returns Traefik "no available server" / timeouts (same class as
+# portal/caddy Traefik NetPol gaps, live-proven 2026-07-20).
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -106,4 +111,74 @@ spec:
       toPorts:
         - ports:
             - port: "10250"
+              protocol: TCP
+---
+# GSK cloud-edge: Traefik (ns traefik) → kube-prometheus Grafana :3000 for
+# HTTPRoute grafana (grafana.lab). Pod label app.kubernetes.io/name=grafana
+# matches the chart Deployment (live release name monitoring-grafana; Argo
+# desired name may differ — name label is stable).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-grafana
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-traefik-to-grafana
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1g-S05e
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-traefik-to-grafana
+  namespace: monitoring
+  labels:
+    owner: platform-team
+    service: policies
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: allow-traefik-to-grafana
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0106"
+    kaddy.io/req: REQ-E1g-S05e
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: traefik
+      toPorts:
+        - ports:
+            - port: "3000"
               protocol: TCP

@@ -115,6 +115,7 @@ tasks:
       - bash tests/smoke/e1g-offline.sh
       - bash tests/smoke/e1g-traefik-gitops-offline.sh
       - bash tests/smoke/e1g-caddy-lab-cloud-route.sh
+      - bash tests/smoke/e1g-grafana-lab-traefik-netpol.sh
       - bash tests/smoke/e6g-offline.sh
       - bash tests/smoke/e8b-offline.sh
       - bash tests/smoke/e13-offline.sh
