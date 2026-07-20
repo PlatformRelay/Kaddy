@@ -13,9 +13,9 @@ variable "gsk_release" {
 }
 
 variable "node_count" {
-  description = "Worker node count for the single pool. Minimal = 1."
+  description = "Worker node count for the single pool. Standing go-live GSK uses 3 (MemoryPressure headroom); cost cap remains 1–3."
   type        = number
-  default     = 1
+  default     = 3
 
   validation {
     condition     = var.node_count >= 1 && var.node_count <= 3

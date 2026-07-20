@@ -177,9 +177,9 @@ carve-out covers only the one sanctioned, recorded standing substrate.
   of the Gateway; re-test E4/E5 (LoadBalancer/TLS) on GSK.
 - **Identity**: the public LBaaS IP/domain feeds the Dex issuer URL + GitHub
   OAuth callback (E1g-S05).
-- **Node pool**: kept intentionally minimal (1 node). Scale via the `k8s`
-  stack's `node_count` var (capped at 3 by both variable validation and
-  `policy/gridscale.rego`).
+- **Node pool**: standing go-live default is **3** workers (D-048; MemoryPressure
+  headroom). Override via the `k8s` stack's `node_count` var (still capped at 3 by
+  both variable validation and `policy/gridscale.rego`).
 
 ## References
 

@@ -1,5 +1,5 @@
-# REQ-E1g-S03: GSK cluster — offline plan, mocked provider. Asserts minimal
-# sizing, concrete (non-latest) release, single node pool, labels wiring.
+# REQ-E1g-S03: GSK cluster — offline plan, mocked provider. Asserts standing
+# sizing (node_count=3), concrete (non-latest) release, single node pool, labels.
 
 mock_provider "gridscale" {}
 
@@ -24,8 +24,8 @@ run "cluster_minimal_defaults" {
   }
 
   assert {
-    condition     = one(gridscale_k8s.platform.node_pool).node_count == 1
-    error_message = "default node_count must be minimal (1)"
+    condition     = one(gridscale_k8s.platform.node_pool).node_count == 3
+    error_message = "default node_count must match standing GSK capacity (3)"
   }
 
   assert {
