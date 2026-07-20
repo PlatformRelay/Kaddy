@@ -12,6 +12,8 @@
 
 # --- Provider: required_providers pin + auth mapping --------------------------
 generate_hcl "_terramate_generated_provider.tf" {
+  # Only gridscale day-0 stacks — github/portal stacks bring their own providers.
+  condition = tm_contains(terramate.stack.tags, "gridscale")
   content {
     terraform {
       required_providers {
@@ -36,6 +38,7 @@ generate_hcl "_terramate_generated_provider.tf" {
 
 # --- Provider auth variables (kept out of each stack's hand-written vars) ------
 generate_hcl "_terramate_generated_variables.tf" {
+  condition = tm_contains(terramate.stack.tags, "gridscale")
   content {
     variable "gridscale_uuid" {
       description = "gridscale User-UUID. Live only: set via TF_VAR_gridscale_uuid (mapped from GRIDSCALE_USER_UUID in task e1g:up)."
@@ -84,6 +87,7 @@ generate_hcl "_terramate_generated_backend.tf" {
 # the shared platform-wide global. Downstream resources reference
 # module.labels.gridscale_labels (list of "key=value") and module.labels.name.
 generate_hcl "_terramate_generated_labels.tf" {
+  condition = tm_contains(terramate.stack.tags, "gridscale")
   content {
     module "labels" {
       source = "${global.root_rel}/modules/labels"

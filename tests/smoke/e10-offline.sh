@@ -56,6 +56,7 @@ if command -v shellcheck >/dev/null 2>&1; then
              "${ROOT}/tests/portal/read-path-rbac.sh" \
              "${ROOT}/tests/portal/catalog-entities.sh" \
              "${ROOT}/tests/portal/gsk-catalog-override.sh" \
+             "${ROOT}/tests/portal/github-oauth-contract.sh" \
     || fail "shellcheck flagged an E10 script"
   ok "shellcheck clean (e10 scripts)"
 else
@@ -202,6 +203,8 @@ ok "GSK cloud-edge portal.lab HTTPRoute + LE cert authored"
 # Register Existing timeout. Guard the override ConfigMap + allow-https-egress.
 bash "${ROOT}/tests/portal/gsk-catalog-override.sh" \
   || fail "gsk-catalog-override.sh failed (catalog wipe / portal.lab URL / HTTPS egress)"
+bash "${ROOT}/tests/portal/github-oauth-contract.sh" \
+  || fail "github-oauth-contract.sh failed (portal.lab OAuth URL contract / TF stack)"
 ok "GSK lab catalog override preserves locations + HTTPS egress NetPol"
 
 # --- live bring-up is deferred + honestly flagged ---------------------------
