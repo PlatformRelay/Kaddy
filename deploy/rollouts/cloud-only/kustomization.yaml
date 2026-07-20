@@ -1,0 +1,31 @@
+# E1g-S05i — GSK (amd64) variant of the Argo Rollouts Gateway API plugin config.
+#
+# GSK worker nodes are amd64; deploy/rollouts/config.yaml pins the plugin binary
+# to linux-arm64 (correct for the local Apple-Silicon kind cluster). This
+# cloud-only kustomization renders the SAME config with the ONLY delta being the
+# `linux-arm64` -> `linux-amd64` arch substring (same pinned v0.16.0 release —
+# SEC-4, no floating tag).
+#
+# Why a sibling file instead of a patch over ../config.yaml: kustomize load
+# restrictions reject a plain-file base outside this root
+# ("security; file is not in or below"), and deploy/rollouts/ itself must stay a
+# PLAIN directory source (adding a top-level kustomization.yaml would flip the
+# `rollouts` Application from directory- to kustomize-rendering and change the
+# kind path's rendered output). config.yaml here is therefore a byte-copy of
+# ../config.yaml modulo the arch substring — DRIFT-GUARDED by
+# tests/smoke/rollouts-plugin-arch-overlay.sh (verify gate): bump base and
+# cloud-only together or the gate fails.
+#
+# Kind safety: the `rollouts` Application directory-syncs deploy/rollouts with
+# recurse OFF (ArgoCD default), so this subdir is NEVER rendered on kind — same
+# exclusion-by-location model as deploy/gateway/cloud-only/.
+#
+# GSK apply: `kubectl apply -k deploy/rollouts/cloud-only` (or a future
+# cloud-edge Application pointing here) AFTER the base install; the controller
+# still needs a one-time restart to load the ConfigMap (see
+# hack/gsk/rollouts-plugin-amd64.sh — now break-glass — for the restart).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - config.yaml

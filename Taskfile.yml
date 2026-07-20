@@ -125,6 +125,7 @@ tasks:
       - bash tests/smoke/e14-offline.sh
       - bash tests/smoke/e10-offline.sh
       - bash tests/smoke/gsk-roll-caddy-images-offline.sh
+      - bash tests/smoke/rollouts-plugin-arch-overlay.sh
 
   deck:build:
     desc: E12 — build the Slidev deck (wraps tests/deck/slidev-build.sh; asserts a FRESH slides/dist)

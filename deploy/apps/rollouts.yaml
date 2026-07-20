@@ -6,6 +6,11 @@
 # controller whose plugin ConfigMap needs a controller restart to take effect
 # (bootstrap:e7 handles the restart) — keep a human in the loop, mirroring the
 # other non-platform-core apps.
+#
+# recurse is OFF (ArgoCD default — no directory.recurse key): the cloud-only/
+# subdir (GSK amd64 plugin variant, E1g-S05i) is excluded by location, same
+# model as deploy/gateway/cloud-only/. Guarded by
+# tests/smoke/rollouts-plugin-arch-overlay.sh.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

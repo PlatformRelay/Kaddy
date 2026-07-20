@@ -1,0 +1,91 @@
+# REQ-E7-S02-01 — Gateway API trafficRouting plugin wiring + RBAC.
+#
+# The stock argo-rollouts install ships an EMPTY `argo-rollouts-config` ConfigMap
+# (removed from the vendored install.yaml so this file is the single owner — Argo
+# CD rejects two same-named resources in one Application). Here it carries the
+# `trafficRouterPlugins` entry that tells the controller to load the Gateway API
+# traffic-router plugin.
+#
+# Delivery: `location:` is an HTTPS URL — the controller downloads the pinned
+# plugin binary at startup (the kind node has egress; verified live). Pinned to an
+# exact release + the node's arch (linux-amd64) — no floating tag (SEC-4). The
+# controller Deployment MUST restart to (re)load this ConfigMap; the rollouts App
+# reconcile + a one-time `rollout restart` (bootstrap:e7) handles that.
+#
+# The plugin `name` string MUST match the key under a Rollout's
+# `spec.strategy.canary.trafficRouting.plugins` (here: `argoproj-labs/gatewayAPI`).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argo-rollouts-config
+  namespace: argo-rollouts
+  labels:
+    owner: platform-team
+    service: argo-rollouts
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: argo-rollouts
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+data:
+  trafficRouterPlugins: |-
+    - name: "argoproj-labs/gatewayAPI"
+      location: "https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.16.0/gatewayapi-plugin-linux-amd64"
+---
+# The stock argo-rollouts ClusterRole does NOT grant access to Gateway API
+# HTTPRoutes — without this the plugin silently fails to shift weights. This adds
+# the httproutes/grpcroutes permissions and binds them to the controller SA.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-rollouts-gateway-api-plugin
+  labels:
+    owner: platform-team
+    service: argo-rollouts
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: argo-rollouts
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+rules:
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - httproutes
+      - grpcroutes
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-rollouts-gateway-api-plugin
+  labels:
+    owner: platform-team
+    service: argo-rollouts
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: argo-rollouts
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-rollouts-gateway-api-plugin
+subjects:
+  - kind: ServiceAccount
+    name: argo-rollouts
+    namespace: argo-rollouts

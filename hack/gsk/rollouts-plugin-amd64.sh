@@ -2,6 +2,14 @@
 # E1g-S05i — override the Argo Rollouts Gateway API trafficRouter plugin arch
 # for the gridscale GSK cloud-edge (CLOUD-ONLY; proven live 2026-07-18).
 #
+# ⚠️ SUPERSEDED-BY-OVERLAY (break-glass only): the amd64 variant is now
+#   GitOps-owned declaratively at deploy/rollouts/cloud-only/ (kustomize root;
+#   `kubectl apply -k deploy/rollouts/cloud-only`), drift-guarded offline by
+#   tests/smoke/rollouts-plugin-arch-overlay.sh. Prefer the overlay. Keep this
+#   script for break-glass live patching AND for the controller restart the
+#   ConfigMap change alone cannot trigger (the controller only reads the
+#   trafficRouterPlugins ConfigMap at startup).
+#
 # WHY THIS EXISTS (the failure mode it fixes):
 #   deploy/rollouts/config.yaml pins the plugin binary to `...-linux-arm64`
 #   because the LOCAL kind cluster runs on Apple-Silicon (arm64) nodes. GSK
@@ -11,12 +19,12 @@
 #   no canary weights are ever shifted, and the rollout hangs Progressing. GSK
 #   needs the `...-linux-amd64` binary of the SAME pinned release (v0.16.0).
 #
-#   We do NOT ship a second `cloud-only/config-amd64.yaml` ConfigMap: Argo CD
-#   rejects two same-named resources in one Application (see the note in
-#   deploy/rollouts/config.yaml), and the GSK edge is applied imperatively
-#   (kubectl), not via an ArgoCD Application — so a live patch is the correct,
-#   least-clobbering delivery. It mirrors edge-up.sh's imperative apply model.
-#   The kind arm64 default in git is left UNTOUCHED.
+#   The amd64 ConfigMap is now COMMITTED at deploy/rollouts/cloud-only/ (a
+#   kustomize root excluded from the kind rollouts App by location — recurse is
+#   OFF, so Argo CD never sees two same-named resources in one Application).
+#   This script remains the imperative break-glass path mirroring edge-up.sh's
+#   apply model, and still owns the controller restart. The kind arm64 default
+#   in git is left UNTOUCHED either way.
 #
 # kind-safety: this MUTATES the target cluster (patches the ConfigMap + restarts
 # the controller), so it is guarded by hack/lib/guard-context.sh (E1g-S05a) — it
