@@ -3,9 +3,11 @@
 # `pnpm exec slidev export` + playwright-chromium). Asserts `pnpm export`
 # exits 0 and that slides/kaddy-deck.pdf exists and was REFRESHED by this run.
 #
-# CI installs Chromium OS libs first (`pnpm exec playwright install-deps chromium`
-# in .github/workflows/deck.yaml). Locally, playwright-chromium's postinstall
-# usually suffices on macOS; on Linux you may need the same install-deps once.
+# CI installs Chromium OS libs then the browser binary
+# (`pnpm exec playwright install-deps chromium` +
+# `pnpm exec playwright install chromium` in .github/workflows/deck.yaml).
+# Locally, playwright-chromium's postinstall usually suffices on macOS; on
+# Linux you may need the same install-deps + install once.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

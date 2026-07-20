@@ -42,10 +42,14 @@ jobs:
       - name: deck exit gate (build + notes + wordcount + iframes + beats)
         run: bash tests/deck/exit-recording-ready.sh
       - name: Install Chromium system dependencies
-        # Browser binary comes from playwright-chromium postinstall; this adds
-        # the OS libraries slidev export needs headless (workshop release.yml).
+        # OS libraries for headless Chromium (workshop release.yml pattern).
         working-directory: slides
         run: pnpm exec playwright install-deps chromium
+      - name: Install Chromium browser
+        # Browser binary itself — install-deps alone does not download it;
+        # playwright-chromium postinstall is not reliable under pnpm CI.
+        working-directory: slides
+        run: pnpm exec playwright install chromium
       - name: Export deck PDF (Playwright)
         run: bash tests/deck/slidev-export.sh
       - name: Upload deck artifact (slides/dist)

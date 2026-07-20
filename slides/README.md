@@ -68,12 +68,16 @@ surface is unavailable.
 ```bash
 cd slides
 pnpm install
+pnpm exec playwright install chromium   # once, for PDF export
 pnpm dev
 pnpm lint
 pnpm build
+pnpm export                             # writes kaddy-deck.pdf
 ```
 
-From the repository root, `tests/deck/exit-recording-ready.sh` runs the composite deck gate. It
+From the repository root, `task deck:export` wraps the PDF export gate. CI runs
+`playwright install-deps chromium` then `playwright install chromium` before export.
+`tests/deck/exit-recording-ready.sh` runs the composite deck gate. It
 checks the build, visual tokens, global frontmatter, slide and cover counts, notes, script length,
 surface markers, and ordered narrative timing.
 

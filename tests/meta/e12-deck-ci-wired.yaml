@@ -4,7 +4,8 @@
 # gate (tests/deck/exit-recording-ready.sh — includes the slidev build),
 # publishes slides/dist as the static-SPA artifact the clubhouse/Caddy tenant
 # can serve, exports a PDF via Playwright (mirrors kubernetes-workshop release
-# export; wired into every deck push here), triggers on the deck paths, and
+# export; wired into every deck push here — OS deps + browser binary install),
+# triggers on the deck paths, and
 # that the Taskfile wires `task deck:build` / `task deck:export`. Offline meta
 # smoke — no cluster and no node toolchain required.
 set -euo pipefail
@@ -48,6 +49,10 @@ printf '%s\n' "$wf_nocomment" | grep -qE 'tests/deck/slidev-export\.sh' \
   || fail "deck.yaml does not run tests/deck/slidev-export.sh (Playwright PDF export)"
 printf '%s\n' "$wf_nocomment" | grep -qE 'playwright[[:space:]]+install-deps[[:space:]]+chromium' \
   || fail "deck.yaml does not install Chromium system deps via playwright install-deps chromium"
+# Browser binary (not only OS libs). install-deps alone left CI without
+# chromium_headless_shell — must not match install-deps (no space after install).
+printf '%s\n' "$wf_nocomment" | grep -qE 'playwright[[:space:]]+install[[:space:]]+chromium' \
+  || fail "deck.yaml does not install Chromium browser via playwright install chromium (install-deps alone is not enough)"
 printf '%s\n' "$wf_nocomment" | grep -qE 'name:[[:space:]]*deck-pdf' \
   || fail "deck.yaml does not upload artifact name: deck-pdf"
 printf '%s\n' "$wf_nocomment" | grep -qE 'path:[[:space:]]*slides/kaddy-deck\.pdf' \
