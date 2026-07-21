@@ -18,16 +18,18 @@
 #     container args load ONLY two config files, override LAST:
 #       node packages/backend --config app-config.yaml \
 #         --config /cfg/app-config.override.yaml
-#     The image's baked `app-config.production.yaml` is NOT in the chain
-#     (white-screen root cause 2026-07-20: its `sign-in-page:app: false`
-#     extensions entry never applied, so the guest AND GitHub sign-in pages
-#     both attached and frontend createApp threw). The override must therefore
-#     be SELF-SUFFICIENT for everything production.yaml would have provided:
-#     auth (resolvers, providers) AND app.extensions (full array — Backstage
-#     replaces ARRAYS with the later file's value, so the override must restate
-#     page:catalog and carry sign-in-page:app: false itself). "Override last"
-#     also keeps the override's signIn.resolvers array authoritative over the
-#     base app-config.yaml.
+#     The image's baked `app-config.production.yaml` is NOT in the chain.
+#     Since kaddy-portal 4ecaecc the GitHub sign-in page is a SAME-ID code
+#     override of `sign-in-page:app` (packages/app/src/modules/signin) — it
+#     replaces the guest default in code, and production.yaml no longer
+#     disables any extension. Config must NEVER set `sign-in-page:app: false`:
+#     on this image that disables the ONLY sign-in gate and the app renders
+#     UNGATED with every API 401ing (live-caught 2026-07-21). The override
+#     must still be SELF-SUFFICIENT for auth (resolvers, providers) AND
+#     restate the app.extensions base entries (full array — Backstage replaces
+#     ARRAYS with the later file's value, so page:catalog must be restated).
+#     "Override last" also keeps the override's signIn.resolvers array
+#     authoritative over the base app-config.yaml.
 #     HONEST: the args live only in the out-of-band Deployment / kaddy-portal
 #     image CMD — no in-repo k8s manifest declares them; this contract (asserted
 #     by tests/portal/gsk-catalog-override.sh) is the in-repo pin. Removing the

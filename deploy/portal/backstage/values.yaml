@@ -41,9 +41,9 @@ backstage:
     # kaddy-portal CI publishes — never `:latest`, never the mutable
     # `:<version>` tag. Record the digest here for audit. Bump deliberately,
     # with a chart-render-config-order run.
-    # sha-8b74245 == v0.2.0
-    # digest: sha256:0f84f62f48d649794da023940e58efddb349b80dcf745ecf4291bd7e43cee2bd
-    tag: sha-8b74245
+    # sha-4ecaecc == v0.2.1 (same-id SignInPage override — working GitHub gate)
+    # digest: sha256:c8e1ced54812354efbdfc58585ebda44505bba93476cdd7c85ab170ed2469778
+    tag: sha-4ecaecc
     pullPolicy: IfNotPresent
 
   # In-memory sqlite — a second replica would fork the catalog. Explicit pin.
@@ -53,8 +53,10 @@ backstage:
   # CONFIG ORDER (security-load-bearing, see gsk/deployment-env.yaml): EXACTLY
   # these two files, override LAST. Backstage replaces ARRAYS with the later
   # file's value — only an override loaded last keeps the catalog-restricted
-  # signIn.resolvers and `sign-in-page:app: false` authoritative over the
-  # baked base config. Do NOT reintroduce extraAppConfig here: the chart
+  # signIn.resolvers array authoritative over the baked base config. (The
+  # sign-in page is a same-id code override in the image since 4ecaecc —
+  # config must never disable sign-in-page:app.) Do NOT reintroduce
+  # extraAppConfig here: the chart
   # appends its --config entries AFTER these args, which would demote the
   # override from last place.
   args:

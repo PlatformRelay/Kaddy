@@ -59,20 +59,22 @@ data:
         - page:catalog:
             config:
               path: /
-        # Disable the default guest sign-in page; the image compiles the GitHub
-        # page at sign-in-page:app/github (kaddy-portal
-        # packages/app/src/modules/signin) and requires the default to be
-        # config-disabled (see that module's comment). The baked
-        # app-config.production.yaml does this, but the live --config chain
-        # does NOT load it — without this line BOTH sign-in-page extensions
-        # attach, frontend createApp throws, and portal.lab white-screens.
-        - sign-in-page:app: false
+        # SIGN-IN GATE — config must NEVER disable `sign-in-page:app`. Since
+        # kaddy-portal 4ecaecc the GitHub sign-in page is a SAME-ID code
+        # override of sign-in-page:app (kaddy-portal
+        # packages/app/src/modules/signin): it replaces the guest default in
+        # code, and the baked production.yaml no longer disables anything. An
+        # `- sign-in-page:app: false` entry here would disable the fixed
+        # GitHub page ITSELF, leaving no sign-in gate at all — the app renders
+        # UNGATED and every API call 401s (live-caught 2026-07-21). The old
+        # named-variant image (sign-in-page:app/github) needed that disable;
+        # the same-id image forbids it.
     backend:
       baseUrl: https://portal.lab.platformrelay.dev
-      # Object form REQUIRED: the sha-8b74245 image build (its backend-defaults
-      # lockfile) rejects the ':7007' string shorthand with "Invalid type in
-      # config for key 'backend.listen' ... wanted object" — LIVE-CAUGHT
-      # 2026-07-21 at the chart cutover (pod crashed pre-readiness).
+      # Object form REQUIRED: image builds since sha-8b74245 (their
+      # backend-defaults lockfile) reject the ':7007' string shorthand with
+      # "Invalid type in config for key 'backend.listen' ... wanted object" —
+      # LIVE-CAUGHT 2026-07-21 at the chart cutover (pod crashed pre-readiness).
       listen:
         port: 7007
       cors:
@@ -102,7 +104,8 @@ data:
                 # scaffolder/register surface to EVERY GitHub account.
                 - resolver: usernameMatchingUserEntityName
       # Declarative-only: the actual sign-in page is compiled into the
-      # kaddy-portal frontend (packages/app SignInPage). This key documents
+      # kaddy-portal frontend (packages/app/src/modules/signin — same-id
+      # override of sign-in-page:app since 4ecaecc). This key documents
       # intent / keeps config-driven consumers honest but cannot switch the
       # rendered page by itself.
       signInPage: github

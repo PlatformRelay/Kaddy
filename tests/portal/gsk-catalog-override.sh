@@ -171,22 +171,24 @@ printf '%s\n' "${last_config}" | grep -q '/cfg/app-config\.override\.yaml' \
   || fail "CONFIG_ORDER must list /cfg/app-config.override.yaml as the LAST --config (else the baked dangerous resolver wins)"
 ok "env contract pins GSK override as the LAST --config (resolver array replacement)"
 
-# --- 4f) app.extensions must disable the default guest sign-in page ----------
-# WHITE-SCREEN root cause (live, 2026-07-20): the image compiles a GitHub
-# sign-in page as extension `sign-in-page:app/github` whose module REQUIRES the
-# default guest page `sign-in-page:app` to be config-disabled. The baked
-# app-config.production.yaml does that, but the live args do NOT load it — the
-# override is the only mutable config in the chain, so it must carry the
-# disable itself. Backstage config merge REPLACES arrays, so the override's
-# app.extensions must ALSO restate the base entries (page:catalog) or the
-# catalog root page is lost.
+# --- 4f) config must NEVER disable sign-in-page:app; page:catalog restated ---
+# SIGN-IN GATE (live-caught 2026-07-21): since kaddy-portal 4ecaecc the GitHub
+# sign-in page is a SAME-ID code override of `sign-in-page:app` (kaddy-portal
+# packages/app/src/modules/signin) — it replaces the guest default in code, so
+# nothing needs (or may be) config-disabled. The OLD named-variant image
+# (`sign-in-page:app/github`) required `sign-in-page:app: false`; on the fixed
+# image that same entry disables the ONLY sign-in gate: the app renders
+# UNGATED and every API call 401s. Backstage config merge still REPLACES
+# arrays, so the override's app.extensions must restate the base entries
+# (page:catalog) or the catalog root page is lost.
 printf '%s\n' "${payload_nocomment}" | grep -qE '^[[:space:]]*extensions:' \
-  || fail "override must set app.extensions (production.yaml is not in the live --config chain)"
-printf '%s\n' "${payload_nocomment}" | grep -qE 'sign-in-page:app[[:space:]]*:[[:space:]]*false' \
-  || fail "override app.extensions must disable the default guest sign-in page (sign-in-page:app: false) — else two sign-in pages attach and the frontend white-screens"
+  || fail "override must set app.extensions (full array — must restate page:catalog; production.yaml is not in the live --config chain)"
+if printf '%s\n' "${payload_nocomment}" | grep -qE 'sign-in-page[^[:space:]]*[[:space:]]*:[[:space:]]*false'; then
+  fail "override must NOT disable any sign-in-page extension — since kaddy-portal 4ecaecc the GitHub page IS sign-in-page:app (same-id code override); disabling it removes the only sign-in gate (ungated render, all APIs 401 — live-caught 2026-07-21)"
+fi
 printf '%s\n' "${payload_nocomment}" | grep -qE 'page:catalog' \
   || fail "override app.extensions must restate page:catalog (array REPLACEMENT drops base entries otherwise)"
-ok "override app.extensions disables default sign-in page and keeps page:catalog"
+ok "override app.extensions keeps sign-in-page:app enabled (same-id GitHub gate) and restates page:catalog"
 
 # --- 4g) env contract documents the ACTUAL live --config chain ---------------
 # The live Deployment loads ONLY app-config.yaml + /cfg/app-config.override.yaml.

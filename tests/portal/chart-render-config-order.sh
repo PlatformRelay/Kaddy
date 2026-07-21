@@ -13,7 +13,9 @@
 #      chain is EXACTLY app-config.yaml then /cfg/app-config.override.yaml,
 #      override LAST (security-load-bearing: Backstage replaces ARRAYS with the
 #      later file's value — only an override loaded last keeps the
-#      catalog-restricted resolver + sign-in-page:app: false authoritative).
+#      catalog-restricted resolver array authoritative; the sign-in page
+#      itself is a same-id code override in the image since 4ecaecc and must
+#      never be config-disabled).
 #   3. NODE_ENV=production is set (guest backend module unload) and the env
 #      Secrets backstage-github + backstage-backend-auth are wired via envFrom.
 #   4. dangerouslyAllowSignInWithoutUserInCatalog appears NOWHERE in the render.
