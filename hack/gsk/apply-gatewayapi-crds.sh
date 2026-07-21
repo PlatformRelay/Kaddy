@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 # E1g-S05b — install the Gateway API CRDs on the gridscale GSK cloud-edge,
-# stripping the k8s-1.31-only CEL rules so they apply on GSK's k8s 1.30.
+# stripping the CEL rules that need k8s >= 1.31 before applying.
 #
-# WHY THIS EXISTS (proven live 2026-07-18):
+# WHY THIS EXISTS (proven live 2026-07-18, on the ORIGINAL GSK k8s 1.30):
 #   Traefik 3.7.6 (the GSK edge controller — see deploy/gateway-controller/traefik)
 #   watches Gateway API at v1. The upstream Gateway API v1.5.1 STANDARD channel
 #   TLSRoute + BackendTLSPolicy CRDs embed CEL validation rules that call the
 #   `isIP()` / `isCIDR()` / `isURL()` CEL functions — added to Kubernetes in
-#   v1.31. GSK is k8s 1.30, so the API server REJECTS those CRDs ("undefined
+#   v1.31. On k8s 1.30 the API server REJECTED those CRDs ("undefined
 #   function"). If TLSRoute never applies, Traefik's informer WaitForCacheSync
 #   never completes and NO reconciliation happens (silent, whole-controller
 #   stall). Stripping just the isIP/isCIDR/isURL CEL rules lets the CRDs apply;
 #   they then serve at v1, which is what Traefik needs.
+#
+# STATUS 2026-07-21: the GSK cluster was REBUILT on k8s v1.31.11, which ships
+#   those CEL functions — the strip is no longer strictly required there. It is
+#   still applied UNCONDITIONALLY: the strip is idempotent, harmless on 1.31+
+#   (it only removes optional address-format validations), and keeps this
+#   script safe should a rebuild ever land on a pre-1.31 GSK release again.
+#   TODO(revisit): once k8s >= 1.31 is the settled GSK floor, drop the strip
+#   and apply the upstream bundle verbatim.
 #
 # kind-safety: this MUTATES the target cluster (force-applies Gateway API CRDs),
 # so it is guarded by hack/lib/guard-context.sh (E1g-S05a) — it REFUSES to run
