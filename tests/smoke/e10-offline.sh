@@ -136,8 +136,21 @@ need_file "${VALUES}"
 if grep -rhE ':latest\b' "${PORTAL_DIR}" "${APP}" | sed 's/#.*//' | grep -qE ':latest\b'; then
   fail "an E10 manifest pins :latest (forbidden, SEC-4)"
 fi
+# The pin must be the ENTIRE tag value ($-anchored) so trailing garbage like
+# `sha-8b74245-dirty` (a local dirty build — NOT an immutable CI tag) is
+# rejected, not just prefix-matched. (The sibling check in
+# tests/portal/chart-render-config-order.sh keeps its own file-local regex.)
+PIN_RE='tag:[[:space:]]*["'\'']?(sha-[0-9a-f]{7,40}|v?[0-9]+(\.[0-9]+)*)["'\'']?[[:space:]]*$'
+# Self-check the anchor against known fixtures (a regex-in-a-var can rot silently):
+grep -qE "${PIN_RE}" <<<'tag: sha-4ecaecc' \
+  || fail "SEC-4 pin-regex self-check broken: must accept 'tag: sha-4ecaecc'"
+grep -qE "${PIN_RE}" <<<'tag: "0.2.0"' \
+  || fail "SEC-4 pin-regex self-check broken: must accept 'tag: \"0.2.0\"'"
+if grep -qE "${PIN_RE}" <<<'tag: sha-abc1234-dirty'; then
+  fail "SEC-4 pin-regex self-check broken: must reject 'tag: sha-abc1234-dirty' (trailing garbage)"
+fi
 grep -qE 'targetRevision:[[:space:]]*[0-9]' "${APP}" \
-  || grep -qE 'tag:[[:space:]]*["'\'']?(sha-[0-9a-f]{7,40}|[0-9v])' "${VALUES}" \
+  || grep -qE "${PIN_RE}" "${VALUES}" \
   || fail "the Backstage chart/image must be pinned to an explicit version (SEC-4: immutable sha-<short> tag or numeric pin)"
 # Third-party TeraSky/community plugin npm versions pinned (exact, no ^/~/*).
 PINS="${PORTAL_DIR}/plugin-versions.md"
