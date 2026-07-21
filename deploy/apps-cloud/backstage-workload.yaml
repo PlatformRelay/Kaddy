@@ -1,0 +1,87 @@
+# REQ-E10-S01-01 / REQ-E10-S05-03 — GSK chart cutover: the Backstage WORKLOAD
+# as an Argo CD Application (CLOUD-ONLY, INERT until an operator applies it).
+#
+# WHAT IT OWNS: the Backstage Deployment/Service (+ ServiceMonitor) in ns
+# `portal` on GSK, rendered from the pinned backstage.github.io chart with this
+# repo's deploy/portal/backstage/values.yaml ($values multi-source). The
+# supporting cast (namespace, netpol, RBAC, cert, override ConfigMap
+# `backstage-override`) is ALREADY Argo-owned by the directory App
+# deploy/apps/portal.yaml — this App adds ONLY the workload objects.
+#
+# THE CUTOVER STORY: Deployment/backstage on GSK is out-of-band today
+# (hand-applied during the 2026-07-20 auth/white-screen incident chain; see
+# deploy/portal/backstage/gsk/deployment-env.yaml — the canonical env contract).
+# This App codifies that exact contract (NODE_ENV=production, AUTH_GITHUB_* +
+# BACKEND_AUTH_SECRET from Secrets, --config app-config.yaml then
+# /cfg/app-config.override.yaml LAST) so syncing it makes Argo the owner.
+# fullnameOverride pins the rendered name to `backstage` so Argo ADOPTS the
+# live object instead of creating a sibling. Offline render proof:
+# tests/portal/chart-render-config-order.sh (R4-1 gate).
+#
+# WHY THIS DIRECTORY (deploy/apps-cloud/, NOT deploy/apps/) — KIND-SAFETY:
+# root recurses deploy/apps/ onto kind; the kaddy-portal image + GSK-only
+# override must never deploy there. apps-cloud is bootstrap-applied once by
+# hack/gsk/edge-up.sh and is invisible to root by construction — until an
+# operator runs edge-up (or kubectl-applies this file) it is fully inert.
+#
+# WHY NO AUTOMATED SYNC (deliberate human-in-the-loop):
+#   - Adopting a live out-of-band Deployment must be OBSERVED: the first sync
+#     diffs against the hand-applied object and may need Replace=true (the
+#     chart's selector labels differ from the hand-applied selector, and
+#     .spec.selector is immutable) — an operator decides, watching the pod.
+#   - This App was authored in a network-blocked session (no kubectl/helm
+#     against GSK possible): the live diff is UNVERIFIED, so auto-sync could
+#     bounce the only portal replica (in-memory sqlite — a restart drops
+#     runtime catalog registrations).
+# After the first observed sync succeeds, flipping to automated
+# prune:true/selfHeal:false (repo convention) is a follow-up commit.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backstage-workload
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-operational
+    track: stable
+    app.kubernetes.io/name: backstage-workload
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    kaddy.io/adr: "0109"
+    kaddy.io/req: REQ-E10-S01-01
+    kaddy.io/status: cloud-only-gsk-inert-until-synced
+spec:
+  # Closed-list portal AppProject (deploy/apps/projects/portal.yaml) — its
+  # sourceRepos already allowlist this repo + https://backstage.github.io/charts
+  # ("one repo, one chart") and its destinations cover portal + argocd.
+  project: portal
+  sources:
+    # Pinned chart (SEC-4; Renovate-trackable via the argocd manager). Exact
+    # version, no floating tag — bump deliberately with a render-gate run.
+    - repoURL: https://backstage.github.io/charts
+      chart: backstage
+      targetRevision: 2.8.2
+      helm:
+        releaseName: backstage
+        valueFiles:
+          - $values/deploy/portal/backstage/values.yaml
+    # $values ref: the values file stays in this repo next to the rest of the
+    # portal config (single source of truth; the directory App excludes it
+    # from manifest rendering via directory.exclude).
+    - repoURL: https://github.com/PlatformRelay/Kaddy.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: portal
+  # MANUAL sync only — see header. NO syncPolicy.automated: the operator
+  # triggers the first (adoption) sync from the Argo UI/CLI and watches it.
+  syncPolicy:
+    syncOptions:
+      # ns `portal` is owned by the directory App; never race-create it here.
+      - CreateNamespace=false

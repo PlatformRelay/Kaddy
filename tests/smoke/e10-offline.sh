@@ -57,6 +57,7 @@ if command -v shellcheck >/dev/null 2>&1; then
              "${ROOT}/tests/portal/catalog-entities.sh" \
              "${ROOT}/tests/portal/gsk-catalog-override.sh" \
              "${ROOT}/tests/portal/github-oauth-contract.sh" \
+             "${ROOT}/tests/portal/chart-render-config-order.sh" \
     || fail "shellcheck flagged an E10 script"
   ok "shellcheck clean (e10 scripts)"
 else
@@ -206,6 +207,15 @@ bash "${ROOT}/tests/portal/gsk-catalog-override.sh" \
 bash "${ROOT}/tests/portal/github-oauth-contract.sh" \
   || fail "github-oauth-contract.sh failed (portal.lab OAuth URL contract / TF stack)"
 ok "GSK lab catalog override preserves locations + HTTPS egress NetPol"
+
+# --- 13) chart cutover App + rendered live-contract (R4-1) -------------------
+# deploy/apps-cloud/backstage-workload.yaml (inert, manual-sync) + helm render
+# of deploy/portal/backstage/values.yaml must honor the GSK env contract
+# (config order override-LAST, NODE_ENV=production, no dangerous sign-in flag,
+# pinned non-latest image). SKIPs the render half without helm/network.
+bash "${ROOT}/tests/portal/chart-render-config-order.sh" \
+  || fail "chart-render-config-order.sh failed (chart cutover render contract)"
+ok "chart cutover App + rendered Deployment honor the GSK env contract"
 
 # --- live bring-up is deferred + honestly flagged ---------------------------
 echo "SKIP: live Backstage bring-up + real form->PR->XR reconcile (live cycle; chainsaw specs skip-gated)"

@@ -1,49 +1,99 @@
 # REQ-E10-S01-01 — Helm values for the Backstage chart (kaddy portal).
 #
-# NOT a Kubernetes manifest — Helm values for the backstage chart. deploy/apps/
-# portal.yaml currently DIRECTORY-syncs deploy/portal (chart install is
-# live-deferred); at the live cycle it becomes a Helm source with
-# helm.valueFiles pointing here. NOT fed to kubeconform.
+# NOT a Kubernetes manifest — Helm values for the backstage chart (pinned in
+# deploy/apps-cloud/backstage-workload.yaml, the GSK chart-cutover App, which
+# renders this file via a $values multi-source). deploy/apps/portal.yaml
+# DIRECTORY-syncs deploy/portal (this file is directory.exclude'd there).
+# NOT fed to kubeconform.
 #
-# Image is PINNED (SEC-4, Renovate-trackable — see plugin-versions.md and the
-# chart targetRevision in deploy/apps/portal.yaml). The image is a CUSTOM
-# Backstage build baking in the pinned TeraSky/community plugins (a stock
-# backstage image cannot load them at runtime — plugins are compiled in). The
-# APP SOURCE + Dockerfile that build this image live in the SEPARATE repo
+# LIVE CONTRACT: these values encode the canonical GSK env contract
+# (deploy/portal/backstage/gsk/deployment-env.yaml) so the rendered Deployment
+# matches the live out-of-band one and Argo can ADOPT it:
+#   - NODE_ENV=production (guest backend module unload)
+#   - AUTH_GITHUB_* / BACKEND_AUTH_SECRET envFrom Secrets backstage-github +
+#     backstage-backend-auth (SOPS/live-created; never in git)
+#   - args load EXACTLY two configs, override LAST:
+#       --config app-config.yaml --config /cfg/app-config.override.yaml
+#     (the baked app-config.production.yaml is NOT in the chain; the override
+#     ConfigMap backstage-override — Argo-synced from gsk/app-config-override.
+#     yaml — is self-sufficient for auth + app.extensions)
+# Render-proven offline by tests/portal/chart-render-config-order.sh (R4-1).
+#
+# Image is PINNED (SEC-4, Renovate-trackable — see plugin-versions.md). The
+# image is a CUSTOM Backstage build baking in the pinned TeraSky/community
+# plugins (a stock backstage image cannot load them at runtime — plugins are
+# compiled in). The APP SOURCE + Dockerfile live in the SEPARATE repo
 # github.com/PlatformRelay/kaddy-portal (private); kaddy deploys exactly the
-# image its CI builds + pushes. Publishing the image is a live-cycle step
-# (deferred, honestly flagged in the runbook + plugin-versions.md).
+# image its CI builds + pushes.
+
+# The live Deployment/Service are named `backstage` (hand-applied). Pin the
+# chart fullname so Argo adopts the live objects instead of creating a
+# `backstage-workload-*` sibling next to them.
+fullnameOverride: backstage
+
 backstage:
   image:
     registry: ghcr.io
     repository: platformrelay/kaddy-portal
     # Pinned tag — NO :latest (SEC-4). Renovate tracks ghcr.io/platformrelay/
     # kaddy-portal in renovate.json (customManagers / helm-values manager).
-    # TODO(live): pin to the exact tag/digest built + pushed by
-    # github.com/PlatformRelay/kaddy-portal CI once the first image ships (E10
-    # live-deferred). 0.1.0 is the placeholder pin the new repo will publish.
+    # 0.1.0 is the tag the live GSK Deployment runs; a parallel lane publishes
+    # newer tags — bump deliberately, with a chart-render-config-order run.
     tag: 0.1.0
     pullPolicy: IfNotPresent
 
-  # app-config.yaml (this directory) is mounted as extra app-config; secrets are
-  # env-injected from KSOPS-rendered Secrets (never in git).
-  extraAppConfig:
-    - filename: app-config.portal.yaml
-      configMapRef: backstage-app-config
+  # In-memory sqlite — a second replica would fork the catalog. Explicit pin.
+  replicas: 1
 
   command: ['node', 'packages/backend']
+  # CONFIG ORDER (security-load-bearing, see gsk/deployment-env.yaml): EXACTLY
+  # these two files, override LAST. Backstage replaces ARRAYS with the later
+  # file's value — only an override loaded last keeps the catalog-restricted
+  # signIn.resolvers and `sign-in-page:app: false` authoritative over the
+  # baked base config. Do NOT reintroduce extraAppConfig here: the chart
+  # appends its --config entries AFTER these args, which would demote the
+  # override from last place.
+  args:
+    - '--config'
+    - 'app-config.yaml'
+    - '--config'
+    - '/cfg/app-config.override.yaml'
+
+  # The GSK override ConfigMap (Argo-synced from gsk/app-config-override.yaml
+  # by the deploy/apps/portal.yaml directory App — reused, never duplicated)
+  # mounted at the exact live path /cfg/app-config.override.yaml.
+  extraVolumes:
+    - name: backstage-override
+      configMap:
+        name: backstage-override
+  extraVolumeMounts:
+    - name: backstage-override
+      mountPath: /cfg
+      readOnly: true
 
   # Live Deployment pods are labeled `app=backstage` — portal NetworkPolicies /
-  # CNPs select that key (see rbac/networkpolicy.yaml). Set it explicitly so a
-  # future Helm chart install stays reachable under default-deny; do NOT rely
-  # solely on app.kubernetes.io/name (live pods may omit it).
+  # CNPs select that key (see rbac/networkpolicy.yaml). Set it explicitly so
+  # the chart install stays reachable under default-deny; do NOT rely solely
+  # on app.kubernetes.io/name (live pods may omit it).
   podLabels:
     app: backstage
 
+  # NODE_ENV=production is load-bearing: kaddy-portal loads the guest auth
+  # backend module whenever NODE_ENV !== production (ConfigMap `guest: null`
+  # alone cannot unload the module).
+  extraEnvVars:
+    - name: NODE_ENV
+      value: production
+
+  # Exactly the live contract Secrets (gsk/deployment-env.yaml):
+  #   backstage-github       -> AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET
+  #   backstage-backend-auth -> BACKEND_AUTH_SECRET
+  # The kind-era backstage-oidc / backstage-readonly-tokens refs are dropped:
+  # Dex is unwired on GSK (override sets oidc: null) and envFrom on a missing
+  # Secret hard-fails pod creation (CreateContainerConfigError).
   extraEnvVarsSecrets:
-    - backstage-oidc
     - backstage-github
-    - backstage-readonly-tokens
+    - backstage-backend-auth
 
   # Pod security posture (Kyverno Enforce set: nonroot, no-privesc, seccomp).
   podSecurityContext:

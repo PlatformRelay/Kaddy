@@ -1,7 +1,11 @@
 # REQ-E10-S05 / GSK lab — Backstage Deployment env invariants (documented patch).
 #
-# The live `Deployment/backstage` is still out-of-band (chart bring-up deferred;
-# see deploy/apps/portal.yaml). This file is the canonical env contract the live
+# The live `Deployment/backstage` is still out-of-band (hand-applied). The
+# chart CUTOVER now exists in-repo: deploy/apps-cloud/backstage-workload.yaml
+# (pinned backstage chart + deploy/portal/backstage/values.yaml, manual-sync,
+# INERT until an operator applies + syncs it; render-proven against this
+# contract by tests/portal/chart-render-config-order.sh). Until that first
+# observed sync, this file remains the canonical env contract the live
 # Deployment MUST match so Argo/operators do not reintroduce guest login:
 #
 #   - NODE_ENV=production — kaddy-portal loads the guest auth module whenever
@@ -33,7 +37,9 @@
 # Apply with: kubectl -n portal patch deploy backstage --type strategic -p ...
 # (or re-apply the live Deployment with these env entries). NOT synced by the
 # directory App today (no kind:Deployment under deploy/portal) — selfHeal cannot
-# reclobber it; keep this file as the source of truth for the next chart cutover.
+# reclobber it; this file stays the source of truth until the chart-cutover App
+# (deploy/apps-cloud/backstage-workload.yaml) is synced and Argo owns the
+# workload.
 apiVersion: v1
 kind: ConfigMap
 metadata:
