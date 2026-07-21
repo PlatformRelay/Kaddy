@@ -137,8 +137,8 @@ if grep -rhE ':latest\b' "${PORTAL_DIR}" "${APP}" | sed 's/#.*//' | grep -qE ':l
   fail "an E10 manifest pins :latest (forbidden, SEC-4)"
 fi
 grep -qE 'targetRevision:[[:space:]]*[0-9]' "${APP}" \
-  || grep -qE 'tag:[[:space:]]*["'\'']?[0-9v]' "${VALUES}" \
-  || fail "the Backstage chart/image must be pinned to an explicit version (SEC-4)"
+  || grep -qE 'tag:[[:space:]]*["'\'']?(sha-[0-9a-f]{7,40}|[0-9v])' "${VALUES}" \
+  || fail "the Backstage chart/image must be pinned to an explicit version (SEC-4: immutable sha-<short> tag or numeric pin)"
 # Third-party TeraSky/community plugin npm versions pinned (exact, no ^/~/*).
 PINS="${PORTAL_DIR}/plugin-versions.md"
 need_file "${PINS}"

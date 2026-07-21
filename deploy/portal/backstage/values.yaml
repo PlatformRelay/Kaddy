@@ -37,9 +37,13 @@ backstage:
     repository: platformrelay/kaddy-portal
     # Pinned tag — NO :latest (SEC-4). Renovate tracks ghcr.io/platformrelay/
     # kaddy-portal in renovate.json (customManagers / helm-values manager).
-    # 0.1.0 is the tag the live GSK Deployment runs; a parallel lane publishes
-    # newer tags — bump deliberately, with a chart-render-config-order run.
-    tag: 0.1.0
+    # PIN POLICY: always pin the immutable per-commit `sha-<short>` tag that
+    # kaddy-portal CI publishes — never `:latest`, never the mutable
+    # `:<version>` tag. Record the digest here for audit. Bump deliberately,
+    # with a chart-render-config-order run.
+    # sha-8b74245 == v0.2.0
+    # digest: sha256:0f84f62f48d649794da023940e58efddb349b80dcf745ecf4291bd7e43cee2bd
+    tag: sha-8b74245
     pullPolicy: IfNotPresent
 
   # In-memory sqlite — a second replica would fork the catalog. Explicit pin.

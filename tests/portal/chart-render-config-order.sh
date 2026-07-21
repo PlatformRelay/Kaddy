@@ -21,7 +21,9 @@
 #      Deployment NAME is exactly `backstage` (Argo must ADOPT the live object,
 #      not create a sibling), override ConfigMap backstage-override mounted at
 #      /cfg.
-#   6. image is ghcr.io/platformrelay/kaddy-portal with a pinned non-latest tag.
+#   6. image is ghcr.io/platformrelay/kaddy-portal with a pinned non-latest tag
+#      (the immutable per-commit `sha-<short>` tag kaddy-portal CI publishes,
+#      or a plain numeric version pin).
 #
 # NETWORK: the chart tarball is fetched ONCE into the gitignored .cache/charts/
 # (helm pull --repo). Tool-absence and network-absence SKIP-not-fail with a
@@ -176,8 +178,8 @@ image="$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0
 [[ "${image}" == ghcr.io/platformrelay/kaddy-portal:* ]] \
   || fail "rendered image must be ghcr.io/platformrelay/kaddy-portal (got: ${image})"
 tag="${image##*:}"
-[[ -n "${tag}" && "${tag}" != "latest" && "${tag}" =~ ^[0-9] ]] \
-  || fail "rendered image tag must be a pinned numeric version, never latest (got: ${tag})"
+[[ -n "${tag}" && "${tag}" != "latest" && "${tag}" =~ ^(sha-[0-9a-f]{7,40}|[0-9]) ]] \
+  || fail "rendered image tag must be a pinned immutable sha-<short> tag or numeric version, never latest (got: ${tag})"
 ok "image pinned: ${image}"
 
 echo "PASS: chart-render-config-order — rendered chart honors the live GSK env contract"
