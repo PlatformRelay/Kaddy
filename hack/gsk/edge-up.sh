@@ -51,7 +51,13 @@ kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/portal.yaml"
 # 3) Traefik Gateway API controller (creates the `traefik` GatewayClass + a
 #    type=LoadBalancer Service that the GSK CCM fronts with a public IP).
 kubectl apply -f "${REPO_ROOT}/deploy/gateway-controller/traefik/application.yaml"
-kubectl -n traefik rollout status deploy/traefik --timeout=300s || true
+# Non-fatal by design: the cloud-edge Apps applied below carry syncPolicy.retry
+# to absorb Traefik-readiness/CRD races — but never swallow the miss silently.
+kubectl -n traefik rollout status deploy/traefik --timeout=300s || {
+  echo "WARN: traefik rollout not Ready within 300s — continuing (the cloud-edge" >&2
+  echo "WARN: Apps retry past readiness races), but the LB IP / routes may lag." >&2
+  echo "WARN: Inspect: kubectl -n traefik get pods,svc" >&2
+}
 
 # 4) GitOps handover — the rest of the edge is Argo-OWNED. Apply the cloud-edge
 #    Applications ONCE (deploy/apps-cloud/): gateway-cloud-edge syncs the
@@ -83,7 +89,13 @@ if kubectl -n argo-rollouts get deploy argo-rollouts >/dev/null 2>&1; then
   echo "==> argo-rollouts present — applying the linux-amd64 plugin overlay"
   kubectl apply -k "${REPO_ROOT}/deploy/rollouts/cloud-only"
   kubectl -n argo-rollouts rollout restart deploy/argo-rollouts
-  kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=180s || true
+  # Non-fatal by design: the plugin overlay is already applied and the canary
+  # merely reconciles late once the controller comes up — but say so loudly.
+  kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=180s || {
+    echo "WARN: argo-rollouts controller not Ready within 180s after the restart —" >&2
+    echo "WARN: continuing (overlay applied; the caddy-mvp canary reconciles late)." >&2
+    echo "WARN: Inspect: kubectl -n argo-rollouts get pods" >&2
+  }
 else
   echo "==> argo-rollouts not deployed — skipping the amd64 plugin overlay"
   echo "    (deploy argo-rollouts, then kubectl apply -k deploy/rollouts/cloud-only + restart the controller for the caddy-mvp canary)."
