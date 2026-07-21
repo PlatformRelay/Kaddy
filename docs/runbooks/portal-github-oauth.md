@@ -2,7 +2,7 @@
 
 **Host:** `https://portal.lab.platformrelay.dev`  
 **Stack:** [`stacks/github/portal-oauth/`](../../stacks/github/portal-oauth/)  
-**Wire script:** [`hack/portal/wire-github-oauth-secret.sh`](../../hack/portal/wire-github-oauth-secret.sh)
+**Wire script:** [`hack/portal/wire-github-oauth-secret.sh`](https://github.com/PlatformRelay/Kaddy/blob/main/hack/portal/wire-github-oauth-secret.sh)
 
 ## Exact fields (paste into GitHub)
 

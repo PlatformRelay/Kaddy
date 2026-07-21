@@ -5,7 +5,7 @@ Scene-by-scene run-sheet for recording the kaddy submission video: exact command
 what to show on screen, and what to say each scene is proving. The deck
 (`slides/slides.md`, `pnpm dev` in `slides/`) is the narration backbone; the scenes
 below are the live cut-aways. GIF/screenshot capture conventions live in
-[`slides/recording-guide.md`](../../slides/recording-guide.md).
+[`slides/recording-guide.md`](https://github.com/PlatformRelay/Kaddy/blob/main/slides/recording-guide.md).
 
 ## Pick a track
 

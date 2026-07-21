@@ -80,7 +80,7 @@ implementation. The spine:
 | Gate | `task verify` · `task test:spec` · story-level tests | Lint, scrub, OpenSpec structure, REQ↔Test coverage |
 | Ship | Conventional commits → rebase-merge PR | One logical change per commit |
 
-OpenSpec project conventions live in [`openspec/config.yaml`](../../openspec/config.yaml)
+OpenSpec project conventions live in [`openspec/config.yaml`](https://github.com/PlatformRelay/Kaddy/blob/main/openspec/config.yaml)
 (`schema: spec-driven`). Every REQ must carry **`Verify:`** and **`Test:`**;
 `task test:spec` enforces coverage. Epic EXIT uses `STRICT_TEST_FILES=1` so every `Test:` path
 exists. Exercise → epic mapping:
@@ -93,7 +93,7 @@ the test named by the REQ → implement → `task verify` (+ story gates) → in
 ## Agent skills
 
 Committed skill definitions live under [`skills/`](../../skills/) (catalogue in
-[`skills/README.md`](../../skills/README.md)). Symlink or copy into `.claude/skills/` if your
+[`skills/README.md`](https://github.com/PlatformRelay/Kaddy/blob/main/skills/README.md)). Symlink or copy into `.claude/skills/` if your
 harness expects that path — `.claude/` itself is gitignored.
 
 Useful entrypoints for this repo: **agent-loop** / **agent-loop-local**, **write-story**,
