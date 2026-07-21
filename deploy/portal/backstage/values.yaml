@@ -79,15 +79,40 @@ backstage:
   # CNPs select that key (see rbac/networkpolicy.yaml). Set it explicitly so
   # the chart install stays reachable under default-deny; do NOT rely solely
   # on app.kubernetes.io/name (live pods may omit it).
+  #
+  # PLUS the seven ADR-0301 bare-key labels (live-proven values): the 2026-07-20
+  # cutover sync was DENIED at admission by Kyverno require-kaddy-labels (and
+  # restrict-data-classification fired on the absent key) because the chart
+  # only labels pods with app.kubernetes.io/* — the bare keys must come from
+  # podLabels. data-classification must stay in the closed vocabulary
+  # (public|internal|confidential|restricted).
   podLabels:
     app: backstage
+    owner: platform-team
+    service: portal
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    data-classification: internal
+    business-criticality: business-operational
 
   # NODE_ENV=production is load-bearing: kaddy-portal loads the guest auth
   # backend module whenever NODE_ENV !== production (ConfigMap `guest: null`
   # alone cannot unload the module).
+  #
+  # ARGOCD_URL + ARGOCD_AUTH_TOKEN are REQUIRED at startup: the baked
+  # app-config argocd/proxy schema substitutes both, and Backstage fails config
+  # validation when either env is unset (live-proven pod carries exactly these
+  # values). The token is a knowingly-unused lab placeholder — NOT a credential
+  # (the argocd plugin read path goes through the proxy with its own auth);
+  # wiring a real scoped token is a separate backlog item.
   extraEnvVars:
     - name: NODE_ENV
       value: production
+    - name: ARGOCD_URL
+      value: https://argocd-server.argocd.svc.cluster.local
+    - name: ARGOCD_AUTH_TOKEN
+      value: unused-lab-token-e10s07
 
   # Exactly the live contract Secrets (gsk/deployment-env.yaml):
   #   backstage-github       -> AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET
@@ -100,6 +125,13 @@ backstage:
     - backstage-backend-auth
 
   # Pod security posture (Kyverno Enforce set: nonroot, no-privesc, seccomp).
+  # Container SC mirrors the LIVE-PROVEN pod exactly:
+  #   - readOnlyRootFilesystem: FALSE — Backstage writes at runtime (in-memory
+  #     sqlite + tmp); the live pod runs writable-root. HONEST: flipping this
+  #     to true (tmpfs mounts for the write paths) is hardening tracked as a
+  #     separate backlog item, NOT smuggled into the cutover.
+  #   - runAsNonRoot/runAsUser duplicated at container level (live spec pins
+  #     them on the container too, not only the pod SC).
   podSecurityContext:
     runAsNonRoot: true
     runAsUser: 1000
@@ -107,9 +139,24 @@ backstage:
       type: RuntimeDefault
   containerSecurityContext:
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
     capabilities:
       drop: ['ALL']
+
+  # LIVE-PROVEN probes: ONLY a readinessProbe GET / on 7007 (initialDelay 20).
+  # The chart defaults liveness/startup probes to /.backstage/health/v1/* —
+  # UNPROVEN on the custom kaddy-portal image; rendering them would crash-loop
+  # the adopted pod. Null them out until the health endpoints are verified
+  # (separate hardening item, together with readOnlyRootFilesystem above).
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 7007
+    initialDelaySeconds: 20
+  livenessProbe: null
+  startupProbe: null
 
   resources:
     requests:

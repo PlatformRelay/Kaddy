@@ -24,6 +24,16 @@
 #   6. image is ghcr.io/platformrelay/kaddy-portal with a pinned non-latest tag
 #      (the immutable per-commit `sha-<short>` tag kaddy-portal CI publishes,
 #      or a plain numeric version pin).
+#   7. LIVE-PARITY (cutover failure 2026-07-20: Kyverno DENIED the rendered
+#      pod): the pod template carries ALL seven ADR-0301 bare-key labels with
+#      the live-proven values (require-kaddy-labels + the closed
+#      data-classification vocabulary), runs as serviceAccountName
+#      portal-read-only, and sets the two ARGOCD_* envs the app-config
+#      argocd/proxy schema requires at startup. If the kyverno CLI is present,
+#      the rendered manifests are ALSO pushed through the Enforce policies
+#      require-kaddy-labels + restrict-data-classification as an offline
+#      admission proof (skip-not-fail when kyverno is absent, same posture as
+#      helm above).
 #
 # NETWORK: the chart tarball is fetched ONCE into the gitignored .cache/charts/
 # (helm pull --repo). Tool-absence and network-absence SKIP-not-fail with a
@@ -181,5 +191,97 @@ tag="${image##*:}"
 [[ -n "${tag}" && "${tag}" != "latest" && "${tag}" =~ ^(sha-[0-9a-f]{7,40}|[0-9]) ]] \
   || fail "rendered image tag must be a pinned immutable sha-<short> tag or numeric version, never latest (got: ${tag})"
 ok "image pinned: ${image}"
+
+# --- 2h) ADR-0301 bare-key labels + serviceAccount + ARGOCD_* envs -----------
+# Live cutover 2026-07-20 was DENIED by Kyverno require-kaddy-labels: the pod
+# template must carry all seven ADR-0301 bare keys with the live-proven values
+# (data-classification: internal is also the closed-vocabulary check —
+# restrict-data-classification only admits public|internal|confidential|
+# restricted).
+for pair in \
+  "owner=platform-team" \
+  "service=portal" \
+  "part-of=kaddy" \
+  "managed-by=argocd" \
+  "track=stable" \
+  "data-classification=internal" \
+  "business-criticality=business-operational"; do
+  key="${pair%%=*}"; want="${pair#*=}"
+  got="$(printf '%s\n' "${deployment}" | yq -r ".spec.template.metadata.labels.\"${key}\" // \"missing\"")"
+  [[ "${got}" == "${want}" ]] \
+    || fail "pod template must carry ADR-0301 label ${key}: ${want} (got: ${got}) — Kyverno require-kaddy-labels denies admission without it"
+done
+ok "all 7 ADR-0301 bare-key labels present with live-proven values"
+
+sa_name="$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.serviceAccountName // "missing"')"
+[[ "${sa_name}" == "portal-read-only" ]] \
+  || fail "rendered pod must run as serviceAccountName portal-read-only (got: ${sa_name}) — the read-path SA from rbac/read-only-rbac.yaml, not chart-created"
+
+for pair in \
+  "ARGOCD_URL=https://argocd-server.argocd.svc.cluster.local" \
+  "ARGOCD_AUTH_TOKEN=unused-lab-token-e10s07"; do
+  env_name="${pair%%=*}"; env_want="${pair#*=}"
+  printf '%s\n' "${deployment}" \
+    | yq -e ".spec.template.spec.containers[0].env[] | select(.name == \"${env_name}\" and .value == \"${env_want}\")" >/dev/null 2>&1 \
+    || fail "rendered Deployment must set ${env_name}=${env_want} (app-config argocd/proxy schema requires both at startup)"
+done
+ok "serviceAccountName portal-read-only; ARGOCD_URL + ARGOCD_AUTH_TOKEN set"
+
+# --- 2i) live-parity probes + container securityContext ----------------------
+# The live-proven pod has ONLY a readinessProbe GET / on 7007 (initialDelay
+# 20). The chart's default liveness/startup probes hit /.backstage/health/v1/*
+# — unproven on the custom kaddy-portal image; rendering them would
+# crash-loop the adopted pod. readOnlyRootFilesystem is FALSE live (Backstage
+# writes at runtime — in-memory sqlite/tmp); hardening it is a separate
+# backlog item.
+[[ "$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0].readinessProbe.httpGet.path // "missing"')" == "/" ]] \
+  || fail "readinessProbe must GET / (the live-proven probe; /.backstage health paths are unproven on this image)"
+[[ "$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0].readinessProbe.httpGet.port // "missing"')" == "7007" ]] \
+  || fail "readinessProbe must target port 7007"
+[[ "$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0].readinessProbe.initialDelaySeconds // "missing"')" == "20" ]] \
+  || fail "readinessProbe must keep initialDelaySeconds 20 (live-proven warmup)"
+printf '%s\n' "${deployment}" \
+  | yq -e '.spec.template.spec.containers[0].livenessProbe // .spec.template.spec.containers[0].startupProbe' >/dev/null 2>&1 \
+  && fail "rendered container must NOT carry liveness/startup probes (live pod has none; chart-default /.backstage paths would crash-loop the custom image)"
+# NOTE: yq's `//` treats false as falsy — probe for the key with has() so an
+# explicit `readOnlyRootFilesystem: false` is not misread as missing.
+csc_ro="$(printf '%s\n' "${deployment}" \
+  | yq -r '.spec.template.spec.containers[0].securityContext | select(has("readOnlyRootFilesystem")) | .readOnlyRootFilesystem')"
+[[ -n "${csc_ro}" ]] || csc_ro="missing"
+[[ "${csc_ro}" == "false" ]] \
+  || fail "container securityContext.readOnlyRootFilesystem must be false (live-proven: Backstage writes at runtime; got: ${csc_ro})"
+[[ "$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0].securityContext.runAsUser // "missing"')" == "1000" ]] \
+  || fail "container securityContext must pin runAsUser: 1000 (live-proven)"
+[[ "$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.containers[0].securityContext.runAsNonRoot // "missing"')" == "true" ]] \
+  || fail "container securityContext must set runAsNonRoot: true"
+ok "readinessProbe GET / :7007 (delay 20), no liveness/startup probes; container SC runAsNonRoot uid 1000, readOnlyRootFilesystem=false (live parity)"
+
+# --- 3) Kyverno admission proof (offline; SKIP-not-fail when kyverno absent) --
+if ! command -v kyverno >/dev/null 2>&1; then
+  skip "kyverno CLI not installed — skip offline admission proof (CI/label asserts above still cover the contract)"
+else
+  POLICIES=(
+    "${ROOT}/deploy/policies/kyverno/require-kaddy-labels.yaml"
+    "${ROOT}/deploy/policies/kyverno/restrict-data-classification.yaml"
+  )
+  # The policies match kind Pod, and the CLI does NOT autogen-expand them onto
+  # the rendered Deployment (verified: applying to the raw render evaluates 0
+  # resources — a vacuous pass). Synthesize the Pod admission would actually
+  # see — the rendered pod template as a bare Pod — and apply the policies to
+  # THAT, then require nonzero passes so the proof can never be vacuous.
+  pod_probe="$(mktemp -t chart-render-kyverno-pod.XXXXXX)"
+  trap 'rm -f "${pod_probe}"' EXIT
+  printf '%s\n' "${deployment}" | yq '{
+      "apiVersion": "v1", "kind": "Pod",
+      "metadata": {"name": "backstage-render-probe", "namespace": "portal",
+                   "labels": .spec.template.metadata.labels},
+      "spec": .spec.template.spec
+    }' > "${pod_probe}"
+  kyverno_out="$(kyverno apply "${POLICIES[@]}" --resource "${pod_probe}" 2>&1)" \
+    || fail "kyverno apply DENIED the rendered pod (the exact live-cutover failure): ${kyverno_out}"
+  printf '%s\n' "${kyverno_out}" | grep -Eq 'pass: 2, fail: 0' \
+    || fail "kyverno admission proof must evaluate BOTH policies with zero failures (vacuous or failing run): ${kyverno_out}"
+  ok "kyverno admission proof: require-kaddy-labels + restrict-data-classification PASS on the rendered pod (2 rules evaluated)"
+fi
 
 echo "PASS: chart-render-config-order — rendered chart honors the live GSK env contract"
