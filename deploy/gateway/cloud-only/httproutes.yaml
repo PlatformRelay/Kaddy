@@ -235,6 +235,23 @@ spec:
   hostnames:
     - portal.lab.platformrelay.dev
   rules:
+    # Habit-proofing: operators keep typing /login, but Backstage has NO /login
+    # route (when signed out its sign-in page renders at ANY path), so the bare
+    # path serves Backstage's "dropped the mic" 404. 302 back to / instead.
+    # Exact match (not PathPrefix) so a real future /login/* route is never
+    # shadowed. Traefik v3.7 Gateway API standard channel supports
+    # RequestRedirect; more-specific match wins over the PathPrefix / rule.
+    - matches:
+        - path:
+            type: Exact
+            value: /login
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /
+            statusCode: 302
     - matches:
         - path:
             type: PathPrefix

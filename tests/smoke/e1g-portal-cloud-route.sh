@@ -103,6 +103,30 @@ esac
 grep -qF "${HOST}" "${ROUTES}" || fail "unreachable" # already checked; keeps set -e happy path clear
 ok "HTTPRoute (ns portal) ${HOST} → Service backstage:7007 via ${LISTENER}"
 
+# --- 3b) /login habit-proof redirect -----------------------------------------
+# Backstage has no /login route (its sign-in renders at any path when signed
+# out), so the bare path 404s. The portal route must carry an Exact /login
+# rule that 302-RequestRedirects to / — Exact (not PathPrefix) so future real
+# /login/* routes are never shadowed.
+awk '
+  /^kind:[[:space:]]*HTTPRoute$/ { in_r=1; host_ok=0; exact=0; redir=0; full=0; code=0; next }
+  in_r && /portal\.lab\.platformrelay\.dev/ { host_ok=1 }
+  in_r && /^[[:space:]]*type:[[:space:]]*Exact[[:space:]]*$/ { seen_exact=1 }
+  in_r && seen_exact && /^[[:space:]]*value:[[:space:]]*\/login[[:space:]]*$/ { exact=1; seen_exact=0 }
+  in_r && /^[[:space:]]*-?[[:space:]]*type:[[:space:]]*RequestRedirect[[:space:]]*$/ { redir=1 }
+  in_r && /^[[:space:]]*replaceFullPath:[[:space:]]*\/[[:space:]]*$/ { full=1 }
+  in_r && /^[[:space:]]*statusCode:[[:space:]]*302[[:space:]]*$/ { code=1 }
+  in_r && /^---$/ {
+    if (host_ok && !(exact && redir && full && code)) exit 4
+    in_r=0; host_ok=0
+  }
+  END {
+    if (host_ok && !(exact && redir && full && code)) exit 4
+  }
+' "${ROUTES}" \
+  || fail "portal HTTPRoute must 302-RequestRedirect Exact /login -> / (ReplaceFullPath)"
+ok "portal HTTPRoute redirects Exact /login -> / (302)"
+
 # --- 4) Docs / apply path mention the fifth host ----------------------------
 grep -qF "portal.lab" "${README}" \
   || fail "cloud-only README must document portal.lab as a demo host"
