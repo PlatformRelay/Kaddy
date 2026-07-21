@@ -9,6 +9,23 @@
 # Deployment + Service + HTTPRoute (clubhouse Gateway) + Certificate
 # (kaddy-local-ca) + ServiceMonitor. ADR-0301 labels on the XR are propagated
 # to every composed resource (Kyverno denies unlabeled pods — set them).
+#
+# TEMPLATE DISCOVERY IS LOAD-BEARING (incident 2026-07-21: the portal's Create
+# page showed NO Website template). The TeraSky kubernetes-ingestor gates
+# template generation on XRD metadata — the target-path annotations below are
+# necessary but NOT sufficient:
+#   - LABEL terasky.backstage.io/generate-form: "true" — kaddy-portal's
+#     kubernetesIngestor.genericCRDTemplates.crdLabelSelector discovers
+#     form-generating CRDs via `labelSelector=generate-form=true`. Crossplane
+#     propagates XRD labels to the generated CRD (verified live), so labeling
+#     the XRD suffices. 2026-07-21: this label was missing -> the ingestor's
+#     CRD query returned [] -> no Website template in the portal.
+#   - ANNOTATION terasky.backstage.io/add-to-catalog: "true" — the ingestor's
+#     Crossplane XRD path (the one that reads target-path/create-kustomization
+#     -file from THIS XRD and publishes PRs via the configured
+#     crossplane.xrds.publishPhase) drops any XRD lacking this annotation
+#     unless `crossplane.xrds.ingestAllXRDs: true` is set in the portal
+#     app-config (it is not).
 apiVersion: apiextensions.crossplane.io/v2
 kind: CompositeResourceDefinition
 metadata:
@@ -24,6 +41,11 @@ metadata:
     app.kubernetes.io/name: websites.platform.kaddy.io
     app.kubernetes.io/part-of: kaddy
     app.kubernetes.io/managed-by: argocd
+    # LOAD-BEARING (E10 template generation, incident 2026-07-21): the portal's
+    # kubernetes-ingestor discovers form-generating CRDs via this exact label
+    # (genericCRDTemplates.crdLabelSelector); Crossplane propagates it to the
+    # generated CRD. Missing label => no Website template on the Create page.
+    terasky.backstage.io/generate-form: "true"
   annotations:
     kaddy.io/adr: "0105"
     kaddy.io/req: REQ-E6-S02-01
@@ -37,6 +59,12 @@ metadata:
     # target, so this path is written via a pull request, never a direct commit.
     terasky.backstage.io/target-path: "deploy/workloads/{namespace}/website/"
     terasky.backstage.io/create-kustomization-file: "true"
+    # LOAD-BEARING (incident 2026-07-21): the ingestor's Crossplane XRD path —
+    # the ONLY path that honors target-path/create-kustomization-file above and
+    # the portal's crossplane.xrds.publishPhase (PR to PlatformRelay/Kaddy) —
+    # filters out every XRD without this annotation when ingestAllXRDs is
+    # unset in the portal app-config (it is unset).
+    terasky.backstage.io/add-to-catalog: "true"
 spec:
   scope: Namespaced
   group: platform.kaddy.io

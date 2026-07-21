@@ -86,6 +86,25 @@ grep -qE 'terasky\.backstage\.io/create-kustomization-file' "${XRD}" \
   || fail "Website XRD must set terasky.backstage.io/create-kustomization-file (ArgoCD sync)"
 ok "Website XRD carries terasky target-path + create-kustomization-file annotations"
 
+# --- 5b) XRD carries the ingestor DISCOVERY markers (label + annotation) -----
+# INCIDENT 2026-07-21: the portal's Create page showed NO Website template.
+# Template DISCOVERY is gated separately from the path-control annotations:
+#   - LABEL terasky.backstage.io/generate-form: "true" — the ingestor's
+#     genericCRDTemplates.crdLabelSelector (kaddy-portal app-config) lists CRDs
+#     with `labelSelector=terasky.backstage.io/generate-form=true`. Crossplane
+#     propagates XRD labels to the generated CRD, so the label on the XRD is
+#     the source of truth. Without it the query returns [] -> no template.
+#   - ANNOTATION terasky.backstage.io/add-to-catalog: "true" — the ingestor's
+#     Crossplane XRD path (XRDDataProvider) drops every XRD lacking it unless
+#     `crossplane.xrds.ingestAllXRDs: true` is set (kaddy-portal does NOT set
+#     it). Only THIS path honors target-path/create-kustomization-file and the
+#     configured crossplane.xrds.publishPhase (PR against PlatformRelay/Kaddy).
+grep -qE 'terasky\.backstage\.io/generate-form:[[:space:]]*["'\'']?true' "${XRD}" \
+  || fail "Website XRD must carry the LABEL terasky.backstage.io/generate-form=true (ingestor crdLabelSelector — without it no Website template is generated; incident 2026-07-21)"
+grep -qE 'terasky\.backstage\.io/add-to-catalog:[[:space:]]*["'\'']?true' "${XRD}" \
+  || fail "Website XRD must carry the ANNOTATION terasky.backstage.io/add-to-catalog=true (Crossplane XRD template path filters on it when ingestAllXRDs is unset)"
+ok "Website XRD carries the generate-form label + add-to-catalog annotation (template discovery)"
+
 # --- 6) NO hand-written per-Website scaffolder template.yaml -----------------
 # D-028: the template is GENERATED from the XRD, not hand-written. A committed
 # scaffolder template.yaml for websites would be the drift-prone anti-pattern.
