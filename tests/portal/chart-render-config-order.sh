@@ -30,8 +30,9 @@
 #      pod): the pod template carries ALL seven ADR-0301 bare-key labels with
 #      the live-proven values (require-kaddy-labels + the closed
 #      data-classification vocabulary), runs as serviceAccountName
-#      portal-read-only, and sets the two ARGOCD_* envs the app-config
-#      argocd/proxy schema requires at startup. If the kyverno CLI is present,
+#      portal-read-only, sets ARGOCD_URL, and wires ARGOCD_AUTH_TOKEN via
+#      envFrom Secret backstage-argocd (real read-only ArgoCD account token,
+#      never plaintext in git). If the kyverno CLI is present,
 #      the rendered manifests are ALSO pushed through the Enforce policies
 #      require-kaddy-labels + restrict-data-classification as an offline
 #      admission proof (skip-not-fail when kyverno is absent, same posture as
@@ -219,15 +220,20 @@ sa_name="$(printf '%s\n' "${deployment}" | yq -r '.spec.template.spec.serviceAcc
 [[ "${sa_name}" == "portal-read-only" ]] \
   || fail "rendered pod must run as serviceAccountName portal-read-only (got: ${sa_name}) — the read-path SA from rbac/read-only-rbac.yaml, not chart-created"
 
-for pair in \
-  "ARGOCD_URL=https://argocd-server.argocd.svc.cluster.local" \
-  "ARGOCD_AUTH_TOKEN=unused-lab-token-e10s07"; do
-  env_name="${pair%%=*}"; env_want="${pair#*=}"
-  printf '%s\n' "${deployment}" \
-    | yq -e ".spec.template.spec.containers[0].env[] | select(.name == \"${env_name}\" and .value == \"${env_want}\")" >/dev/null 2>&1 \
-    || fail "rendered Deployment must set ${env_name}=${env_want} (app-config argocd/proxy schema requires both at startup)"
-done
-ok "serviceAccountName portal-read-only; ARGOCD_URL + ARGOCD_AUTH_TOKEN set"
+# ARGOCD_URL stays a plain env (not a credential). ARGOCD_AUTH_TOKEN is a REAL
+# read-only token (ArgoCD local account backstage-readonly, role:readonly) and
+# must arrive via envFrom Secret backstage-argocd (live-created out-of-band
+# like backstage-github; SOPS backlog) — NEVER as a plaintext env value in git.
+printf '%s\n' "${deployment}" \
+  | yq -e '.spec.template.spec.containers[0].env[] | select(.name == "ARGOCD_URL" and .value == "https://argocd-server.argocd.svc.cluster.local")' >/dev/null 2>&1 \
+  || fail "rendered Deployment must set ARGOCD_URL=https://argocd-server.argocd.svc.cluster.local (app-config argocd/proxy schema requires it at startup)"
+printf '%s\n' "${deployment}" \
+  | yq -e '.spec.template.spec.containers[0].env[] | select(.name == "ARGOCD_AUTH_TOKEN")' >/dev/null 2>&1 \
+  && fail "rendered Deployment must NOT set ARGOCD_AUTH_TOKEN as a plaintext env — the token comes from Secret backstage-argocd via envFrom"
+printf '%s\n' "${deployment}" \
+  | yq -e '.spec.template.spec.containers[0].envFrom[] | select(.secretRef.name == "backstage-argocd")' >/dev/null 2>&1 \
+  || fail "rendered Deployment must envFrom Secret backstage-argocd (real read-only ARGOCD_AUTH_TOKEN, out-of-band like backstage-github)"
+ok "serviceAccountName portal-read-only; ARGOCD_URL set; ARGOCD_AUTH_TOKEN via envFrom backstage-argocd (no plaintext token)"
 
 # --- 2i) live-parity probes + container securityContext ----------------------
 # The live-proven pod has ONLY a readinessProbe GET / on 7007 (initialDelay

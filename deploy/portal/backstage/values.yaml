@@ -104,27 +104,30 @@ backstage:
   #
   # ARGOCD_URL + ARGOCD_AUTH_TOKEN are REQUIRED at startup: the baked
   # app-config argocd/proxy schema substitutes both, and Backstage fails config
-  # validation when either env is unset (live-proven pod carries exactly these
-  # values). The token is a knowingly-unused lab placeholder — NOT a credential
-  # (the argocd plugin read path goes through the proxy with its own auth);
-  # wiring a real scoped token is a separate backlog item.
+  # validation when either env is unset. ARGOCD_URL is not a credential and
+  # stays a plain env. ARGOCD_AUTH_TOKEN is a REAL read-only token now — an
+  # apiKey token of the ArgoCD local account `backstage-readonly` (role:readonly,
+  # no UI login; see deploy/bootstrap/argocd.yaml) — and comes from the Secret
+  # backstage-argocd via extraEnvVarsSecrets below, live-created out-of-band
+  # exactly like backstage-github (SOPS-managing it is tracked backlog).
   extraEnvVars:
     - name: NODE_ENV
       value: production
     - name: ARGOCD_URL
       value: https://argocd-server.argocd.svc.cluster.local
-    - name: ARGOCD_AUTH_TOKEN
-      value: unused-lab-token-e10s07
 
   # Exactly the live contract Secrets (gsk/deployment-env.yaml):
   #   backstage-github       -> AUTH_GITHUB_CLIENT_ID / AUTH_GITHUB_CLIENT_SECRET
   #   backstage-backend-auth -> BACKEND_AUTH_SECRET
+  #   backstage-argocd       -> ARGOCD_AUTH_TOKEN (read-only apiKey token of the
+  #                             ArgoCD local account backstage-readonly)
   # The kind-era backstage-oidc / backstage-readonly-tokens refs are dropped:
   # Dex is unwired on GSK (override sets oidc: null) and envFrom on a missing
   # Secret hard-fails pod creation (CreateContainerConfigError).
   extraEnvVarsSecrets:
     - backstage-github
     - backstage-backend-auth
+    - backstage-argocd
 
   # Pod security posture (Kyverno Enforce set: nonroot, no-privesc, seccomp).
   # Container SC mirrors the LIVE-PROVEN pod exactly:

@@ -68,5 +68,7 @@ data:
     AUTH_GITHUB_CLIENT_ID <- secret/backstage-github:AUTH_GITHUB_CLIENT_ID
     AUTH_GITHUB_CLIENT_SECRET <- secret/backstage-github:AUTH_GITHUB_CLIENT_SECRET
     BACKEND_AUTH_SECRET <- secret/backstage-backend-auth:BACKEND_AUTH_SECRET
+    ARGOCD_URL=https://argocd-server.argocd.svc.cluster.local (plain env, not a credential)
+    ARGOCD_AUTH_TOKEN <- secret/backstage-argocd:ARGOCD_AUTH_TOKEN (REAL read-only apiKey token of ArgoCD local account backstage-readonly, role:readonly, no UI login; Secret live-created out-of-band like backstage-github — SOPS backlog)
     OAuth callback URL (GitHub OAuth App, ONE callback per app):
       https://portal.lab.platformrelay.dev/api/auth/github/handler/frame
