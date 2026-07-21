@@ -116,8 +116,9 @@ radius with controls we *do* own:
    the required NodePorts are reachable, even though the IP is public. Tracked
    as follow-up for the S05b/S05c edge build (in-cluster, not IaC — out of this
    spike's offline boundary).
-3. **Cap the node count** (enforced: `node_count` default 3 for standing go-live,
-   conftest caps at 3) — fewer public IPs, smaller surface.
+3. **Cap the node count** (enforced: `node_count` default 3, variable validation
+   and conftest cap at 4 — the 4th node is operator-approved MemoryPressure
+   relief, 2026-07-20) — fewer public IPs, smaller surface.
 4. **Ruthless teardown** (DECIDED-B; `task e1g:down`) keeps the exposure window
    short — the substrate is not a standing target.
 

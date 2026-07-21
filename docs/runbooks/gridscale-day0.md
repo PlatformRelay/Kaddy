@@ -146,7 +146,7 @@ Rough monthly-run cost if left up (order-of-magnitude, verify in the panel):
 
 | Resource                | Sizing                          | Cost driver     |
 | ----------------------- | ------------------------------- | --------------- |
-| GSK node pool           | 3 nodes × 2 cores / 4 GiB / 30 GB (D-048 default) | dominant cost   |
+| GSK node pool           | 4 nodes × 2 cores / 4 GiB / 30 GB (D-048 default 3; 4th operator-approved 2026-07-20) | dominant cost   |
 | LBaaS                   | 1 load balancer                 | modest hourly   |
 | Public IPv4 + IPv6      | 1 each                          | small hourly    |
 | Object Storage (state)  | tiny bucket                     | negligible      |
@@ -177,9 +177,10 @@ carve-out covers only the one sanctioned, recorded standing substrate.
   of the Gateway; re-test E4/E5 (LoadBalancer/TLS) on GSK.
 - **Identity**: the public LBaaS IP/domain feeds the Dex issuer URL + GitHub
   OAuth callback (E1g-S05).
-- **Node pool**: standing go-live default is **3** workers (D-048; MemoryPressure
-  headroom). Override via the `k8s` stack's `node_count` var (still capped at 3 by
-  both variable validation and `policy/gridscale.rego`).
+- **Node pool**: default is **3** workers (D-048); the standing go-live substrate
+  runs **4** — the 4th node is operator-approved MemoryPressure relief
+  (2026-07-20, ~€46/node/mo). Override via the `k8s` stack's `node_count` var
+  (capped at 4 by both variable validation and `policy/gridscale.rego`).
 
 ## References
 
