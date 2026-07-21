@@ -153,8 +153,24 @@ fi
 # Argo CD rejects AppProjects whose spec.description exceeds 255 characters
 # ("spec.description: Too long"). Measure the FOLDED scalar — exactly the
 # string the API server validates — in bytes (strictest; description must stay
-# ASCII so bytes == chars).
-desc_len="$(yq -r '.spec.description // ""' "${PROJECT}" | tr -d '\n' | wc -c | tr -d ' ')"
+# ASCII so bytes == chars). yq emits the parsed (post-folding) value plus ONE
+# trailing newline of its own; strip exactly that one — NOT every newline:
+# multi-paragraph folded scalars (blank lines under >-) keep real \n characters
+# that the server counts too.
+folded_desc_len() {
+  local n
+  n="$(yq -r '.spec.description // ""' "$1" | wc -c | tr -d ' ')"
+  echo "$(( n - 1 ))"
+}
+# Self-check the folding emulation against a known multi-paragraph fixture:
+# >- folds the single line break to a space but KEEPS the blank-line paragraph
+# break as \n, so 'a / b / <blank> / c' folds to 'a b\nc' = 5 bytes.
+fixture="$(mktemp)"
+trap 'rm -f "${fixture}"' EXIT
+printf 'spec:\n  description: >-\n    a\n    b\n\n    c\n' > "${fixture}"
+[[ "$(folded_desc_len "${fixture}")" == "5" ]] \
+  || fail "folded-length self-check broken: '>-' multi-paragraph fixture must measure 5 bytes ('a b\\nc'), got $(folded_desc_len "${fixture}") — paragraph newlines count toward Argo's 255 limit"
+desc_len="$(folded_desc_len "${PROJECT}")"
 [[ "${desc_len}" -le 255 ]] \
   || fail "gsk-cloud-edge AppProject spec.description folds to ${desc_len} chars — Argo rejects >255 (apply fails, cluster keeps the OLD project); move rationale into YAML comments above the field"
 ok "AppProject description within Argo's 255-char limit (${desc_len} chars folded)"
