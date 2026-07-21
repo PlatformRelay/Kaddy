@@ -65,7 +65,15 @@ need_file "${PLATFORM_PROJ}"
 # without this whitelist entry. ClusterProviderConfig is also cluster-scoped and
 # lives in deploy/crossplane/, so it must be listed too (closed list, not */*).
 # ProviderRevision is Crossplane-owned (not in git) — do NOT whitelist it here.
-awk '
+# FLAKE FIX (reviewer, 2026-07-21): this used to be `awk ... | grep -qx ...`
+# run twice. Under `set -o pipefail`, `grep -q` exits the moment it matches —
+# and 'pkg.crossplane.io/Provider' sits mid-list, so awk still had entries to
+# write into a now-closed pipe: SIGPIPE, awk exits 141, pipefail surfaces 141
+# as the pipeline status, and the `|| fail` false-fired. Reproduced at ~5% per
+# invocation under parallel load (77/1200 runs), matching the ~1/4 flake seen
+# under `task verify`. Capturing awk's output ONCE into a variable removes the
+# pipe entirely (grep then reads a herestring) and dedupes the parser.
+whitelist_entries="$(awk '
   /clusterResourceWhitelist:/ { in_w=1; next }
   in_w && /^[[:space:]]*-[[:space:]]*group:/ {
     g=$0; sub(/^[[:space:]]*-[[:space:]]*group:[[:space:]]*/, "", g)
@@ -76,20 +84,10 @@ awk '
     }
   }
   in_w && /^[^[:space:]#]/ && $0 !~ /^[[:space:]]/ { in_w=0 }
-' "${PLATFORM_PROJ}" | grep -qx 'pkg.crossplane.io/Provider' \
+' "${PLATFORM_PROJ}")"
+grep -qx 'pkg.crossplane.io/Provider' <<<"${whitelist_entries}" \
   || fail "platform AppProject clusterResourceWhitelist must include pkg.crossplane.io/Provider"
-awk '
-  /clusterResourceWhitelist:/ { in_w=1; next }
-  in_w && /^[[:space:]]*-[[:space:]]*group:/ {
-    g=$0; sub(/^[[:space:]]*-[[:space:]]*group:[[:space:]]*/, "", g)
-    getline
-    if ($0 ~ /kind:/) {
-      k=$0; sub(/^[[:space:]]*kind:[[:space:]]*/, "", k)
-      print g "/" k
-    }
-  }
-  in_w && /^[^[:space:]#]/ && $0 !~ /^[[:space:]]/ { in_w=0 }
-' "${PLATFORM_PROJ}" | grep -qx 'gridscale.m.platformrelay.io/ClusterProviderConfig' \
+grep -qx 'gridscale.m.platformrelay.io/ClusterProviderConfig' <<<"${whitelist_entries}" \
   || fail "platform AppProject clusterResourceWhitelist must include gridscale.m.platformrelay.io/ClusterProviderConfig"
 ok "platform AppProject whitelists Provider + ClusterProviderConfig (D-045)"
 
