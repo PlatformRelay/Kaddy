@@ -166,6 +166,10 @@ folded_desc_len() {
 # >- folds the single line break to a space but KEEPS the blank-line paragraph
 # break as \n, so 'a / b / <blank> / c' folds to 'a b\nc' = 5 bytes.
 fixture="$(mktemp)"
+# NOTE: this is the script's ONLY `trap ... EXIT` — bash REPLACES (does not
+# stack) EXIT traps, so a second one added later would silently drop this
+# cleanup. If another temp resource ever needs cleanup, fold it into THIS
+# trap body instead of registering a new one.
 trap 'rm -f "${fixture}"' EXIT
 printf 'spec:\n  description: >-\n    a\n    b\n\n    c\n' > "${fixture}"
 [[ "$(folded_desc_len "${fixture}")" == "5" ]] \
