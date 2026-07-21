@@ -168,6 +168,13 @@ metadata:
 data:
   url: https://127.0.0.1:30443
   admin.enabled: "true"
+  # Portal read path (REQ-E10-S07 follow-up): local account for the Backstage
+  # argocd proxy. apiKey ONLY — no `login` capability, so the account can never
+  # sign in to the UI; its token is minted out-of-band (argocd account
+  # generate-token / POST /api/v1/account/backstage-readonly/token) and stored
+  # as Secret portal/backstage-argocd (never in git). RBAC below pins it to
+  # role:readonly.
+  accounts.backstage-readonly: apiKey
   kustomize.buildOptions: --enable-alpha-plugins --enable-exec
   oidc.tls.insecure.skip.verify: "true"
   oidc.config: |
@@ -203,3 +210,4 @@ data:
     g, konih, role:admin
     g, konrad.heimel@gmail.com, role:admin
     g, PlatformRelay:platform-admins, role:admin
+    g, backstage-readonly, role:readonly
