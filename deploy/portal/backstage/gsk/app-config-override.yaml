@@ -69,7 +69,12 @@ data:
         - sign-in-page:app: false
     backend:
       baseUrl: https://portal.lab.platformrelay.dev
-      listen: ':7007'
+      # Object form REQUIRED: the sha-8b74245 image build (its backend-defaults
+      # lockfile) rejects the ':7007' string shorthand with "Invalid type in
+      # config for key 'backend.listen' ... wanted object" — LIVE-CAUGHT
+      # 2026-07-21 at the chart cutover (pod crashed pre-readiness).
+      listen:
+        port: 7007
       cors:
         origin: https://portal.lab.platformrelay.dev
       auth:
