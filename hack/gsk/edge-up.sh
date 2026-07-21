@@ -37,13 +37,16 @@ echo "==> Target GSK context: ${active}"
 #    fight the stripped, script-applied ones (see deploy/apps-cloud/README.md).
 "${REPO_ROOT}/hack/gsk/apply-gatewayapi-crds.sh"
 
-# 2) The gsk-cloud-edge AppProject. Every cloud-edge Application below is
-#    project-scoped to it, so it MUST exist first — else ArgoCD rejects the
-#    Apps with an unknown-project error. Applying Applications also requires
-#    ArgoCD present on the edge (bootstrap:argocd with KADDY_GSK_CONTEXT); if
-#    ArgoCD is absent these applies fail on the unknown CRD — bootstrap ArgoCD
-#    first (see docs/runbooks/gridscale-live-demo.md).
+# 2) The AppProjects the apps-cloud Applications reference. They MUST exist
+#    first — else ArgoCD rejects the Apps with an unknown-project error:
+#    gsk-cloud-edge for the edge Apps, portal for backstage-workload (the
+#    chart-cutover App; manual-sync, so applying it stays inert). Applying
+#    Applications also requires ArgoCD present on the edge (bootstrap:argocd
+#    with KADDY_GSK_CONTEXT); if ArgoCD is absent these applies fail on the
+#    unknown CRD — bootstrap ArgoCD first (see docs/runbooks/
+#    gridscale-live-demo.md).
 kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/gsk-cloud-edge.yaml"
+kubectl apply -f "${REPO_ROOT}/deploy/apps/projects/portal.yaml"
 
 # 3) Traefik Gateway API controller (creates the `traefik` GatewayClass + a
 #    type=LoadBalancer Service that the GSK CCM fronts with a public IP).

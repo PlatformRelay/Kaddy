@@ -14,7 +14,8 @@ Epic: E10 (cuttable) · ADR: [0109](../../../docs/adr/0109-idp-portal-orchestrat
 **Given** `deploy/portal/backstage/` synced by Argo CD  
 **When** `kubectl get deployment backstage -n portal`  
 **Then** Available replicas ≥ 1; mandatory kaddy labels present  
-**Test:** `tests/chainsaw/portal/backstage-ready.yaml`
+**Test:** `tests/chainsaw/portal/backstage-ready.yaml` + offline chart-cutover render gate
+`tests/portal/chart-render-config-order.sh` (GSK workload App renders the live env contract)
 
 **Verify:** `kubectl wait -n portal --for=condition=Available deployment/backstage --timeout=300s`
 
@@ -154,7 +155,8 @@ composed/workload GVKs, and netpol allows egress only to kube-apiserver + argocd
 `usernameMatchingUserEntityName` resolver admits ONLY GitHub logins that exist as catalog User
 entities (allowlist `deploy/portal/backstage/gsk/org-users.yaml` via url location; no
 sign-in-without-catalog-user escape hatch — classic OAuth Apps cannot restrict by org)  
-**Test:** `tests/portal/github-oauth-contract.sh`
+**Test:** `tests/portal/github-oauth-contract.sh` + `tests/portal/chart-render-config-order.sh`
+(chart cutover renders override as LAST --config, NODE_ENV=production, no escape-hatch flag)
 
 **Verify:** `bash tests/portal/github-oauth-contract.sh` (fails if the escape hatch returns or the allowlist is removed)
 

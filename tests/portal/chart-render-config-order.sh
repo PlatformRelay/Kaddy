@@ -62,6 +62,14 @@ CHART_VERSION="$(yq -r '.spec.sources[] | select(.chart == "backstage") | .targe
 yq -r '.spec.sources[] | select(.chart == "backstage") | .helm.valueFiles[]' "${APP}" \
   | grep -qx -- "[\$]values/deploy/portal/backstage/values.yaml" \
   || fail "cutover App must render \$values/deploy/portal/backstage/values.yaml"
+# ADOPTION NAMING (static — the render below cannot prove this on its own:
+# helm template is invoked with the release name read HERE, so only the App
+# manifest pin is load-bearing): releaseName must be `backstage` or Argo
+# derives the release from the App name (backstage-workload) and renders a
+# sibling next to the live objects.
+release_name="$(yq -r '.spec.sources[] | select(.chart == "backstage") | .helm.releaseName // "absent"' "${APP}")"
+[[ "${release_name}" == "backstage" ]] \
+  || fail "cutover App must pin helm.releaseName: backstage (got: ${release_name}) — adoption naming must not depend on the Argo App name"
 ref_repo="$(yq -r '.spec.sources[] | select(.ref == "values") | .repoURL' "${APP}")"
 [[ "${ref_repo}" == "https://github.com/PlatformRelay/Kaddy.git" ]] \
   || fail "cutover App \$values ref must point at this repo (got: ${ref_repo:-none})"
@@ -85,13 +93,19 @@ if [[ ! -f "${TGZ}" ]]; then
   mkdir -p "${CACHE_DIR}"
   if ! helm pull backstage --repo "${CHART_REPO}" --version "${CHART_VERSION}" \
        -d "${CACHE_DIR}" >/dev/null 2>&1; then
+    # In CI a fetch failure is a FAILURE: a network flake must not silently
+    # downgrade this gate to static-only there. Locally (offline dev) it SKIPs.
+    [[ -z "${CI:-}" ]] \
+      || fail "cannot fetch backstage chart ${CHART_VERSION} in CI — the render asserts must run there (network flake: rerun)"
     skip "cannot fetch backstage chart ${CHART_VERSION} (offline?) — skip render asserts (CI runs it)"
     echo "PASS: chart-render-config-order (static asserts only)"
     exit 0
   fi
 fi
 
-rendered="$(helm template backstage "${TGZ}" -n portal -f "${VALUES}")" \
+# Render under the App-pinned release name (asserted == backstage above) —
+# exactly the name Argo will use.
+rendered="$(helm template "${release_name}" "${TGZ}" -n portal -f "${VALUES}")" \
   || fail "helm template failed for chart ${CHART_VERSION} with ${VALUES}"
 
 deployment="$(printf '%s\n' "${rendered}" | yq 'select(.kind == "Deployment")')"

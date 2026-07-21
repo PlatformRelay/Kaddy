@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | `gateway-cloud-edge.yaml` | `deploy/gateway/cloud-only/` | clubhouse Gateway, per-host Certificates, app HTTPRoutes |
 | `cert-manager-cloud-edge.yaml` | `deploy/cert-manager/cloud-only/` (issuers only, via `directory.include`) | DNS-01 Let's Encrypt ClusterIssuers |
+| `backstage-workload.yaml` | pinned backstage.github.io chart + `$values` `deploy/portal/backstage/values.yaml` | Backstage Deployment/Service in ns `portal` (MANUAL sync — chart cutover of the out-of-band live Deployment; inert until an operator syncs it) |
 
 The Traefik controller App lives at
 `deploy/gateway-controller/traefik/application.yaml` (predates this directory;
@@ -38,6 +39,10 @@ the v1.5.1 CRDs need their `isIP`/`isCIDR`/`isURL` CEL rules stripped first
 would fight the stripped, script-applied ones — so CRDs stay a bootstrap step,
 mirroring kind's E1e bootstrap-owned CRDs.
 
-All Apps are scoped to the closed-allowlist `gsk-cloud-edge` AppProject
-(`deploy/apps/projects/gsk-cloud-edge.yaml`) — inert on kind (no members there),
-GitOps-managed via root's sync of `deploy/apps/projects/`.
+The edge Apps are scoped to the closed-allowlist `gsk-cloud-edge` AppProject
+(`deploy/apps/projects/gsk-cloud-edge.yaml`); `backstage-workload.yaml` uses the
+closed-allowlist `portal` AppProject instead (its sourceRepos already pin the
+backstage chart repo — one repo, one chart). Both projects are inert on kind
+(no members there) and GitOps-managed via root's sync of
+`deploy/apps/projects/`; edge-up.sh applies both before this directory so no
+App lands with an unknown-project condition.
