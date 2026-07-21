@@ -18,7 +18,7 @@ assert these pins are present and non-floating.
 
 | Component | Package / Image | Version |
 | --- | --- | --- |
-| Backstage image (source: `github.com/PlatformRelay/kaddy-portal`) | `ghcr.io/platformrelay/kaddy-portal` | `sha-4ecaecc` (immutable per-commit tag == `v0.2.1`, same-id SignInPage override) |
+| Backstage image (source: `github.com/PlatformRelay/kaddy-portal`) | `ghcr.io/platformrelay/kaddy-portal` | `sha-4ecaecc` (source release `v0.2.1`; image tags use the immutable per-commit `sha-` form, never the release tag; same-id SignInPage override) |
 | Backstage Helm chart | `backstage` (backstage.github.io/charts) | see `deploy/apps/portal.yaml` `targetRevision` |
 
 ## Write path — auto-generated scaffolder (TeraSky)
