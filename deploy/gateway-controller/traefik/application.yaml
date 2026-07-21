@@ -21,9 +21,12 @@
 # GatewayClass object (that would double-own the Helm-managed one and conflict on
 # apply).
 #
-# PREREQUISITE — Gateway API CRDs (v1.5.1 standard channel) must exist FIRST,
-# with the k8s-1.31-only isIP/isCIDR/isURL CEL rules stripped so they apply on
-# GSK's k8s 1.30 (see hack/gsk/apply-gatewayapi-crds.sh). Traefik 3.7.6 watches
+# PREREQUISITE — Gateway API CRDs (v1.5.1 standard channel) must exist FIRST
+# (see hack/gsk/apply-gatewayapi-crds.sh). On the original GSK k8s 1.30 the
+# k8s-1.31-only isIP/isCIDR/isURL CEL rules had to be stripped for the CRDs to
+# apply; the cluster was rebuilt to v1.31.11 on 2026-07-21, where those CEL
+# functions exist natively — the script still strips unconditionally; revisit
+# whether the strip is still required on 1.31. Traefik 3.7.6 watches
 # TLSRoute + BackendTLSPolicy at v1 unconditionally; a stale v1alpha2 tlsroutes
 # CRD blocks WaitForCacheSync and stops all reconciliation.
 apiVersion: argoproj.io/v1alpha1
