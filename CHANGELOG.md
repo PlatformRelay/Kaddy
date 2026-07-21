@@ -3,16 +3,39 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
-## [0.8.0] — 2026-07-20
+## [0.9.0] — 2026-07-21
 
-**The GSK portal locks its front door, and the cloud edge goes fully
-GitOps-owned.** Backstage on GSK now signs in via GitHub only — guest auth is
-gone, an OAuth URL contract stack keeps callbacks pinned to portal.lab, and
-sign-in is restricted to catalog org users (no dangerous resolver fallback).
-The GSK Traefik cloud edge moves under Argo ownership via `deploy/apps-cloud`,
-argo-rollouts gains an amd64 overlay for the gatewayapi plugin on cloud nodes,
-the AppProject description fits Argo's 255-char limit (with a gate to keep it
-that way), and cost docs are reconciled to the real node_count=3 figures.
+### Features
+- **evidence:** Deck-identity scorecard restyle + demo-video run-sheet
+- **gsk:** Allow 4th worker node (MemoryPressure relief, operator-approved)
+- **gsk:** Raise conftest node cap to 4 + boundary tests (policied 4-node path)
+- **portal:** Inert GSK chart-cutover App + live-contract values + R4-1 render gate
+
+### Fixes
+- **observability:** Disable managed-cluster control-plane monitors (kube-system Services blocked by closed AppProject)
+- **portal:** Disable default guest sign-in page via override extensions (white-screen fix)
+- **portal:** Use github.com blob URL for org-users catalog location (raw host not readable)
+- **gsk:** Count paragraph newlines in folded description gate (check 10)
+- **gsk:** WARN loudly when edge-up rollout-status misses (no silent continue)
+- **gateway:** ADR-0301 podLabels on Traefik pods (kyverno denied re-admission after GSK node rebuild — edge outage)
+- **portal:** Repin image to immutable sha-8b74245 per-commit tag
+- **portal:** Chart values live-parity — ADR-0301 pod labels, ARGOCD_* envs, live probes/securityContext
+- **portal:** Backend.listen object form in override (sha-8b74245 image rejects string shorthand)
+
+### Tests
+- **portal:** Harden chart-cutover gate + wire portal project into edge-up (review fast-follow)
+- **portal:** Fail loudly on missing wire-script exec bit (R4-2)
+
+### Documentation
+- **deck:** Closing thank-you line in speaker notes
+- **gsk:** Reconcile node-count/cost figures with 4-node cluster (cap 4, ~€207/mo)
+- **gsk:** Caveat — tofu local/S3 state holds plaintext secrets (keys + kubeconfig)
+- **gateway:** Update traefik header for GSK rebuild to k8s 1.31
+
+### Refactoring
+- **deck:** Redo as 5-10 min demo-video deck
+
+## [0.8.0] — 2026-07-20
 
 ### Features
 - **rollouts:** Amd64 cloud overlay for gatewayapi plugin
@@ -30,6 +53,7 @@ that way), and cost docs are reconciled to the real node_count=3 figures.
 
 ### Documentation
 - **cost:** Reconcile day0/README cost figures with node_count=3
+- **release:** Changelog and README for v0.8.0
 
 ## [0.7.0] — 2026-07-20
 
