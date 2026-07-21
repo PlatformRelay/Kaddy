@@ -68,6 +68,16 @@ tofu init \
 outputs of the object-storage stack.) The backend block already sets the
 `skip_*` / `use_path_style` flags gos3.io needs (it is not real AWS).
 
+> **Plaintext secrets in state:** tofu state — the LOCAL
+> `terraform.tfstate` of the object-storage anchor **and** the S3 remote state
+> of every other stack — stores sensitive values **in plaintext**: the
+> object-storage `access_key`/`secret_key`, and for the `k8s` stack the full
+> **kubeconfig** (cluster-admin credentials). Neither gos3.io nor OpenTofu
+> encrypts these at the application layer. Treat every state file like a
+> credential: never commit `terraform.tfstate*` (gitignored — keep it that
+> way), keep the bucket private, don't paste state output into logs/issues,
+> and rotate the object-storage keys + GSK credentials if a state file leaks.
+
 ## Live output → input wiring (E1g-S05)
 
 The stacks pass values by **input variable** (not `terraform_remote_state`) so
