@@ -15,7 +15,12 @@ ok()   { echo "OK: $*"; }
 
 [[ -f "${STACK}" ]] || fail "missing ${STACK}"
 [[ -f "${WIRE}" ]]  || fail "missing ${WIRE}"
-[[ -x "${WIRE}" ]] || chmod +x "${WIRE}"
+# The wire script is tracked mode 100755 (R4-2): a missing exec bit means the
+# committed mode regressed. Fail loudly instead of chmod-ing the working tree
+# from a test — repair with:
+#   chmod +x hack/portal/wire-github-oauth-secret.sh && git update-index --chmod=+x hack/portal/wire-github-oauth-secret.sh
+[[ -x "${WIRE}" ]] \
+  || fail "wire script lost its executable bit (tracked mode must stay 100755): chmod +x '${WIRE#"${ROOT}"/}' and commit via git update-index --chmod=+x"
 
 HOMEPAGE='https://portal.lab.platformrelay.dev'
 CALLBACK='https://portal.lab.platformrelay.dev/api/auth/github/handler/frame'
