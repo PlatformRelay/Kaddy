@@ -3,6 +3,16 @@
 All notable changes to the kaddy platform. Generated with git-cliff from
 gitmoji-conventional commit history.
 
+## [0.9.1] — 2026-07-21
+
+### Fixes
+- **docs:** Blob URLs for out-of-tree links (mkdocs --strict aborted showcase-image tag build)
+- **portal:** Drop sign-in-page:app disable + repin image sha-4ecaecc (same-id sign-in gate)
+- **gateway:** 302-redirect Exact /login to / on portal.lab cloud edge
+
+### Documentation
+- **evidence:** Live proof — portal sign-in gate renders + /login 302 redirect
+
 ## [0.9.0] — 2026-07-21
 
 ### Features
@@ -31,6 +41,7 @@ gitmoji-conventional commit history.
 - **gsk:** Reconcile node-count/cost figures with 4-node cluster (cap 4, ~€207/mo)
 - **gsk:** Caveat — tofu local/S3 state holds plaintext secrets (keys + kubeconfig)
 - **gateway:** Update traefik header for GSK rebuild to k8s 1.31
+- **release:** Changelog and README for v0.9.0
 
 ### Refactoring
 - **deck:** Redo as 5-10 min demo-video deck
