@@ -16,3 +16,10 @@ spec:
   variant: in-cluster
   crossplane:
     compositionUpdatePolicy: Automatic
+    # Crossplane v2 nests composition selection under spec.crossplane. With two
+    # Website Compositions (in-cluster + gridscale) selection is no longer
+    # implicit — pin the in-cluster Composition by label so this XR resolves
+    # deterministically (matches deploy/crossplane/composition-website.yaml).
+    compositionSelector:
+      matchLabels:
+        platform.kaddy.io/variant: in-cluster
