@@ -77,14 +77,25 @@ grep -qE 'deploy/workloads/' "${APPCONFIG}" \
   || fail "the workloads target path (deploy/workloads/) must be documented in app-config"
 ok "scaffolded XRs targeted at deploy/workloads/"
 
-# --- 5) XRD carries the terasky path-control annotations --------------------
-grep -qE 'terasky\.backstage\.io/target-path' "${XRD}" \
-  || fail "Website XRD must carry terasky.backstage.io/target-path (where scaffolded XRs land)"
-grep -qE 'deploy/workloads/' "${XRD}" \
-  || fail "Website XRD target-path must be under deploy/workloads/ (ArgoCD-watched)"
-grep -qE 'terasky\.backstage\.io/create-kustomization-file' "${XRD}" \
-  || fail "Website XRD must set terasky.backstage.io/create-kustomization-file (ArgoCD sync)"
-ok "Website XRD carries terasky target-path + create-kustomization-file annotations"
+# --- 5) XRD carries the terasky path-control + discovery annotations ---------
+# Anchor to non-comment, value-bearing lines (^[[:space:]]* excludes the '#'
+# explainer comments above each key) so a commented-out annotation can never
+# satisfy the assertion (vacuous-grep guard).
+grep -qE '^[[:space:]]*terasky\.backstage\.io/target-path:[[:space:]]*"deploy/workloads/' "${XRD}" \
+  || fail "Website XRD must set terasky.backstage.io/target-path under deploy/workloads/ (ArgoCD-watched)"
+grep -qE '^[[:space:]]*terasky\.backstage\.io/create-kustomization-file:[[:space:]]*"true"' "${XRD}" \
+  || fail "Website XRD must set terasky.backstage.io/create-kustomization-file: \"true\" (ArgoCD sync)"
+# LOAD-BEARING: without add-to-catalog the ingestor's crossplane.xrds path drops
+# the XRD and NO Website template appears on the Create page (incident
+# 2026-07-21; live-proven fix 2026-07-24).
+grep -qE '^[[:space:]]*terasky\.backstage\.io/add-to-catalog:[[:space:]]*"true"' "${XRD}" \
+  || fail "Website XRD must set terasky.backstage.io/add-to-catalog: \"true\" (else no Create-page template)"
+# Guard the correction: the generate-form LABEL must NOT be added — it feeds the
+# publishPhase-less genericCRDTemplates path and yields a BROKEN duplicate template.
+if grep -qE '^[[:space:]]*terasky\.backstage\.io/generate-form:' "${XRD}"; then
+  fail "Website XRD must NOT carry terasky.backstage.io/generate-form (broken duplicate template; use add-to-catalog only)"
+fi
+ok "Website XRD carries terasky target-path + create-kustomization-file + add-to-catalog (no generate-form)"
 
 # --- 6) NO hand-written per-Website scaffolder template.yaml -----------------
 # D-028: the template is GENERATED from the XRD, not hand-written. A committed

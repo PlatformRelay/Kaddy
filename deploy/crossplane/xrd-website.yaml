@@ -37,6 +37,21 @@ metadata:
     # target, so this path is written via a pull request, never a direct commit.
     terasky.backstage.io/target-path: "deploy/workloads/{namespace}/website/"
     terasky.backstage.io/create-kustomization-file: "true"
+    # LOAD-BEARING for Create-page template discovery (live-proven 2026-07-24,
+    # incident 2026-07-21 "only nodejs template shows"): the kubernetes-ingestor
+    # XRDDataProvider (the crossplane.xrds path — the ONLY path that honors the
+    # target-path/create-kustomization-file annotations above and the portal's
+    # crossplane.xrds.publishPhase PR flow) DROPS every XRD lacking this
+    # annotation unless `crossplane.xrds.ingestAllXRDs: true` is set in the
+    # portal app-config (it is not). Verified in the plugin's own
+    # XRDDataProvider.cjs.js gating. With this annotation set, the ingestor
+    # generated exactly one working `Website` template (form + PR publish to
+    # PlatformRelay/Kaddy). NOTE: do NOT also add a
+    # `terasky.backstage.io/generate-form` LABEL — that feeds the SEPARATE
+    # genericCRDTemplates path which, lacking its own publishPhase, would emit a
+    # BROKEN duplicate template; live Website XRs already reach the catalog via
+    # crossplane.claims.ingestAllClaims.
+    terasky.backstage.io/add-to-catalog: "true"
 spec:
   scope: Namespaced
   group: platform.kaddy.io
