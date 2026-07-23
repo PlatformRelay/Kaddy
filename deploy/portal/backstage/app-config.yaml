@@ -95,8 +95,11 @@ kubernetesIngestor:
         # Users cannot retarget the repo — every PR lands in PlatformRelay/Kaddy.
         allowRepoSelection: false
         # Path control (where the scaffolded XR file lands) is on the XRD via
-        # terasky.backstage.io/target-path (deploy/workloads/{namespace}/website/)
+        # terasky.backstage.io/target-path (deploy/workloads/{xrNamespace}/website)
         # — that is the documented mechanism, asserted by ingestor-config.sh.
+        # NOTE: the placeholder is {xrNamespace} (the real scaffolder form param)
+        # and there is NO trailing slash — terasky-utils resolvePathTemplate
+        # rejects empty segments and unknown params (live-caught 2026-07-24).
     claims:
       # Live Website XRs -> Software Catalog entities, no per-site catalog-info.
       ingestAllClaims: true

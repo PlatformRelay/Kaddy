@@ -35,7 +35,14 @@ metadata:
     # where ArgoCD watches — with a kustomization.yaml so the new site syncs. The
     # ingestor publishPhase (deploy/portal/backstage/app-config.yaml) is a PR
     # target, so this path is written via a pull request, never a direct commit.
-    terasky.backstage.io/target-path: "deploy/workloads/{namespace}/website/"
+    # Placeholder MUST be a real scaffolder param key and the path MUST have no
+    # trailing slash (live-caught 2026-07-24, Create failed at terasky:claim-template):
+    # terasky-utils resolvePathTemplate splits on '/' and rejects any empty or
+    # non-{param} literal segment, so a trailing '/' -> empty segment -> "invalid
+    # literal segment ''". It then resolves {name} against input.parameters[name];
+    # the generated form's namespace field is `xrNamespace` (there is NO `namespace`
+    # key), so `{namespace}` -> undefined -> "invalid value for placeholder".
+    terasky.backstage.io/target-path: "deploy/workloads/{xrNamespace}/website"
     terasky.backstage.io/create-kustomization-file: "true"
     # LOAD-BEARING for Create-page template discovery (live-proven 2026-07-24,
     # incident 2026-07-21 "only nodejs template shows"): the kubernetes-ingestor

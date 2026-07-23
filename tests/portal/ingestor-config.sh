@@ -83,6 +83,18 @@ ok "scaffolded XRs targeted at deploy/workloads/"
 # satisfy the assertion (vacuous-grep guard).
 grep -qE '^[[:space:]]*terasky\.backstage\.io/target-path:[[:space:]]*"deploy/workloads/' "${XRD}" \
   || fail "Website XRD must set terasky.backstage.io/target-path under deploy/workloads/ (ArgoCD-watched)"
+# resolvePathTemplate (terasky-utils) rejects a trailing '/' (empty segment) and
+# resolves {name} against the scaffolder param `xrNamespace` — NOT `namespace`.
+# Both bugs made Create fail at the claim-template step (live-caught 2026-07-24).
+tp="$(grep -oE 'terasky\.backstage\.io/target-path:[[:space:]]*"[^"]*"' "${XRD}" | head -1)"
+case "${tp}" in
+  *'/website"') : ;;  # ends at 'website' + closing quote — no trailing slash
+  *) fail "target-path must not end in a trailing slash (empty segment breaks resolvePathTemplate): ${tp}" ;;
+esac
+case "${tp}" in
+  *'{xrNamespace}'*) : ;;
+  *) fail "target-path must use the {xrNamespace} placeholder (the real scaffolder param; {namespace} is undefined): ${tp}" ;;
+esac
 grep -qE '^[[:space:]]*terasky\.backstage\.io/create-kustomization-file:[[:space:]]*"true"' "${XRD}" \
   || fail "Website XRD must set terasky.backstage.io/create-kustomization-file: \"true\" (ArgoCD sync)"
 # LOAD-BEARING: without add-to-catalog the ingestor's crossplane.xrds path drops
