@@ -1,0 +1,18 @@
+apiVersion: platform.kaddy.io/v1alpha1
+kind: Website
+metadata:
+  annotations:
+    terasky.backstage.io/source-info: '{"pushToGit":true,"gitBranch":"main","gitRepo":"github.com?owner=PlatformRelay&repo=Kaddy","gitLayout":"custom","basePath":""}'
+    terasky.backstage.io/add-to-catalog: 'true'
+    terasky.backstage.io/owner: group:default/platform-team
+    terasky.backstage.io/system: kaddy-website
+    terasky.backstage.io/source-file-url: https://github.com/PlatformRelay/Kaddy/blob/main/deploy/workloads/kaddy-website/website/kaddy-website-in-cluster.yaml
+  name: kaddy-website-in-cluster
+  namespace: kaddy-website
+spec:
+  image: ghcr.io/platformrelay/kaddy-showcase:0.6.0
+  port: 8080
+  replicas: 1
+  variant: in-cluster
+  crossplane:
+    compositionUpdatePolicy: Automatic
