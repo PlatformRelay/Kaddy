@@ -1,0 +1,56 @@
+# REQ-E1e-S03-01: platform-local-ca child Application.
+#
+# Deploys the self-signed kaddy-local-ca ClusterIssuer onto the cloud GSK
+# cluster. On kind this CA is applied by hack/cluster/install-cert-manager.sh
+# (first-boot bootstrap, before ArgoCD exists); on GSK there was no such path,
+# so every Certificate that chains to kaddy-local-ca stayed stuck
+# (Reason=DoesNotExist) — the clubhouse gateway cert AND every composed Website
+# per-site cert (deploy/crossplane/composition-website.yaml) were READY=False.
+# Live-caught 2026-07-24: applying the CA flipped putting-green (in-cluster
+# Website XR) to READY=True and issued clubhouse-tls.
+#
+# SINGLE SOURCE OF TRUTH: this app syncs ONLY cluster-issuer.yaml from
+# deploy/cluster-local (directory.include) — the same file kind bootstraps from —
+# so the CA is defined once. The sibling l2-announcement/lb-ippool/smoke-gateway
+# manifests in that dir are kind-only Cilium networking and are deliberately
+# excluded.
+#
+# selfHeal is OFF (self-heal stays reserved for the control-plane apps —
+# platform-core and identity): the CA is a static, issued-once declarative root,
+# so manual re-sync on the rare drift is fine and keeps a human in the loop for a
+# cluster-scoped trust anchor.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-local-ca
+  namespace: argocd
+  labels:
+    owner: platform-team
+    service: platform-local-ca
+    part-of: kaddy
+    managed-by: argocd
+    data-classification: internal
+    business-criticality: business-critical
+    track: stable
+    app.kubernetes.io/name: platform-local-ca
+    app.kubernetes.io/part-of: kaddy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/PlatformRelay/Kaddy.git
+    targetRevision: main
+    path: deploy/cluster-local
+    directory:
+      # ONLY the CA issuer — not the kind-only Cilium L2/LB/smoke-gateway files.
+      include: cluster-issuer.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
