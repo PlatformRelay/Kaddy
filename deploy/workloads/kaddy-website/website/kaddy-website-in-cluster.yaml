@@ -10,6 +10,10 @@ metadata:
   name: kaddy-website-in-cluster
   namespace: kaddy-website
 spec:
+  # Route path prefix on the shared clubhouse host (XRD-required). The scaffolder
+  # form did NOT collect this required field — hand-added so the XR is valid
+  # (tracked: durable fix must make the generated form include spec.path).
+  path: /kaddy-website
   image: ghcr.io/platformrelay/kaddy-showcase:0.6.0
   port: 8080
   replicas: 1
