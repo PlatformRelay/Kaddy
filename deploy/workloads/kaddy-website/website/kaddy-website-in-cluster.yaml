@@ -9,6 +9,18 @@ metadata:
     terasky.backstage.io/source-file-url: https://github.com/PlatformRelay/Kaddy/blob/main/deploy/workloads/kaddy-website/website/kaddy-website-in-cluster.yaml
   name: kaddy-website-in-cluster
   namespace: kaddy-website
+  # Mandatory ADR-0301 labels — the Composition propagates these to the composed
+  # Pod; Kyverno (require-kaddy-labels + restrict-data-classification, Enforce)
+  # denies pods without them. The scaffolder form did NOT set these (durable gap:
+  # the generated XR must carry the ADR-0301 label set).
+  labels:
+    owner: platform-team
+    service: kaddy-website
+    part-of: kaddy
+    managed-by: argocd
+    track: stable
+    data-classification: public
+    business-criticality: business-operational
 spec:
   # Route path prefix on the shared clubhouse host (XRD-required). The scaffolder
   # form did NOT collect this required field — hand-added so the XR is valid
